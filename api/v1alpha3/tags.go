@@ -49,6 +49,12 @@ const (
 	// cluster-api-provider-hetzner owned components from other tooling that
 	// uses NameKubernetesClusterPrefix
 	NameHetznerProviderOwned = "cluster." + NameHetznerProviderPrefix
+
+	// MachineNameTag tags related MachineNameTag
+	MachineNameTagKey = "machine." + NameHetznerProviderPrefix + "name"
+
+	// MachineTempalteHashTag tags server resources
+	MachineTemplateHashTagKey = "machine." + NameHetznerProviderPrefix + "template"
 )
 
 // ClusterTagKey generates the key for resources associated with a cluster.

@@ -58,6 +58,10 @@ docker-build: test
 docker-push:
 	docker push ${IMG}
 
+mockgen:
+	mkdir -p pkg/cloud/scope/mock
+	mockgen sigs.k8s.io/cluster-api-provider-hetzner/pkg/cloud/scope HetznerClient > pkg/cloud/scope/mock/scope.go
+
 # find or download controller-gen
 # download controller-gen if necessary
 controller-gen:

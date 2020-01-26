@@ -24,7 +24,9 @@ import (
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 	infrastructurev1alpha3 "sigs.k8s.io/cluster-api-provider-hetzner/api/v1alpha3"
 	"sigs.k8s.io/cluster-api-provider-hetzner/controllers"
+	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha2"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 	// +kubebuilder:scaffold:imports
 )
@@ -38,6 +40,7 @@ func init() {
 	_ = clientgoscheme.AddToScheme(scheme)
 
 	_ = infrastructurev1alpha3.AddToScheme(scheme)
+	_ = clusterv1.AddToScheme(scheme)
 	// +kubebuilder:scaffold:scheme
 }
 
@@ -68,8 +71,24 @@ func main() {
 		Client: mgr.GetClient(),
 		Log:    ctrl.Log.WithName("controllers").WithName("HetznerCluster"),
 		Scheme: mgr.GetScheme(),
-	}).SetupWithManager(mgr); err != nil {
+	}).SetupWithManager(mgr, controller.Options{}); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "HetznerCluster")
+		os.Exit(1)
+	}
+	if err = (&controllers.HetznerMachineReconciler{
+		Client: mgr.GetClient(),
+		Log:    ctrl.Log.WithName("controllers").WithName("HetznerMachine"),
+		Scheme: mgr.GetScheme(),
+	}).SetupWithManager(mgr, controller.Options{}); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "HetznerMachine")
+		os.Exit(1)
+	}
+	if err = (&controllers.HetznerVolumeReconciler{
+		Client: mgr.GetClient(),
+		Log:    ctrl.Log.WithName("controllers").WithName("HetznerVolume"),
+		Scheme: mgr.GetScheme(),
+	}).SetupWithManager(mgr, controller.Options{}); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "HetznerVolume")
 		os.Exit(1)
 	}
 	// +kubebuilder:scaffold:builder

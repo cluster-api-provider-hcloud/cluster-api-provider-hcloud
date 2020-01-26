@@ -20,6 +20,13 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+const (
+	// ClusterFinalizer allows ReconcileHetznerCluster to clean up Hetzner
+	// resources associated with HetznerCluster before removing it from the
+	// apiserver.
+	ClusterFinalizer = "hetznercluster.infrastructure.cluster.x-k8s.io"
+)
+
 type HetznerLocation string
 type HetznerNetworkZone string
 
@@ -35,15 +42,36 @@ const (
 type HetznerClusterSpec struct {
 	Location HetznerLocation `json:"location,omitempty"`
 
-	SSHKeys []HetznerSSHKeySpec `json:"sshKeys,omitempty"`
-
-	Image *HetznerImageSpec `json:"image,omitempty"`
-
 	// +kubebuilder:validation:MinItems=1
 	// +kubebuilder:validation:MaxItems=10
 	ControlPlaneFloatingIPs []HetznerFloatingIPSpec `json:"controlPlaneFloatingIPs,omitempty"`
 
+	Network *HetznerNetworkSpec `json:"network,omitempty"`
+
 	TokenRef *corev1.SecretKeySelector `json:"tokenRef,omitempty"`
+}
+
+type HetznerNetwork struct {
+	CIDRBlock string `json:"cidrBlock,omitempty"`
+}
+
+type HetznerNetworkSpec struct {
+	HetznerNetwork `json:",inline"`
+
+	Subnets []HetznerNetworkSubnetSpec `json:"subnets,omitempty"`
+}
+
+type HetznerNetworkSubnetSpec struct {
+	HetznerNetwork `json:",inline"`
+
+	NetworkZone HetznerNetworkZone `json:"networkZone,omitempty"`
+}
+
+type HetznerNetworkStatus struct {
+	HetznerNetworkSpec `json:",inline"`
+
+	ID     int               `json:"id,omitempty"`
+	Labels map[string]string `json:"-"`
 }
 
 type HetznerFloatingIPSpec struct {
@@ -57,18 +85,7 @@ type HetznerFloatingIPStatus struct {
 	Name    string                `json:"name,omitempty"`
 	Network string                `json:"network,omitempty"`
 	Type    HetznerFloatingIPType `json:"type"`
-}
-
-type HetznerSSHKeySpec struct {
-	LabelSelector *metav1.LabelSelector `json:"labelSelector,omitempty"`
-	Name          *string               `json:"name,omitempty"`
-	ID            *string               `json:"id,omitempty"`
-}
-
-type HetznerImageSpec struct {
-	LabelSelector *metav1.LabelSelector `json:"labelSelector,omitempty"`
-	Name          *string               `json:"name,omitempty"`
-	ID            *string               `json:"id,omitempty"`
+	Labels  map[string]string     `json:"-"`
 }
 
 // HetznerClusterStatus defines the observed state of HetznerCluster
@@ -77,10 +94,16 @@ type HetznerClusterStatus struct {
 	NetworkZone             HetznerNetworkZone        `json:"networkZone,omitempty"`
 	ControlPlaneFloatingIPs []HetznerFloatingIPStatus `json:"controlPlaneFloatingIPs,omitempty"`
 
-	ImageID string `json:"imageID,omitempty"`
+	// Ready is true when the provider resource is ready.
+	// +optional
+	Ready bool `json:"ready"`
+
+	// +optional
+	Network *HetznerNetworkStatus `json:"network,omitempty"`
 }
 
 // +kubebuilder:object:root=true
+// +kubebuilder:resource:path=hetznerclusters,scope=Namespaced,categories=cluster-api
 // +kubebuilder:printcolumn:name="Location",type="string",JSONPath=".status.location",description="Location of the cluster"
 // +kubebuilder:printcolumn:name="NetworkZone",type="string",JSONPath=".status.networkZone",description="NetworkZone of the cluster"
 // +kubebuilder:subresource:status

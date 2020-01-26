@@ -3,6 +3,8 @@
 # It should be run by config/default
 resources:
 - bases/infrastructure.cluster.x-k8s.io_hetznerclusters.yaml
+- bases/infrastructure.cluster.x-k8s.io_hetznermachines.yaml
+- bases/infrastructure.cluster.x-k8s.io_hetznervolumes.yaml
 # +kubebuilder:scaffold:crdkustomizeresource
 
 patchesStrategicMerge:
