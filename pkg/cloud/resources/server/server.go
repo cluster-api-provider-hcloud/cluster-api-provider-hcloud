@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/base64"
 	"fmt"
+	"time"
 
 	"github.com/hetznercloud/hcloud-go/hcloud"
 	"github.com/pkg/errors"
@@ -138,21 +139,51 @@ func (s *Service) Reconcile(ctx context.Context) (_ *ctrl.Result, err error) {
 	return nil, nil
 }
 
-func (s *Service) Delete(ctx context.Context) (err error) {
-	// update current server
+func (s *Service) Delete(ctx context.Context) (_ *ctrl.Result, err error) {
+	// update current servers
 	actualServers, err := s.actualStatus(ctx)
 	if err != nil {
-		return errors.Wrap(err, "failed to refresh server status")
+		return nil, errors.Wrap(err, "failed to refresh server status")
 	}
 
+	var actionWait []*hcloud.Server
+	var actionShutdown []*hcloud.Server
+	var actionDelete []*hcloud.Server
+
 	for _, server := range actualServers {
-		// TODO: Shutdown first
-		if _, err := s.scope.HetznerClient().DeleteServer(ctx, server); err != nil {
-			return errors.Wrap(err, "failed to delete server")
+		switch status := server.Status; status {
+		case hcloud.ServerStatusRunning:
+			actionShutdown = append(actionShutdown, server)
+		case hcloud.ServerStatusOff:
+			actionDelete = append(actionDelete, server)
+		default:
+			actionWait = append(actionWait, server)
 		}
 	}
 
-	return nil
+	// shutdown servers
+	for _, server := range actionShutdown {
+		if _, _, err := s.scope.HetznerClient().ShutdownServer(ctx, server); err != nil {
+			return nil, errors.Wrap(err, "failed to shutdown server")
+		}
+		actionWait = append(actionWait, server)
+	}
+
+	// delete servers that need delete
+	for _, server := range actionDelete {
+		if _, err := s.scope.HetznerClient().DeleteServer(ctx, server); err != nil {
+			return nil, errors.Wrap(err, "failed to delete server")
+		}
+	}
+
+	var result *ctrl.Result
+	if len(actionWait) > 0 {
+		result = &ctrl.Result{
+			RequeueAfter: 5 * time.Second,
+		}
+	}
+
+	return result, nil
 }
 
 func (s *Service) volumes(ctx context.Context) ([]*hcloud.Volume, error) {

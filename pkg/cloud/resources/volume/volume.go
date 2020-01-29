@@ -83,7 +83,22 @@ func (s *Service) Reconcile(ctx context.Context) (err error) {
 }
 
 func (s *Service) Delete(ctx context.Context) (err error) {
-	return errNotImplemented
+	// update actual volume status
+	actualStatus, err := s.actualStatus(ctx)
+	if err != nil {
+		return errors.Wrap(err, "failed to refresh volume")
+	}
+
+	if actualStatus == nil {
+		return nil
+	}
+
+	if s.scope.HetznerVolume.Spec.ReclaimPolicy != infrav1.HetznerVolumeReclaimDelete {
+		s.scope.V(1).Info("Remove kubernetes volume, but retain HetznerVolume due to ReclaimPolicy", "volume_id", actualStatus.VolumeID)
+		return nil
+	}
+
+	return s.deleteVolume(ctx, *actualStatus.VolumeID)
 }
 
 func (s *Service) createVolume(ctx context.Context) error {
@@ -105,6 +120,11 @@ func (s *Service) createVolume(ctx context.Context) error {
 	s.scope.HetznerVolume.Status = *apiToStatus(v.Volume)
 
 	return nil
+}
+
+func (s *Service) deleteVolume(ctx context.Context, id infrav1.HetznerVolumeID) error {
+	_, err := s.scope.HetznerClient().DeleteVolume(ctx, &hcloud.Volume{ID: int(id)})
+	return err
 }
 
 // actualStatus gathers all matching server instances, matched by tag

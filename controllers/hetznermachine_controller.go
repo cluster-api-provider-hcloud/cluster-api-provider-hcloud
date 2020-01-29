@@ -140,11 +140,14 @@ func (r *HetznerMachineReconciler) reconcileDelete(machineScope *scope.MachineSc
 	hetznerMachine := machineScope.HetznerMachine
 
 	// delete servers
-	if err := server.NewService(machineScope).Delete(machineScope.Ctx); err != nil {
-		return reconcile.Result{}, errors.Wrapf(err, "failed to delete servers for HetznerMachine %s/%s", hetznerMachine.Namespace, hetznerMachine.Name)
+	if result, err, brk := breakReconcile(server.NewService(machineScope).Reconcile(machineScope.Ctx)); brk {
+		return result, errors.Wrapf(err, "failed to reconcile server for HetznerMachine %s/%s", hetznerMachine.Namespace, hetznerMachine.Name)
 	}
 
-	// delete controlplane floating IPs
+	if result, err, brk := breakReconcile(server.NewService(machineScope).Delete(machineScope.Ctx)); brk {
+		return result, errors.Wrapf(err, "failed to delete servers for HetznerMachine %s/%s", hetznerMachine.Namespace, hetznerMachine.Name)
+	}
+
 	// Machine is deleted so remove the finalizer.
 	machineScope.HetznerMachine.Finalizers = util.Filter(machineScope.HetznerMachine.Finalizers, infrav1.MachineFinalizer)
 

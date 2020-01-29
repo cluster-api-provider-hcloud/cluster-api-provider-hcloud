@@ -16,6 +16,7 @@ type HetznerClient interface {
 	CreateServer(context.Context, hcloud.ServerCreateOpts) (hcloud.ServerCreateResult, *hcloud.Response, error)
 	ListServers(context.Context, hcloud.ServerListOpts) ([]*hcloud.Server, error)
 	DeleteServer(context.Context, *hcloud.Server) (*hcloud.Response, error)
+	ShutdownServer(context.Context, *hcloud.Server) (*hcloud.Action, *hcloud.Response, error)
 	CreateVolume(context.Context, hcloud.VolumeCreateOpts) (hcloud.VolumeCreateResult, *hcloud.Response, error)
 	ListVolumes(context.Context, hcloud.VolumeListOpts) ([]*hcloud.Volume, error)
 	DeleteVolume(context.Context, *hcloud.Volume) (*hcloud.Response, error)
@@ -60,6 +61,11 @@ func (c *realClient) ListServers(ctx context.Context, opts hcloud.ServerListOpts
 	return c.client.Server.AllWithOpts(ctx, opts)
 }
 
+func (c *realClient) ShutdownServer(ctx context.Context, server *hcloud.Server) (*hcloud.Action, *hcloud.Response, error) {
+
+	return c.client.Server.Shutdown(ctx, server)
+}
+
 func (c *realClient) DeleteServer(ctx context.Context, server *hcloud.Server) (*hcloud.Response, error) {
 	return c.client.Server.Delete(ctx, server)
 }
@@ -78,7 +84,6 @@ func (c *realClient) DeleteVolume(ctx context.Context, server *hcloud.Volume) (*
 
 func (c *realClient) CreateNetwork(ctx context.Context, opts hcloud.NetworkCreateOpts) (*hcloud.Network, *hcloud.Response, error) {
 	return c.client.Network.Create(ctx, opts)
-
 }
 
 func (c *realClient) ListNetworks(ctx context.Context, opts hcloud.NetworkListOpts) ([]*hcloud.Network, error) {
