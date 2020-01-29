@@ -74,6 +74,16 @@ func (s *Service) Reconcile(ctx context.Context) (_ *ctrl.Result, err error) {
 		return nil, errors.Wrap(err, "failed to parse user data")
 	}
 
+	// ensure TLS is using proper certificates
+	if err := userDataObj.appendKubeadmConfig(`---
+apiVersion: kubelet.config.k8s.io/v1beta1
+kind: KubeletConfiguration
+rotateCertificates: true
+serverTLSBootstrap: true
+`); err != nil {
+		return nil, errors.Wrap(err, "failed to append kubelet configuration for TLs bootstrapping")
+	}
+
 	var myTrue = true
 	var myFalse = false
 	opts := hcloud.ServerCreateOpts{

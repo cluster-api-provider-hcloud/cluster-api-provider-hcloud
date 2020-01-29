@@ -105,6 +105,54 @@ runcmd:
   - kubeadm init --config /tmp/kubeadm.yaml
 `)
 
+var userDataWithAppenedKubeadm = []byte(`## template: jinja
+#cloud-config
+
+write_files:
+  - content: |
+        ---
+        apiServer:
+          extraArgs:
+            cloud-provider: external
+        apiVersion: kubeadm.k8s.io/v1beta1
+        certificatesDir: /etc/kubernetes/pki
+        clusterName: christian-dev
+        controlPlaneEndpoint: ""
+        controllerManager:
+          extraArgs:
+            cloud-provider: external
+        dns:
+          type: ""
+        etcd: {}
+        imageRepository: ""
+        kind: ClusterConfiguration
+        kubernetesVersion: v1.16.6
+        networking:
+          dnsDomain: cluster.local
+          podSubnet: 192.168.0.0/16
+          serviceSubnet: 172.16.0.0/12
+        scheduler: {}
+        ---
+        apiVersion: kubeadm.k8s.io/v1beta1
+        kind: InitConfiguration
+        localAPIEndpoint:
+          advertiseAddress: ""
+          bindPort: 0
+        nodeRegistration:
+          kubeletExtraArgs:
+            cloud-provider: external
+        ---
+        apiVersion: kubelet.config.k8s.io/v1beta1
+        kind: KubeletConfiguration
+        rotateCertificates: true
+        serverTLSBootstrap: true
+    owner: root:root
+    path: /tmp/kubeadm.yaml
+    permissions: "0640"
+runcmd:
+  - kubeadm init --config /tmp/kubeadm.yaml
+`)
+
 func TestUserData(t *testing.T) {
 	RegisterFailHandler(Fail)
 	RunSpecs(t, "UserData Suite")
@@ -136,6 +184,22 @@ var _ = Describe("UserData", func() {
 			output, err := u.output()
 			Expect(err).NotTo(HaveOccurred())
 			Expect(string(output)).To(Equal(string(userDataWithMountExample)))
+		})
+	})
+	Context("Append to kubeadm config", func() {
+		It("should have an extra systemd unit", func() {
+			u, err := s.parseUserData(userDataExample)
+			Expect(err).NotTo(HaveOccurred())
+			err = u.appendKubeadmConfig(`---
+apiVersion: kubelet.config.k8s.io/v1beta1
+kind: KubeletConfiguration
+rotateCertificates: true
+serverTLSBootstrap: true
+`)
+			Expect(err).NotTo(HaveOccurred())
+			output, err := u.output()
+			Expect(err).NotTo(HaveOccurred())
+			Expect(string(output)).To(Equal(string(userDataWithAppenedKubeadm)))
 		})
 	})
 })
