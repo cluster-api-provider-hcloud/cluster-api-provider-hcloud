@@ -35,6 +35,10 @@ github.com/beorn7/perks v1.0.0/go.mod h1:KWe93zE9D1o94FZ5RNwFwVgaQK1VOXiVxmqh+Ce
 github.com/beorn7/perks v1.0.1 h1:VlbKKnNfV8bJzeqoa4cOKqO6bYr3WgKZxO8Z16+hsOM=
 github.com/beorn7/perks v1.0.1/go.mod h1:G2ZrVWU2WbWT9wwq4/hrbKbnv/1ERSJQ0ibhJ6rlkpw=
 github.com/blang/semver v3.5.0+incompatible/go.mod h1:kRBLl5iJ+tD4TcOOxsy/0fnwebNt5EWlYSAyrTnjyyk=
+github.com/bronze1man/go-yaml2json v0.0.0-20150129175009-f6f64b738964 h1:YtNfk92cLL9IKGS7pNxnxN4OXWw5S2efi9/6jcwzTdY=
+github.com/bronze1man/go-yaml2json v0.0.0-20150129175009-f6f64b738964/go.mod h1:E/+SgS+fFbSMoTIuQxgvi6cvcxmr8v7WGTi2EhNkLy4=
+github.com/bronze1man/yaml2json v0.0.0-20190501122504-861f66b7262b h1:H7QXuITFovnVHZcSbOWCUM0Xs7oDsioAClU5ezTzf/M=
+github.com/bronze1man/yaml2json v0.0.0-20190501122504-861f66b7262b/go.mod h1:mVTg4vqWRIHEJK5QnZhSXBUP8GmI7ArXGq182zSJbxM=
 github.com/coreos/bbolt v1.3.1-coreos.6/go.mod h1:iRUV2dpdMOn7Bo10OQBFzIJO9kkE559Wcmn+qkEiiKk=
 github.com/coreos/etcd v3.3.10+incompatible/go.mod h1:uF7uidLiAD3TWHmW31ZFd/JWoc32PjwdhPthX9715RE=
 github.com/coreos/etcd v3.3.13+incompatible/go.mod h1:uF7uidLiAD3TWHmW31ZFd/JWoc32PjwdhPthX9715RE=
