@@ -7,7 +7,7 @@ import (
 	"github.com/hetznercloud/hcloud-go/hcloud"
 	"github.com/pkg/errors"
 
-	infrav1 "sigs.k8s.io/cluster-api-provider-hetzner/api/v1alpha3"
+	infrav1 "github.com/simonswine/cluster-api-provider-hetzner/api/v1alpha3"
 )
 
 func (s *Service) findImageIDBySpec(ctx context.Context, spec *infrav1.HetznerImageSpec) (*infrav1.HetznerImageID, error) {

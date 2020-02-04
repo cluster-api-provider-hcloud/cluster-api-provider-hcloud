@@ -32,10 +32,10 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
-	infrav1 "sigs.k8s.io/cluster-api-provider-hetzner/api/v1alpha3"
-	"sigs.k8s.io/cluster-api-provider-hetzner/pkg/cloud/resources/location"
-	"sigs.k8s.io/cluster-api-provider-hetzner/pkg/cloud/resources/server"
-	"sigs.k8s.io/cluster-api-provider-hetzner/pkg/cloud/scope"
+	infrav1 "github.com/simonswine/cluster-api-provider-hetzner/api/v1alpha3"
+	"github.com/simonswine/cluster-api-provider-hetzner/pkg/cloud/resources/location"
+	"github.com/simonswine/cluster-api-provider-hetzner/pkg/cloud/resources/server"
+	"github.com/simonswine/cluster-api-provider-hetzner/pkg/cloud/scope"
 )
 
 // HetznerMachineReconciler reconciles a HetznerMachine object

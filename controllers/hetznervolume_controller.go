@@ -29,10 +29,10 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
-	infrav1 "sigs.k8s.io/cluster-api-provider-hetzner/api/v1alpha3"
-	"sigs.k8s.io/cluster-api-provider-hetzner/pkg/cloud/resources/location"
-	"sigs.k8s.io/cluster-api-provider-hetzner/pkg/cloud/resources/volume"
-	"sigs.k8s.io/cluster-api-provider-hetzner/pkg/cloud/scope"
+	infrav1 "github.com/simonswine/cluster-api-provider-hetzner/api/v1alpha3"
+	"github.com/simonswine/cluster-api-provider-hetzner/pkg/cloud/resources/location"
+	"github.com/simonswine/cluster-api-provider-hetzner/pkg/cloud/resources/volume"
+	"github.com/simonswine/cluster-api-provider-hetzner/pkg/cloud/scope"
 )
 
 // HetznerVolumeReconciler reconciles a HetznerVolume object

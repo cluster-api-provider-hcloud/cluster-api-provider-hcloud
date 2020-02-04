@@ -19,11 +19,11 @@ import (
 	"flag"
 	"os"
 
+	infrastructurev1alpha3 "github.com/simonswine/cluster-api-provider-hetzner/api/v1alpha3"
+	"github.com/simonswine/cluster-api-provider-hetzner/controllers"
 	"k8s.io/apimachinery/pkg/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
-	infrastructurev1alpha3 "sigs.k8s.io/cluster-api-provider-hetzner/api/v1alpha3"
-	"sigs.k8s.io/cluster-api-provider-hetzner/controllers"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha2"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/controller"

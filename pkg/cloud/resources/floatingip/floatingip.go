@@ -9,8 +9,8 @@ import (
 	"github.com/pkg/errors"
 	"k8s.io/apiserver/pkg/storage/names"
 
-	infrav1 "sigs.k8s.io/cluster-api-provider-hetzner/api/v1alpha3"
-	"sigs.k8s.io/cluster-api-provider-hetzner/pkg/cloud/scope"
+	infrav1 "github.com/simonswine/cluster-api-provider-hetzner/api/v1alpha3"
+	"github.com/simonswine/cluster-api-provider-hetzner/pkg/cloud/scope"
 )
 
 type Service struct {

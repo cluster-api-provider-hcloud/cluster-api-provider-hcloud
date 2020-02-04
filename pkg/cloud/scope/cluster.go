@@ -13,7 +13,7 @@ import (
 	"sigs.k8s.io/cluster-api/util/patch"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	infrav1 "sigs.k8s.io/cluster-api-provider-hetzner/api/v1alpha3"
+	infrav1 "github.com/simonswine/cluster-api-provider-hetzner/api/v1alpha3"
 )
 
 // ClusterScopeParams defines the input parameters used to create a new Scope.

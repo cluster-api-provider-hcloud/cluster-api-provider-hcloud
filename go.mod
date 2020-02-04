@@ -1,4 +1,4 @@
-module sigs.k8s.io/cluster-api-provider-hetzner
+module github.com/simonswine/cluster-api-provider-hetzner
 
 go 1.12
 

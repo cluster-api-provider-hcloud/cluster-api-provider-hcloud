@@ -14,10 +14,10 @@ import (
 	"k8s.io/klog"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha2"
 
-	infrav1 "sigs.k8s.io/cluster-api-provider-hetzner/api/v1alpha3"
-	"sigs.k8s.io/cluster-api-provider-hetzner/pkg/cloud/resources/floatingip"
-	"sigs.k8s.io/cluster-api-provider-hetzner/pkg/cloud/scope"
-	mock_scope "sigs.k8s.io/cluster-api-provider-hetzner/pkg/cloud/scope/mock"
+	infrav1 "github.com/simonswine/cluster-api-provider-hetzner/api/v1alpha3"
+	"github.com/simonswine/cluster-api-provider-hetzner/pkg/cloud/resources/floatingip"
+	"github.com/simonswine/cluster-api-provider-hetzner/pkg/cloud/scope"
+	mock_scope "github.com/simonswine/cluster-api-provider-hetzner/pkg/cloud/scope/mock"
 )
 
 func TestFloatingIPs(t *testing.T) {
