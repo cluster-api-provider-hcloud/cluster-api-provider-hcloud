@@ -2,7 +2,7 @@ local utils = import '../utils.libsonnet';
 local upstream = utils.convertManifests(import 'manifests.json');
 
 upstream {
-  _config:: {
+  _config+:: {
     podsCIDRBlock: '192.168.0.0/17',
   },
 
