@@ -1,0 +1,12 @@
+{
+   "values": [
+      {
+         "name": "CALICO_IPV4POOL_CIDR",
+         "value": "10.123.0.0/17"
+      },
+      {
+         "name": "FELIX_XDPENABLED",
+         "value": "false"
+      }
+   ]
+}

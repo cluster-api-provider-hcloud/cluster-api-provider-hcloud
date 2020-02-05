@@ -1,0 +1,25 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "go_default_library",
+    srcs = [
+        "client.go",
+        "cluster.go",
+        "machine.go",
+        "volume.go",
+    ],
+    importpath = "github.com/simonswine/cluster-api-provider-hetzner/pkg/cloud/scope",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//api/v1alpha3:go_default_library",
+        "@com_github_go_logr_logr//:go_default_library",
+        "@com_github_hetznercloud_hcloud_go//hcloud:go_default_library",
+        "@com_github_pkg_errors//:go_default_library",
+        "@io_k8s_api//core/v1:go_default_library",
+        "@io_k8s_apimachinery//pkg/types:go_default_library",
+        "@io_k8s_klog//klogr:go_default_library",
+        "@io_k8s_sigs_cluster_api//api/v1alpha2:go_default_library",
+        "@io_k8s_sigs_cluster_api//util/patch:go_default_library",
+        "@io_k8s_sigs_controller_runtime//pkg/client:go_default_library",
+    ],
+)

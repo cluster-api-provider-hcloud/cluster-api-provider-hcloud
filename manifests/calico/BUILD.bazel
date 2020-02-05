@@ -1,0 +1,27 @@
+load("@io_bazel_rules_jsonnet//jsonnet:jsonnet.bzl", "jsonnet_library", "jsonnet_to_json_test")
+
+filegroup(
+    name = "files",
+    srcs = [
+        "calico.libsonnet",
+        "manifests.json",
+    ],
+)
+
+jsonnet_library(
+    name = "lib",
+    srcs = [
+        ":files",
+    ],
+    deps = [
+        "//manifests:utils",
+    ],
+    visibility = ["//visibility:public"],
+)
+
+jsonnet_to_json_test(
+    name = "test_basic",
+    src = "test_basic.jsonnet",
+    golden = "test_basic.result.json",
+    deps = [":lib"],
+)

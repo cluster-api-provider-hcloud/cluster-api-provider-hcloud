@@ -1,0 +1,45 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library")
+
+go_library(
+    name = "go_default_library",
+    srcs = ["yaml2json.go"],
+    importpath = "github.com/simonswine/cluster-api-provider-hetzner/hack",
+    visibility = ["//visibility:private"],
+    deps = ["@com_github_bronze1man_yaml2json//y2jLib:go_default_library"],
+)
+
+go_binary(
+    name = "hack",
+    embed = [":go_default_library"],
+    visibility = ["//visibility:public"],
+)
+
+GAZELLE = "@bazel_gazelle//cmd/gazelle"
+
+GO = "@go_sdk//:bin/go"
+
+sh_binary(
+    name = "update-bazel",
+    srcs = ["update-bazel.sh"],
+    args = [
+        "$(location %s)" % GAZELLE,
+    ],
+    data = [
+        GAZELLE,
+    ],
+)
+
+sh_binary(
+    name = "update-deps",
+    srcs = ["update-deps.sh"],
+    args = [
+        "$(location %s)" % GO,
+        "$(location %s)" % GAZELLE,
+        "$(location :update-bazel)",
+    ],
+    data = [
+        GAZELLE,
+        GO,
+        ":update-bazel",
+    ],
+)

@@ -16,7 +16,10 @@ limitations under the License.
 package controllers
 
 import (
+	"fmt"
+	"os"
 	"path/filepath"
+	"runtime"
 	"testing"
 
 	. "github.com/onsi/ginkgo"
@@ -31,6 +34,24 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 	// +kubebuilder:scaffold:imports
 )
+
+var crdPath = []string{filepath.Join("..", "config", "crd", "bases")}
+
+func init() {
+	// if bazel style directory is found use that for assets
+	path, err := filepath.Abs(filepath.Join("external", fmt.Sprintf("kubebuilder_%s_%s_bin", runtime.GOOS, runtime.GOARCH)))
+	if err != nil {
+		return
+	}
+	info, err := os.Stat(path)
+	if err != nil {
+		return
+	}
+	if !info.IsDir() {
+		return
+	}
+	os.Setenv("KUBEBUILDER_ASSETS", path)
+}
 
 // These tests use Ginkgo (BDD-style Go testing framework). Refer to
 // http://onsi.github.io/ginkgo/ to learn more about Ginkgo.

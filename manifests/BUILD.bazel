@@ -1,0 +1,52 @@
+load("@io_bazel_rules_jsonnet//jsonnet:jsonnet.bzl", "jsonnet_library", "jsonnet_to_json_test")
+
+filegroup(
+    name = "config_files",
+    srcs = [
+        "config.jsonnet",
+    ],
+)
+
+jsonnet_library(
+    name = "config",
+    srcs = [
+        ":config_files",
+    ],
+    deps = [
+        "//manifests/calico:lib",
+        "//manifests/hcloud-cloud-controller-manager:lib",
+        "//manifests/hcloud-ip-floater:lib",
+        "//manifests/hcloud-csi:lib",
+        "//manifests/metrics-server:lib",
+    ],
+    visibility = ["//visibility:public"],
+)
+
+jsonnet_to_json_test(
+    name = "test_config_simple",
+    src = "test_config_simple.jsonnet",
+    golden = "test_config_simple.result.json",
+    deps = [":config"],
+)
+
+filegroup(
+    name = "utils_files",
+    srcs = [
+        "utils.libsonnet",
+    ],
+)
+
+jsonnet_library(
+    name = "utils",
+    srcs = [
+        ":utils_files",
+    ],
+    visibility = ["//visibility:public"],
+)
+
+jsonnet_to_json_test(
+    name = "test_utils_envreplace",
+    src = "test_utils_envreplace.jsonnet",
+    golden = "test_utils_envreplace.result.json",
+    deps = [":utils"],
+)

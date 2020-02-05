@@ -66,15 +66,4 @@ local recursiveEnvReplaceFound(obj, value) = std.map(
       std.map(function(x) $.recursiveEnvReplace(x, value), obj)
     else
       obj,
-
-  //input: [{ name: 'NAME', value: 'VALUEOLD' }],
-  //inputReal: {
-  //  containers: [
-  //    { env: [{ name: 'NAME', value: 'VALUEOLD' }] },
-  //    { env: [{ name: 'NAMEX', value: 'VALUEOLD' }] },
-  //  ],
-  //},
-  //  test1: recursiveEnvReplaceFound($.input, { name: 'NAME', value: 'VALUENEW' }),
-  //  test2: recursiveEnvReplaceFound($.input, { name: 'NAMEX', value: 'VALUENEW' }),
-  //  test3: $.recursiveEnvReplace($.inputReal, { name: 'NAMEX', value: 'VALUENEW' }),
 }

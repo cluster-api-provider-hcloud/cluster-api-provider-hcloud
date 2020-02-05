@@ -4,6 +4,7 @@ go 1.12
 
 require (
 	github.com/aws/aws-sdk-go v1.25.43 // indirect
+	github.com/bazelbuild/buildtools v0.0.0-20200204123905-9e63c6f02e63 // indirect
 	github.com/bronze1man/go-yaml2json v0.0.0-20150129175009-f6f64b738964
 	github.com/bronze1man/yaml2json v0.0.0-20190501122504-861f66b7262b
 	github.com/coreos/go-systemd v0.0.0-20180511133405-39ca1b05acc7

@@ -1,0 +1,15 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "go_default_library",
+    srcs = ["network.go"],
+    importpath = "github.com/simonswine/cluster-api-provider-hetzner/pkg/cloud/resources/network",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//api/v1alpha3:go_default_library",
+        "//pkg/cloud/scope:go_default_library",
+        "//pkg/cloud/utils:go_default_library",
+        "@com_github_hetznercloud_hcloud_go//hcloud:go_default_library",
+        "@com_github_pkg_errors//:go_default_library",
+    ],
+)

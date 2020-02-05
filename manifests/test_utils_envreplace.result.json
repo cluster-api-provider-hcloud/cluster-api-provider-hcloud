@@ -1,0 +1,62 @@
+{
+   "test1": {
+      "containers": [
+         {
+            "env": [
+               {
+                  "name": "NAME",
+                  "value": "VALUEOLD"
+               }
+            ]
+         },
+         {
+            "env": [
+               {
+                  "name": "NAMEX",
+                  "value": "VALUENEW"
+               }
+            ]
+         }
+      ]
+   },
+   "test2": {
+      "containers": [
+         {
+            "env": [
+               {
+                  "name": "NAME",
+                  "value": "VALUENEW"
+               }
+            ]
+         },
+         {
+            "env": [
+               {
+                  "name": "NAMEX",
+                  "value": "VALUEOLD"
+               }
+            ]
+         }
+      ]
+   },
+   "test3": {
+      "containers": [
+         {
+            "env": [
+               {
+                  "name": "NAME",
+                  "value": "VALUEOLD"
+               }
+            ]
+         },
+         {
+            "env": [
+               {
+                  "name": "NAMEX",
+                  "value": "VALUEOLD"
+               }
+            ]
+         }
+      ]
+   }
+}
