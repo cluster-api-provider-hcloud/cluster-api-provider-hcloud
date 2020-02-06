@@ -1,0 +1,36 @@
+{
+  "variables": {
+    "hcloud_token": "{{env `HCLOUD_TOKEN`}}",
+    "scripts": "{{template_dir}}/scripts",
+    "os": "centos-7",
+    "kubernetes_version": "1.16.6-0"
+  },
+  "builders": [
+    {
+      "type": "hcloud",
+      "token": "{{user `hcloud_token`}}",
+      "image": "{{user `os`}}",
+      "location": "nbg1",
+      "server_type": "cx11",
+      "ssh_username": "root",
+      "snapshot_name": "centos-7-test-{{isotime \"2006-01-02-030405\"}}"
+    }
+  ],
+  "provisioners": [
+    {
+      "type": "shell",
+      "environment_vars": [
+        "PACKER_OS_IMAGE={{user `os`}}",
+        "PACKER_KUBERNETES_VERSION={{user `kubernetes_version`}}"
+      ],
+      "scripts": [
+        "{{user `scripts`}}/configure_base.sh",
+        "{{user `scripts`}}/configure_crio.sh",
+        "{{user `scripts`}}/configure_kubernetes.sh",
+        "{{user `scripts`}}/configure_later_kernel.sh",
+        "{{user `scripts`}}/configure_wireguard.sh",
+        "{{user `scripts`}}/cleanup_ssh_host_keys.sh"
+      ]
+    }
+  ]
+}

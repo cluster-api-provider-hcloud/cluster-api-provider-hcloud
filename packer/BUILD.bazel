@@ -1,0 +1,53 @@
+load("@bazel_tools//tools/build_defs/pkg:pkg.bzl", "pkg_tar")
+
+filegroup(
+    name = "centos7_crio",
+    srcs = [
+        "packer-centos7-crio.json",
+    ],
+)
+
+filegroup(
+    name = "scripts",
+    srcs = glob(["scripts/*.sh"]),
+)
+
+pkg_tar(
+    name = "packer",
+    srcs = [
+        ":centos7_crio",
+        ":scripts",
+    ],
+    mode = "0o644",
+    package_dir = "packer-config",
+    strip_prefix = ".",
+    visibility = ["//visibility:public"],
+)
+
+sh_test(
+    name = "test_centos7_crio",
+    srcs = ["packer-validate.sh"],
+    args = [
+        "$(location @packer_linux_amd64_bin//:bin)",
+        "$(location :centos7_crio)",
+    ],
+    data = [
+        ":centos7_crio",
+        ":scripts",
+        "@packer_linux_amd64_bin//:bin",
+    ],
+)
+
+filegroup(
+    name = "package-srcs",
+    srcs = glob(["**"]),
+    tags = ["automanaged"],
+    visibility = ["//visibility:private"],
+)
+
+filegroup(
+    name = "all-srcs",
+    srcs = [":package-srcs"],
+    tags = ["automanaged"],
+    visibility = ["//visibility:public"],
+)
