@@ -1,69 +1,49 @@
-load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library")
-load("@io_bazel_rules_docker//container:container.bzl", "container_image")
 load("@bazel_gazelle//:def.bzl", "gazelle")
 
 # gazelle:prefix github.com/simonswine/cluster-api-provider-hetzner
 # gazelle:proto disable_global
 gazelle(name = "gazelle")
 
-go_library(
-    name = "go_default_library",
-    srcs = ["main.go"],
-    importpath = "github.com/simonswine/cluster-api-provider-hetzner",
-    visibility = ["//visibility:private"],
-    deps = [
-        "//api/v1alpha3:go_default_library",
-        "//controllers:go_default_library",
-        "@io_k8s_apimachinery//pkg/runtime:go_default_library",
-        "@io_k8s_client_go//kubernetes/scheme:go_default_library",
-        "@io_k8s_client_go//plugin/pkg/client/auth/gcp:go_default_library",
-        "@io_k8s_sigs_cluster_api//api/v1alpha2:go_default_library",
-        "@io_k8s_sigs_controller_runtime//:go_default_library",
-        "@io_k8s_sigs_controller_runtime//pkg/controller:go_default_library",
-        "@io_k8s_sigs_controller_runtime//pkg/log/zap:go_default_library",
-    ],
-)
-
-
-load("@bazel_tools//tools/build_defs/pkg:pkg.bzl", "pkg_tar")
-pkg_tar(
-    name = "bin_tar",
-    srcs = [
-        "@packer_linux_amd64_bin//:bin",
-        "@kubecfg_linux_amd64_bin//file",
-    ],
-    mode = "0o755",
-    package_dir = "usr/local/bin",
-    remap_paths = { "usr/local/bin/downloaded": "kubecfg"},
-)
-
-container_image(
-    name = "base_image",
-    base = "@static_base//image",
-    tars = [":bin_tar"],
-    user = "nobody",
-)
-
-load("@io_bazel_rules_docker//go:image.bzl", "go_image")
-go_image(
-    name = "image",
-    base = ":base_image",
-    binary = ":cluster-api-provider-hetzner",
-    visibility = ["//visibility:public"],
-)
-
-go_binary(
-    name = "cluster-api-provider-hetzner",
-    embed = [":go_default_library"],
-    pure = "on",
-    visibility = ["//visibility:public"],
-)
-
 load("@io_bazel_rules_docker//container:container.bzl", "container_bundle")
 
 container_bundle(
     name = "images",
     images = {
-        "{STABLE_DOCKER_REGISTRY}/cluster-api-provider-hetzner:{STABLE_DOCKER_TAG}": ":image",
+        "{STABLE_DOCKER_REGISTRY}/cluster-api-provider-hetzner:{STABLE_DOCKER_TAG}": "//cmd/cluster-api-provider-hetzner:image",
     },
+)
+
+filegroup(
+    name = "all-srcs",
+    srcs = [
+        ":package-srcs",
+        "//api/v1alpha3:all-srcs",
+        "//cmd/cluster-api-provider-hetzner:all-srcs",
+        "//controllers:all-srcs",
+        "//hack:all-srcs",
+        "//manifests:all-srcs",
+        "//packer:all-srcs",
+        "//pkg/cloud/resources/floatingip:all-srcs",
+        "//pkg/cloud/resources/location:all-srcs",
+        "//pkg/cloud/resources/network:all-srcs",
+        "//pkg/cloud/resources/server:all-srcs",
+        "//pkg/cloud/resources/volume:all-srcs",
+        "//pkg/cloud/scope:all-srcs",
+        "//pkg/cloud/utils:all-srcs",
+    ],
+    tags = ["automanaged"],
+    visibility = ["//visibility:public"],
+)
+
+filegroup(
+    name = "package-srcs",
+    srcs = glob(
+        ["**"],
+        exclude = [
+            "bazel-*/**",
+            ".git/**",
+        ],
+    ),
+    tags = ["automanaged"],
+    visibility = ["//visibility:private"],
 )

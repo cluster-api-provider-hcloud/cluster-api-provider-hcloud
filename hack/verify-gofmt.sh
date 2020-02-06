@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+
 # Copyright 2019 The Jetstack cert-manager contributors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -17,27 +18,27 @@ set -o errexit
 set -o nounset
 set -o pipefail
 
-if [[ -n "${BUILD_WORKSPACE_DIRECTORY:-}" ]]; then # Running inside bazel
-  echo "Updating bazel rules..." >&2
-elif ! command -v bazel &>/dev/null; then
+if [[ -n "${TEST_WORKSPACE:-}" ]]; then # Running inside bazel
+  echo "Validating go source file formatting..." >&2
+elif ! command -v bazel &> /dev/null; then
   echo "Install bazel at https://bazel.build" >&2
   exit 1
 else
   (
     set -o xtrace
-    bazel run //hack:update-bazel
+    bazel test --test_output=streamed //hack:verify-gofmt
   )
   exit 0
 fi
 
-gazelle=$(realpath "$1")
+gofmt=$(realpath "$1")
 
-cd "$BUILD_WORKSPACE_DIRECTORY"
+export GO111MODULE=on
 
-if [[ ! -f go.mod ]]; then
-    echo "No module defined, see https://github.com/golang/go/wiki/Modules#how-to-define-a-module" >&2
+echo "+++ Running gofmt"
+output=$(find . -name '*.go' | grep -v 'vendor/' | xargs "$gofmt" -s -d)
+if [ ! -z "${output}" ]; then
+    echo "${output}"
+    echo "Please run 'bazel run //hack:update-gofmt'"
     exit 1
 fi
-
-set -o xtrace
-"$gazelle" fix --external=external

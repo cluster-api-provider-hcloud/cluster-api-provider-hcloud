@@ -62,7 +62,7 @@ var _ = Describe("FloatingIPs", func() {
 				HetznerClientFactory: clientFactory,
 			})
 			mockClient.EXPECT().ListFloatingIPs(gomock.Any(), gomock.Any()).Return(
-				[]*hcloud.FloatingIP{&hcloud.FloatingIP{
+				[]*hcloud.FloatingIP{{
 					ID:     123,
 					Type:   hcloud.FloatingIPTypeIPv4,
 					IP:     net.IPv4(0x01, 0x01, 0x01, 0x01),
@@ -94,13 +94,13 @@ var _ = Describe("FloatingIPs", func() {
 			gomock.InOrder(
 				mockClient.EXPECT().ListFloatingIPs(gomock.Any(), gomock.Any()).Return(
 					[]*hcloud.FloatingIP{
-						&hcloud.FloatingIP{
+						{
 							ID:     123,
 							Type:   hcloud.FloatingIPTypeIPv4,
 							IP:     net.IPv4(0x01, 0x01, 0x01, 0x01),
 							Labels: map[string]string{clusterTagKey: string(infrav1.ResourceLifecycleOwned)},
 						},
-						&hcloud.FloatingIP{
+						{
 							ID:     124,
 							Type:   hcloud.FloatingIPTypeIPv4,
 							IP:     net.IPv4(0x01, 0x00, 0x00, 0x01),
@@ -111,7 +111,7 @@ var _ = Describe("FloatingIPs", func() {
 				),
 				mockClient.EXPECT().ListFloatingIPs(gomock.Any(), gomock.Any()).Return(
 					[]*hcloud.FloatingIP{
-						&hcloud.FloatingIP{
+						{
 							ID:     124,
 							Type:   hcloud.FloatingIPTypeIPv4,
 							IP:     net.IPv4(0x01, 0x00, 0x00, 0x01),

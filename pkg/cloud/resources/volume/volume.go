@@ -17,7 +17,12 @@ type Service struct {
 	scope *scope.VolumeScope
 }
 
-var minumumSize = resource.MustParse("10Gi")
+var volumeMinimumSize = resource.MustParse("10Gi")
+
+func minimumSize() *resource.Quantity {
+	test := volumeMinimumSize
+	return &test
+}
 
 func NewService(scope *scope.VolumeScope) *Service {
 	return &Service{
@@ -51,13 +56,13 @@ func (s *Service) Reconcile(ctx context.Context) (err error) {
 	// ensure requsested volume size is set (default to 10GiB)
 	// TODO: should be done through defaulting
 	if s.scope.HetznerVolume.Spec.Size == nil {
-		s.scope.HetznerVolume.Spec.Size = minumumSize.Copy()
+		s.scope.HetznerVolume.Spec.Size = minimumSize()
 	}
 
 	// ensure requested size is bigger or equal than 10Gi
 	// TODO: should be validation
-	if s.scope.HetznerVolume.Spec.Size.Cmp(minumumSize) < 1 {
-		s.scope.HetznerVolume.Spec.Size = minumumSize.Copy()
+	if s.scope.HetznerVolume.Spec.Size.Cmp(volumeMinimumSize) < 1 {
+		s.scope.HetznerVolume.Spec.Size = minimumSize()
 	}
 
 	// ensure retain policy is by default to retain

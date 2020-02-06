@@ -31,6 +31,14 @@ load("@bazel_gazelle//:deps.bzl", "gazelle_dependencies")
 
 gazelle_dependencies()
 
+## Load kubernetes repo-infra for tools like kazel
+git_repository(
+    name = "io_k8s_repo_infra",
+    commit = "967e39a37fb93640a37e272949ddf92a8c96f230",
+    remote = "https://github.com/kubernetes/repo-infra.git",
+    shallow_since = "1569300445 -0700",
+)
+
 # Load repositories from external files
 load("//hack/build:repos.bzl", "go_repositories")
 

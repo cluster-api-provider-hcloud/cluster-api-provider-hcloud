@@ -12,14 +12,14 @@ jsonnet_library(
     srcs = [
         ":config_files",
     ],
+    visibility = ["//visibility:public"],
     deps = [
         "//manifests/calico:lib",
         "//manifests/hcloud-cloud-controller-manager:lib",
-        "//manifests/hcloud-ip-floater:lib",
         "//manifests/hcloud-csi:lib",
+        "//manifests/hcloud-ip-floater:lib",
         "//manifests/metrics-server:lib",
     ],
-    visibility = ["//visibility:public"],
 )
 
 jsonnet_to_json_test(
@@ -49,4 +49,39 @@ jsonnet_to_json_test(
     src = "test_utils_envreplace.jsonnet",
     golden = "test_utils_envreplace.result.json",
     deps = [":utils"],
+)
+
+load("@bazel_tools//tools/build_defs/pkg:pkg.bzl", "pkg_tar")
+
+pkg_tar(
+    name = "manifests",
+    srcs = [
+        ":config",
+    ],
+    include_runfiles = True,
+    mode = "0o644",
+    package_dir = "manifests-config",
+    strip_prefix = ".",
+    visibility = ["//visibility:public"],
+)
+
+filegroup(
+    name = "package-srcs",
+    srcs = glob(["**"]),
+    tags = ["automanaged"],
+    visibility = ["//visibility:private"],
+)
+
+filegroup(
+    name = "all-srcs",
+    srcs = [
+        ":package-srcs",
+        "//manifests/calico:all-srcs",
+        "//manifests/hcloud-cloud-controller-manager:all-srcs",
+        "//manifests/hcloud-csi:all-srcs",
+        "//manifests/hcloud-ip-floater:all-srcs",
+        "//manifests/metrics-server:all-srcs",
+    ],
+    tags = ["automanaged"],
+    visibility = ["//visibility:public"],
 )

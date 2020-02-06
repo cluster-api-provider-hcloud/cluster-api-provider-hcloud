@@ -3,8 +3,8 @@ load("@io_bazel_rules_jsonnet//jsonnet:jsonnet.bzl", "jsonnet_library")
 filegroup(
     name = "files",
     srcs = [
-        "metrics-server.libsonnet",
         "manifests.json",
+        "metrics-server.libsonnet",
     ],
 )
 
@@ -13,8 +13,22 @@ jsonnet_library(
     srcs = [
         ":files",
     ],
+    visibility = ["//visibility:public"],
     deps = [
         "//manifests:utils",
     ],
+)
+
+filegroup(
+    name = "package-srcs",
+    srcs = glob(["**"]),
+    tags = ["automanaged"],
+    visibility = ["//visibility:private"],
+)
+
+filegroup(
+    name = "all-srcs",
+    srcs = [":package-srcs"],
+    tags = ["automanaged"],
     visibility = ["//visibility:public"],
 )

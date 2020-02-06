@@ -3,26 +3,30 @@ module github.com/simonswine/cluster-api-provider-hetzner
 go 1.12
 
 require (
-	github.com/aws/aws-sdk-go v1.25.43 // indirect
-	github.com/bazelbuild/buildtools v0.0.0-20200204123905-9e63c6f02e63 // indirect
-	github.com/bronze1man/go-yaml2json v0.0.0-20150129175009-f6f64b738964
+	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/bronze1man/yaml2json v0.0.0-20190501122504-861f66b7262b
-	github.com/coreos/go-systemd v0.0.0-20180511133405-39ca1b05acc7
-	github.com/go-delve/delve v1.3.2 // indirect
+	github.com/coreos/go-systemd v0.0.0-20190321100706-95778dfbb74e
 	github.com/go-logr/logr v0.1.0
+	github.com/golang/groupcache v0.0.0-20190129154638-5b532d6fd5ef // indirect
 	github.com/golang/mock v1.3.1
+	github.com/google/go-cmp v0.3.1 // indirect
+	github.com/hashicorp/golang-lru v0.5.3 // indirect
 	github.com/hetznercloud/hcloud-go v1.17.0
+	github.com/imdario/mergo v0.3.8 // indirect
 	github.com/onsi/ginkgo v1.10.1
 	github.com/onsi/gomega v1.7.0
 	github.com/pkg/errors v0.8.1
-	gopkg.in/yaml.v2 v2.2.4
+	github.com/prometheus/procfs v0.0.5 // indirect
+	go.uber.org/atomic v1.4.0 // indirect
+	golang.org/x/crypto v0.0.0-20190911031432-227b76d455e7 // indirect
+	golang.org/x/sys v0.0.0-20190911201528-7ad0cfa0b7b5 // indirect
 	gopkg.in/yaml.v3 v3.0.0-20200121175148-a6ecf24a6d71
-	k8s.io/api v0.0.0-20190918195907-bd6ac527cfd2
-	k8s.io/apimachinery v0.0.0-20190817020851-f2f3a405f61d
-	k8s.io/apiserver v0.0.0-20190918200908-1e17798da8c1
-	k8s.io/client-go v0.0.0-20190918200256-06eb1244587a
+	k8s.io/api v0.17.0
+	k8s.io/apimachinery v0.17.0
+	k8s.io/apiserver v0.17.0
+	k8s.io/client-go v0.17.0
 	k8s.io/klog v1.0.0
 	sigs.k8s.io/cluster-api v0.2.7
-	sigs.k8s.io/cluster-api-provider-aws v0.4.6 // indirect
-	sigs.k8s.io/controller-runtime v0.3.0
+	sigs.k8s.io/controller-runtime v0.4.0
+	sigs.k8s.io/controller-tools v0.2.5
 )

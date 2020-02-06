@@ -13,10 +13,10 @@ jsonnet_library(
     srcs = [
         ":files",
     ],
+    visibility = ["//visibility:public"],
     deps = [
         "//manifests:utils",
     ],
-    visibility = ["//visibility:public"],
 )
 
 jsonnet_to_json_test(
@@ -24,4 +24,18 @@ jsonnet_to_json_test(
     src = "test_basic.jsonnet",
     golden = "test_basic.result.json",
     deps = [":lib"],
+)
+
+filegroup(
+    name = "package-srcs",
+    srcs = glob(["**"]),
+    tags = ["automanaged"],
+    visibility = ["//visibility:private"],
+)
+
+filegroup(
+    name = "all-srcs",
+    srcs = [":package-srcs"],
+    tags = ["automanaged"],
+    visibility = ["//visibility:public"],
 )

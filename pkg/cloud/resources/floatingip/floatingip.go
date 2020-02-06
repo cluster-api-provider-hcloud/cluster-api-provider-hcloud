@@ -250,7 +250,7 @@ func (s *Service) actualStatus(ctx context.Context) ([]infrav1.HetznerFloatingIP
 	}
 
 	ids = []int{}
-	for id, _ := range ipStatusByID {
+	for id := range ipStatusByID {
 		ids = append(ids, id)
 	}
 	sort.Ints(ids)
