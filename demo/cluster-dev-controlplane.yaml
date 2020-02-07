@@ -1,0 +1,60 @@
+apiVersion: bootstrap.cluster.x-k8s.io/v1alpha2
+kind: KubeadmConfig
+metadata:
+  name: controller
+spec:
+  initConfiguration:
+    nodeRegistration:
+      kubeletExtraArgs:
+        cloud-provider: external
+  clusterConfiguration:
+    apiServer:
+      extraArgs:
+        cloud-provider: external
+    controllerManager:
+      extraArgs:
+        cloud-provider: external
+#TODO kubelet config
+# rotateCertificates: true
+# serverTLSBootstrap: true
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1alpha3
+kind: HetznerMachine
+metadata:
+  name: controller
+spec:
+  location: nbg1
+  image:
+    name: {ISHOULDBEANIMAGENAME}
+  type: cx21
+---
+apiVersion: cluster.x-k8s.io/v1alpha2
+kind: Machine
+metadata:
+  name: controller
+  labels:
+    cluster.x-k8s.io/cluster-name: cluster-dev
+    cluster.x-k8s.io/control-plane: "true"
+spec:
+  version: "v1.16.6"
+  bootstrap:
+    configRef:
+      apiVersion: bootstrap.cluster.x-k8s.io/v1alpha2
+      kind: KubeadmConfig
+      name: controller
+  infrastructureRef:
+    apiVersion: infrastructure.cluster.x-k8s.io/v1alpha3
+    kind: HetznerMachine
+    name: controller
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1alpha3
+kind: HetznerVolume
+metadata:
+  name: controller
+  labels:
+    cluster.x-k8s.io/cluster-name: cluster-dev
+    cluster.x-k8s.io/control-plane: "true"
+spec:
+  size: 16Gi
+  location: nbg1
+  reclaimPolicy: Delete
