@@ -26,3 +26,9 @@ bin
 /secrets/
 /cluster-api-provider-hetzner
 /.kubeconfig*
+
+# Bazel
+bazel-bin
+bazel-cluster-api-provider-hetzner
+bazel-out
+bazel-testlogs

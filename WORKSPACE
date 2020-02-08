@@ -101,11 +101,23 @@ git_repository(
 
 load("@com_github_jemdiggity_rules_os_dependent_http_archive//:os_dependent_http_archive.bzl", "os_dependent_http_archive")
 
-# Packer binary dependency
+# Packer binary dependency linux
 http_archive(
     name = "packer_linux_amd64_bin",
     urls = ["https://releases.hashicorp.com/packer/1.5.1/packer_1.5.1_linux_amd64.zip"],
     sha256 = "3305ede8886bc3fd83ec0640fb87418cc2a702b2cb1567b48c8cb9315e80047d",
+    build_file_content = '''filegroup(
+    name="bin",
+    srcs=["packer"],
+    visibility = ["//visibility:public"],
+)''',
+)
+
+# Packer binary dependency darwin
+http_archive(
+    name = "packer_darwin_amd64_bin",
+    urls = ["https://releases.hashicorp.com/packer/1.5.1/packer_1.5.1_darwin_amd64.zip"],
+    sha256 = "9cb7d75cbb73af1379f2d72235b7fba184518944d0ae013b77739b453c7cd074",
     build_file_content = '''filegroup(
     name="bin",
     srcs=["packer"],
