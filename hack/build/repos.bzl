@@ -1865,3 +1865,11 @@ def go_repositories():
         sum = "h1:jxcFYjlkl8xaERsgLo+RNquI0epW6zuy/ZRQs6jnrFA=",
         version = "v1.1.2",
     )
+    go_repository(
+        name = "com_github_google_go_jsonnet",
+        build_file_generation = "on",
+        build_file_proto_mode = "disable_global",
+        importpath = "github.com/google/go-jsonnet",
+        sum = "h1:Ul0FtJiQl705JIyGKaBZug/W2LBY5p0xwY08Q69eOAg=",
+        version = "v0.13.0",
+    )

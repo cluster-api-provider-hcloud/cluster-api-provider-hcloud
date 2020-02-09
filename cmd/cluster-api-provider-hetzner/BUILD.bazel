@@ -8,6 +8,9 @@ go_library(
     deps = [
         "//api/v1alpha3:go_default_library",
         "//controllers:go_default_library",
+        "//pkg/manifests:go_default_library",
+        "//pkg/packer:go_default_library",
+        "@com_github_spf13_cobra//:go_default_library",
         "@io_k8s_apimachinery//pkg/runtime:go_default_library",
         "@io_k8s_client_go//kubernetes/scheme:go_default_library",
         "@io_k8s_client_go//plugin/pkg/client/auth/gcp:go_default_library",
@@ -61,15 +64,6 @@ pkg_tar(
 )
 
 pkg_tar(
-    name = "target_all_tar",
-    deps = [
-        ":target_bin_tar",
-        "//manifests",
-        "//packer",
-    ],
-)
-
-pkg_tar(
     name = "host_all_tar",
     deps = [
         ":host_bin_tar",
@@ -78,13 +72,29 @@ pkg_tar(
     ],
 )
 
-load("@io_bazel_rules_docker//container:container.bzl", "container_image")
+load("@io_bazel_rules_docker//container:container.bzl", "container_image", "container_layer")
+
+container_layer(
+    name = "target_bin_layer",
+    tars = [
+        "//manifests",
+        "//packer",
+    ],
+)
+
+container_layer(
+    name = "config_layer",
+    tars = [
+        ":target_bin_tar",
+    ],
+)
 
 container_image(
     name = "base_image",
     base = "@static_base//image",
-    tars = [
-        ":target_all_tar",
+    layers = [
+        ":config_layer",
+        ":target_bin_layer",
     ],
     user = "nobody",
 )
@@ -93,8 +103,16 @@ load("@io_bazel_rules_docker//go:image.bzl", "go_image")
 
 go_image(
     name = "image",
+    args = [
+        "--verbose",
+        "--manifests-config-path",
+        "/manifests-config/config-extvar.jsonnet",
+        "--packer-config-path",
+        "/packer-config/packer-centos7-crio.json",
+    ],
     base = ":base_image",
     binary = ":cluster-api-provider-hetzner",
+    entrypoint = [],
     visibility = ["//visibility:public"],
 )
 

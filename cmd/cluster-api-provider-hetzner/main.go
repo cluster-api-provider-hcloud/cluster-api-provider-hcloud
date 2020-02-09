@@ -1,26 +1,8 @@
-/*
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-*/
-
 package main
 
 import (
-	"flag"
 	"os"
 
-	infrastructurev1alpha3 "github.com/simonswine/cluster-api-provider-hetzner/api/v1alpha3"
-	"github.com/simonswine/cluster-api-provider-hetzner/controllers"
 	"k8s.io/apimachinery/pkg/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
@@ -28,6 +10,12 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
+
+	infrastructurev1alpha3 "github.com/simonswine/cluster-api-provider-hetzner/api/v1alpha3"
+	"github.com/simonswine/cluster-api-provider-hetzner/controllers"
+	"github.com/simonswine/cluster-api-provider-hetzner/pkg/manifests"
+	"github.com/simonswine/cluster-api-provider-hetzner/pkg/packer"
+	"github.com/spf13/cobra"
 	// +kubebuilder:scaffold:imports
 )
 
@@ -36,66 +24,98 @@ var (
 	setupLog = ctrl.Log.WithName("setup")
 )
 
+var rootFlags = struct {
+	MetricsAddr          string
+	EnableLeaderElection bool
+	Verbose              bool
+	ManifestsConfigPath  string
+	PackerConfigPath     string
+}{}
+
 func init() {
 	_ = clientgoscheme.AddToScheme(scheme)
 
 	_ = infrastructurev1alpha3.AddToScheme(scheme)
 	_ = clusterv1.AddToScheme(scheme)
 	// +kubebuilder:scaffold:scheme
+
+	rootCmd.PersistentFlags().BoolVarP(&rootFlags.Verbose, "verbose", "v", false, "Enable verbose logging")
+	rootCmd.PersistentFlags().StringVar(&rootFlags.MetricsAddr, "metrics-addr", ":8484", "The address the metrics endpoint binds to.")
+	rootCmd.PersistentFlags().BoolVar(&rootFlags.EnableLeaderElection, "enable-leader-election", false, "Enable leader election for controller manager. Enabling this will ensure there is only one active controller manager.")
+	rootCmd.PersistentFlags().StringVarP(&rootFlags.ManifestsConfigPath, "manifests-config-path", "m", "", "Path to the manifests config. Disable manifest deployment if not set")
+	rootCmd.PersistentFlags().StringVarP(&rootFlags.PackerConfigPath, "packer-config-path", "p", "", "Path to the packer config. Disable image building if not set")
+}
+
+var rootCmd = &cobra.Command{
+	Use:  "cluster-api-provider-hetzner",
+	Args: cobra.NoArgs,
+	Run: func(cmd *cobra.Command, args []string) {
+		ctrl.SetLogger(zap.New(func(o *zap.Options) {
+			o.Development = rootFlags.Verbose
+		}))
+
+		// Initialise manifests generator
+		manifestsMgr := manifests.New(ctrl.Log.WithName("module").WithName("manifests"), rootFlags.ManifestsConfigPath)
+		if err := manifestsMgr.Initialize(); err != nil {
+			setupLog.Error(err, "unable to initialise manifests manager")
+			os.Exit(1)
+		}
+
+		// Initialise packer generator
+		packerMgr := packer.New(ctrl.Log.WithName("module").WithName("packer"), rootFlags.PackerConfigPath)
+		if err := packerMgr.Initialize(); err != nil {
+			setupLog.Error(err, "unable to initialise packer manager")
+			os.Exit(1)
+		}
+
+		mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
+			Scheme:             scheme,
+			MetricsBindAddress: rootFlags.MetricsAddr,
+			LeaderElection:     rootFlags.EnableLeaderElection,
+			Port:               9443,
+		})
+		if err != nil {
+			setupLog.Error(err, "unable to start manager")
+			os.Exit(1)
+		}
+
+		if err = (&controllers.HetznerClusterReconciler{
+			Client: mgr.GetClient(),
+			Log:    ctrl.Log.WithName("controllers").WithName("HetznerCluster"),
+			Scheme: mgr.GetScheme(),
+		}).SetupWithManager(mgr, controller.Options{}); err != nil {
+			setupLog.Error(err, "unable to create controller", "controller", "HetznerCluster")
+			os.Exit(1)
+		}
+		if err = (&controllers.HetznerMachineReconciler{
+			Client: mgr.GetClient(),
+			Log:    ctrl.Log.WithName("controllers").WithName("HetznerMachine"),
+			Scheme: mgr.GetScheme(),
+		}).SetupWithManager(mgr, controller.Options{}); err != nil {
+			setupLog.Error(err, "unable to create controller", "controller", "HetznerMachine")
+			os.Exit(1)
+		}
+		if err = (&controllers.HetznerVolumeReconciler{
+			Client: mgr.GetClient(),
+			Log:    ctrl.Log.WithName("controllers").WithName("HetznerVolume"),
+			Scheme: mgr.GetScheme(),
+		}).SetupWithManager(mgr, controller.Options{}); err != nil {
+			setupLog.Error(err, "unable to create controller", "controller", "HetznerVolume")
+			os.Exit(1)
+		}
+		// +kubebuilder:scaffold:builder
+
+		setupLog.Info("starting manager")
+		if err := mgr.Start(ctrl.SetupSignalHandler()); err != nil {
+			setupLog.Error(err, "problem running manager")
+			os.Exit(1)
+		}
+	},
 }
 
 func main() {
-	var metricsAddr string
-	var enableLeaderElection bool
-	flag.StringVar(&metricsAddr, "metrics-addr", ":8080", "The address the metric endpoint binds to.")
-	flag.BoolVar(&enableLeaderElection, "enable-leader-election", false,
-		"Enable leader election for controller manager. Enabling this will ensure there is only one active controller manager.")
-	flag.Parse()
-
-	ctrl.SetLogger(zap.New(func(o *zap.Options) {
-		o.Development = true
-	}))
-
-	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
-		Scheme:             scheme,
-		MetricsBindAddress: metricsAddr,
-		LeaderElection:     enableLeaderElection,
-		Port:               9443,
-	})
-	if err != nil {
-		setupLog.Error(err, "unable to start manager")
-		os.Exit(1)
-	}
-
-	if err = (&controllers.HetznerClusterReconciler{
-		Client: mgr.GetClient(),
-		Log:    ctrl.Log.WithName("controllers").WithName("HetznerCluster"),
-		Scheme: mgr.GetScheme(),
-	}).SetupWithManager(mgr, controller.Options{}); err != nil {
-		setupLog.Error(err, "unable to create controller", "controller", "HetznerCluster")
-		os.Exit(1)
-	}
-	if err = (&controllers.HetznerMachineReconciler{
-		Client: mgr.GetClient(),
-		Log:    ctrl.Log.WithName("controllers").WithName("HetznerMachine"),
-		Scheme: mgr.GetScheme(),
-	}).SetupWithManager(mgr, controller.Options{}); err != nil {
-		setupLog.Error(err, "unable to create controller", "controller", "HetznerMachine")
-		os.Exit(1)
-	}
-	if err = (&controllers.HetznerVolumeReconciler{
-		Client: mgr.GetClient(),
-		Log:    ctrl.Log.WithName("controllers").WithName("HetznerVolume"),
-		Scheme: mgr.GetScheme(),
-	}).SetupWithManager(mgr, controller.Options{}); err != nil {
-		setupLog.Error(err, "unable to create controller", "controller", "HetznerVolume")
-		os.Exit(1)
-	}
-	// +kubebuilder:scaffold:builder
-
-	setupLog.Info("starting manager")
-	if err := mgr.Start(ctrl.SetupSignalHandler()); err != nil {
-		setupLog.Error(err, "problem running manager")
+	if err := rootCmd.Execute(); err != nil {
+		setupLog.Error(err, "problem executing rootCmd")
 		os.Exit(1)
 	}
 }

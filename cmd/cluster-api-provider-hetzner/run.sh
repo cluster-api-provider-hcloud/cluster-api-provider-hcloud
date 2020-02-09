@@ -11,4 +11,8 @@ tar xf $TAR
 
 export PATH=$(pwd)/usr/local/bin:$PATH
 
-exec $CAPH "$@"
+exec $CAPH \
+  --verbose \
+  --manifests-config-path "./manifests-config/config-extvar.jsonnet" \
+  --packer-config-path "./packer-config/packer-centos7-crio.json" \
+  "$@"

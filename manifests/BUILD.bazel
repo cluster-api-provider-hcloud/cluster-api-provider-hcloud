@@ -4,6 +4,7 @@ filegroup(
     name = "config_files",
     srcs = [
         "config.jsonnet",
+        "config-extvar.jsonnet",
     ],
 )
 
