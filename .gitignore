@@ -28,7 +28,7 @@ bin
 /.kubeconfig*
 
 # Bazel
-bazel-bin
-bazel-cluster-api-provider-hetzner
-bazel-out
-bazel-testlogs
+/bazel-bin
+/bazel-cluster-api-provider-hetzner
+/bazel-out
+/bazel-testlogs

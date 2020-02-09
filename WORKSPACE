@@ -101,10 +101,12 @@ git_repository(
 
 load("@com_github_jemdiggity_rules_os_dependent_http_archive//:os_dependent_http_archive.bzl", "os_dependent_http_archive")
 
-# Packer binary dependency linux
+# Packer binary dependencies
+PACKER_VERSION = "1.5.1"
+
 http_archive(
     name = "packer_linux_amd64_bin",
-    urls = ["https://releases.hashicorp.com/packer/1.5.1/packer_1.5.1_linux_amd64.zip"],
+    urls = ["https://releases.hashicorp.com/packer/%s/packer_%s_linux_amd64.zip" % (PACKER_VERSION, PACKER_VERSION)],
     sha256 = "3305ede8886bc3fd83ec0640fb87418cc2a702b2cb1567b48c8cb9315e80047d",
     build_file_content = '''filegroup(
     name="bin",
@@ -113,25 +115,15 @@ http_archive(
 )''',
 )
 
-# Packer binary dependency darwin
 http_archive(
     name = "packer_darwin_amd64_bin",
-    urls = ["https://releases.hashicorp.com/packer/1.5.1/packer_1.5.1_darwin_amd64.zip"],
+    urls = ["https://releases.hashicorp.com/packer/%s/packer_%s_darwin_amd64.zip" % (PACKER_VERSION, PACKER_VERSION)],
     sha256 = "9cb7d75cbb73af1379f2d72235b7fba184518944d0ae013b77739b453c7cd074",
     build_file_content = '''filegroup(
     name="bin",
     srcs=["packer"],
     visibility = ["//visibility:public"],
 )''',
-)
-
-# kubecfg binary dependency
-http_file(
-    name = "kubecfg_linux_amd64_bin",
-    urls = ["https://github.com/bitnami/kubecfg/releases/download/v0.14.0/kubecfg-linux-amd64"],
-    sha256 = "bb1455ec70f93d6f0fd344becec2f1617837a879e8363272d3216bf44c04cb2c",
-    downloaded_file_path = "kubecfg",
-    executable = True,
 )
 
 # kubebuilder for testing our controllers
@@ -157,4 +149,23 @@ http_archive(
     srcs=["etcd","kubectl","kube-apiserver", "kubebuilder"],
     visibility = ["//visibility:public"],
 )''',
+)
+
+# kubectl binary dependencies
+KUBECTL_VERSION = "1.17.2"
+
+http_file(
+    name = "kubectl_linux_amd64_bin",
+    urls = ["https://storage.googleapis.com/kubernetes-release/release/v%s/bin/linux/amd64/kubectl" % KUBECTL_VERSION],
+    sha256 = "7732548b9c353114b0dfa173bc7bcdedd58a607a5b4ca49d867bdb4c05dc25a1",
+    downloaded_file_path = "kubectl",
+    executable = True,
+)
+
+http_file(
+    name = "kubectl_darwin_amd64_bin",
+    urls = ["https://storage.googleapis.com/kubernetes-release/release/v%s/bin/linux/amd64/kubectl" % KUBECTL_VERSION],
+    sha256 = "5d5bd9f88cc77fc51057641c46a2a73e6490550efa7c808f2d2e27a90cfe0c6e",
+    downloaded_file_path = "kubectl",
+    executable = True,
 )
