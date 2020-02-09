@@ -1,42 +1,30 @@
+# This makefile provider some wrapper around bazel targets
 
-# Image URL to use all building/pushing image targets
-IMG ?= controller:latest
-# Produce CRDs that work back to Kubernetes 1.11 (no version conversion)
-CRD_OPTIONS ?= "crd:trivialVersions=true"
+# from https://suva.sh/posts/well-documented-makefiles/
+.PHONY: help
+help:  ## Display this help
+	@awk 'BEGIN {FS = ":.*##"; printf "\nUsage:\n  make \033[36m<target>\033[0m\n\nTargets:\n"} /^[a-zA-Z0-9_-]+:.*?##/ { printf "  \033[36m%-30s\033[0m %s\n", $$1, $$2 }' $(MAKEFILE_LIST)
 
-# Get the currently used golang install path (in GOPATH/bin, unless GOBIN is set)
-ifeq (,$(shell go env GOBIN))
-GOBIN=$(shell go env GOPATH)/bin
-else
-GOBIN=$(shell go env GOBIN)
-endif
+.PHONY: test
+test: ## Run all tests through bazel
+	bazel test //...
 
-all: manager
+.PHONY: run
+run: ## Run controller's binary
+	bazel run //cmd/cluster-api-provider-hetzner:run
 
-# Run tests
-test: generate fmt vet manifests
-	go test ./... -coverprofile cover.out
+.PHONY: install
+install: manifests ## Install CRDs into a cluster
+	kubectl apply -k config/crd
 
-# Build manager binary
-manager: generate fmt vet
-	go build -o bin/manager main.go
+.PHONY: manifests
+manifests: ## Update generated manifests
+	bazel run //hack:update-crds
 
-# Run against the configured Kubernetes cluster in ~/.kube/config
-run: generate fmt vet manifests
-	go run ./main.go
-
-# Install CRDs into a cluster
-install: manifests
-	kustomize build config/crd | kubectl apply -f -
-
-# Deploy controller in the configured Kubernetes cluster in ~/.kube/config
-deploy: manifests
-	cd config/manager && kustomize edit set image controller=${IMG}
-	kustomize build config/default | kubectl apply -f -
-
-# Generate manifests e.g. CRD, RBAC etc.
-manifests: controller-gen
-	$(CONTROLLER_GEN) $(CRD_OPTIONS) rbac:roleName=manager-role webhook paths="./..." output:crd:artifacts:config=config/crd/bases
+# TODO: Deploy controller in the configured Kubernetes cluster in ~/.kube/config
+#deploy: manifests
+#	cd config/manager && kustomize edit set image controller=${IMG}
+#	kustomize build config/default | kubectl apply -f -
 
 # Run go fmt against code
 fmt:
@@ -46,35 +34,7 @@ fmt:
 vet:
 	go vet ./...
 
-# Generate code
-generate: controller-gen
-	$(CONTROLLER_GEN) object:headerFile=./hack/boilerplate.go.txt paths="./..."
-
-# Build the docker image
-docker-build: test
-	docker build . -t ${IMG}
-
-# Push the docker image
-docker-push:
-	docker push ${IMG}
-
+# TODO: Bazelify
 mockgen:
 	mkdir -p pkg/cloud/scope/mock
 	mockgen github.com/simonswine/cluster-api-provider-hetzner/pkg/cloud/scope HetznerClient > pkg/cloud/scope/mock/scope.go
-
-# find or download controller-gen
-# download controller-gen if necessary
-controller-gen:
-ifeq (, $(shell which controller-gen))
-	@{ \
-	set -e ;\
-	CONTROLLER_GEN_TMP_DIR=$$(mktemp -d) ;\
-	cd $$CONTROLLER_GEN_TMP_DIR ;\
-	go mod init tmp ;\
-	go get sigs.k8s.io/controller-tools/cmd/controller-gen@v0.2.2 ;\
-	rm -rf $$CONTROLLER_GEN_TMP_DIR ;\
-	}
-CONTROLLER_GEN=$(GOBIN)/controller-gen
-else
-CONTROLLER_GEN=$(shell which controller-gen)
-endif

@@ -30,20 +30,20 @@ sh_binary(
     srcs = ["run.sh"],
     args = [
         "$(location :cluster-api-provider-hetzner)",
-        "$(location :all_tar.tar)",
+        "$(location :host_all_tar.tar)",
     ],
     data = [
-        ":all_tar.tar",
         ":cluster-api-provider-hetzner",
+        ":host_all_tar.tar",
     ],
 )
 
 load("@bazel_tools//tools/build_defs/pkg:pkg.bzl", "pkg_tar")
 
 pkg_tar(
-    name = "bin_tar",
+    name = "target_bin_tar",
     srcs = [
-        "@kubecfg_linux_amd64_bin//file",
+        "@kubectl_linux_amd64_bin//file",
         "@packer_linux_amd64_bin//:bin",
     ],
     mode = "0o755",
@@ -51,9 +51,28 @@ pkg_tar(
 )
 
 pkg_tar(
-    name = "all_tar",
+    name = "host_bin_tar",
+    srcs = [
+        "//hack:kubectl_host_bin",
+        "//hack:packer_host_bin",
+    ],
+    mode = "0o755",
+    package_dir = "usr/local/bin",
+)
+
+pkg_tar(
+    name = "target_all_tar",
     deps = [
-        ":bin_tar",
+        ":target_bin_tar",
+        "//manifests",
+        "//packer",
+    ],
+)
+
+pkg_tar(
+    name = "host_all_tar",
+    deps = [
+        ":host_bin_tar",
         "//manifests",
         "//packer",
     ],
@@ -65,7 +84,7 @@ container_image(
     name = "base_image",
     base = "@static_base//image",
     tars = [
-        ":all_tar",
+        ":target_all_tar",
     ],
     user = "nobody",
 )

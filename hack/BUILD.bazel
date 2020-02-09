@@ -10,6 +10,22 @@ config_setting(
     ],
 )
 
+alias(
+    name = "packer_host_bin",
+    actual = select({
+        "//hack:darwin_amd64": "@packer_darwin_amd64_bin//:bin",
+        "//conditions:default": "@packer_linux_amd64_bin//:bin",
+    }),
+)
+
+alias(
+    name = "kubectl_host_bin",
+    actual = select({
+        "//hack:darwin_amd64": "@packer_darwin_amd64_bin//:bin",
+        "//conditions:default": "@packer_linux_amd64_bin//:bin",
+    }),
+)
+
 go_library(
     name = "go_default_library",
     srcs = ["yaml2json.go"],
