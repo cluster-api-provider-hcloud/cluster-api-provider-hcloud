@@ -217,7 +217,7 @@ func (s *Service) volumes(ctx context.Context) ([]*hcloud.Volume, error) {
 // actualStatus gathers all matching server instances, matched by tag
 func (s *Service) actualStatus(ctx context.Context) ([]*hcloud.Server, error) {
 	opts := hcloud.ServerListOpts{}
-	opts.LabelSelector = utils.LabelsToLabelSelector(s.genericLabels())
+	opts.LabelSelector = utils.LabelsToLabelSelector(s.labels())
 	servers, err := s.scope.HetznerClient().ListServers(s.scope.Ctx, opts)
 	if err != nil {
 		return nil, err
