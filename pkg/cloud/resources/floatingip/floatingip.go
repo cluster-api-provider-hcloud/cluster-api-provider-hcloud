@@ -42,8 +42,12 @@ func (s intSlice) contains(e int) bool {
 
 func apiToStatus(ip *hcloud.FloatingIP) (*infrav1.HetznerFloatingIPStatus, error) {
 	network := fmt.Sprintf("%s/32", ip.IP.String())
+	ipString := ip.IP.String()
 	if ip.Network != nil {
 		network = ip.Network.String()
+		networkObj := ip.Network.IP
+		networkObj[15] += 1
+		ipString = networkObj.String()
 	}
 
 	var ipType infrav1.HetznerFloatingIPType
@@ -60,6 +64,7 @@ func apiToStatus(ip *hcloud.FloatingIP) (*infrav1.HetznerFloatingIPStatus, error
 		ID:      ip.ID,
 		Name:    ip.Name,
 		Network: network,
+		IP:      ipString,
 		Type:    ipType,
 		Labels:  ip.Labels,
 	}

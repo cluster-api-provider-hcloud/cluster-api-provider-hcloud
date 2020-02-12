@@ -18,6 +18,7 @@ package v1alpha3
 import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha2"
 )
 
 const (
@@ -84,6 +85,7 @@ type HetznerFloatingIPStatus struct {
 	ID      int                   `json:"id,omitempty"`
 	Name    string                `json:"name,omitempty"`
 	Network string                `json:"network,omitempty"`
+	IP      string                `json:"ip,omitempty"`
 	Type    HetznerFloatingIPType `json:"type"`
 	Labels  map[string]string     `json:"-"`
 }
@@ -100,6 +102,10 @@ type HetznerClusterStatus struct {
 
 	// +optional
 	Network *HetznerNetworkStatus `json:"network,omitempty"`
+
+	// APIEndpoints represents the endpoints to communicate with the control plane.
+	// +optional
+	APIEndpoints []clusterv1.APIEndpoint `json:"apiEndpoints,omitempty"`
 }
 
 // +kubebuilder:object:root=true

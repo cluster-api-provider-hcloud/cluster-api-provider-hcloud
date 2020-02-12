@@ -102,11 +102,30 @@ spec:
         status:
           description: HetznerClusterStatus defines the observed state of HetznerCluster
           properties:
+            apiEndpoints:
+              description: APIEndpoints represents the endpoints to communicate with
+                the control plane.
+              items:
+                description: APIEndpoint represents a reachable Kubernetes API endpoint.
+                properties:
+                  host:
+                    description: The hostname on which the API server is serving.
+                    type: string
+                  port:
+                    description: The port on which the API server is serving.
+                    type: integer
+                required:
+                - host
+                - port
+                type: object
+              type: array
             controlPlaneFloatingIPs:
               items:
                 properties:
                   id:
                     type: integer
+                  ip:
+                    type: string
                   name:
                     type: string
                   network:
