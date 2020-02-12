@@ -22,6 +22,7 @@ import (
 	"github.com/pkg/errors"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
+	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha2"
 	"sigs.k8s.io/cluster-api/util"
 	ctrl "sigs.k8s.io/controller-runtime"
 	controllerclient "sigs.k8s.io/controller-runtime/pkg/client"
@@ -144,6 +145,14 @@ func (r *HetznerClusterReconciler) reconcileNormal(clusterScope *scope.ClusterSc
 	// reconcile the Controlplane Floating IPs
 	if err := floatingip.NewService(clusterScope).Reconcile(ctx); err != nil {
 		return reconcile.Result{}, errors.Wrapf(err, "failed to reconcile floating IPs for HetznerCluster %s/%s", hetznerCluster.Namespace, hetznerCluster.Name)
+	}
+
+	// add the first controlplan floating IP to the status
+	if len(hetznerCluster.Status.ControlPlaneFloatingIPs) > 0 {
+		hetznerCluster.Status.APIEndpoints = []clusterv1.APIEndpoint{{
+			Host: hetznerCluster.Status.ControlPlaneFloatingIPs[0].IP,
+			Port: 6443,
+		}}
 	}
 
 	hetznerCluster.Status.Ready = true
