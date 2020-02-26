@@ -38,13 +38,17 @@ import (
 	"github.com/simonswine/cluster-api-provider-hetzner/pkg/cloud/resources/location"
 	"github.com/simonswine/cluster-api-provider-hetzner/pkg/cloud/resources/server"
 	"github.com/simonswine/cluster-api-provider-hetzner/pkg/cloud/scope"
+	"github.com/simonswine/cluster-api-provider-hetzner/pkg/manifests"
+	"github.com/simonswine/cluster-api-provider-hetzner/pkg/packer"
 )
 
 // HetznerMachineReconciler reconciles a HetznerMachine object
 type HetznerMachineReconciler struct {
 	controllerclient.Client
-	Log    logr.Logger
-	Scheme *runtime.Scheme
+	Log       logr.Logger
+	Scheme    *runtime.Scheme
+	Packer    *packer.Packer
+	Manifests *manifests.Manifests
 }
 
 // +kubebuilder:rbac:groups=infrastructure.cluster.x-k8s.io,resources=hetznermachines,verbs=get;list;watch;create;update;patch;delete
@@ -119,6 +123,8 @@ func (r *HetznerMachineReconciler) Reconcile(req ctrl.Request) (_ ctrl.Result, r
 			Logger:         log,
 			Cluster:        cluster,
 			HetznerCluster: hetznerCluster,
+			Packer:         r.Packer,
+			Manifests:      r.Manifests,
 		},
 		KubeadmConfig:  kubeadmConfig,
 		Machine:        machine,

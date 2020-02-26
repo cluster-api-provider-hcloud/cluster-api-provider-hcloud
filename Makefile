@@ -37,4 +37,4 @@ vet:
 # TODO: Bazelify
 mockgen:
 	mkdir -p pkg/cloud/scope/mock
-	mockgen github.com/simonswine/cluster-api-provider-hetzner/pkg/cloud/scope HetznerClient > pkg/cloud/scope/mock/scope.go
+	mockgen github.com/simonswine/cluster-api-provider-hetzner/pkg/cloud/scope HetznerClient,Manifests,Packer > pkg/cloud/scope/mock/scope.go

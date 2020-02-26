@@ -80,17 +80,21 @@ var rootCmd = &cobra.Command{
 		}
 
 		if err = (&controllers.HetznerClusterReconciler{
-			Client: mgr.GetClient(),
-			Log:    ctrl.Log.WithName("controllers").WithName("HetznerCluster"),
-			Scheme: mgr.GetScheme(),
+			Client:    mgr.GetClient(),
+			Log:       ctrl.Log.WithName("controllers").WithName("HetznerCluster"),
+			Scheme:    mgr.GetScheme(),
+			Packer:    packerMgr,
+			Manifests: manifestsMgr,
 		}).SetupWithManager(mgr, controller.Options{}); err != nil {
 			setupLog.Error(err, "unable to create controller", "controller", "HetznerCluster")
 			os.Exit(1)
 		}
 		if err = (&controllers.HetznerMachineReconciler{
-			Client: mgr.GetClient(),
-			Log:    ctrl.Log.WithName("controllers").WithName("HetznerMachine"),
-			Scheme: mgr.GetScheme(),
+			Client:    mgr.GetClient(),
+			Log:       ctrl.Log.WithName("controllers").WithName("HetznerMachine"),
+			Scheme:    mgr.GetScheme(),
+			Packer:    packerMgr,
+			Manifests: manifestsMgr,
 		}).SetupWithManager(mgr, controller.Options{}); err != nil {
 			setupLog.Error(err, "unable to create controller", "controller", "HetznerMachine")
 			os.Exit(1)

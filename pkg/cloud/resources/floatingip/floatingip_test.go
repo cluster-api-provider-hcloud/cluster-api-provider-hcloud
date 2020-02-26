@@ -40,14 +40,34 @@ var _ = Describe("FloatingIPs", func() {
 	var (
 		mockCtrl      *gomock.Controller
 		mockClient    *mock_scope.MockHetznerClient
+		mockPacker    *mock_scope.MockPacker
+		mockManifests *mock_scope.MockManifests
 		clientFactory = func(ctx context.Context) (scope.HetznerClient, error) {
 			return mockClient, nil
 		}
+		newClusterScope func() *scope.ClusterScope
 	)
 
 	BeforeEach(func() {
 		mockCtrl = gomock.NewController(GinkgoT())
 		mockClient = mock_scope.NewMockHetznerClient(mockCtrl)
+		mockPacker = mock_scope.NewMockPacker(mockCtrl)
+		mockManifests = mock_scope.NewMockManifests(mockCtrl)
+		newClusterScope = func() *scope.ClusterScope {
+			scp, err := scope.NewClusterScope(scope.ClusterScopeParams{
+				Cluster: &clusterv1.Cluster{},
+				HetznerCluster: &infrav1.HetznerCluster{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "christian-dev",
+					},
+				},
+				HetznerClientFactory: clientFactory,
+				Packer:               mockPacker,
+				Manifests:            mockManifests,
+			})
+			Expect(err).NotTo(HaveOccurred())
+			return scp
+		}
 	})
 
 	AfterEach(func() {
@@ -56,11 +76,7 @@ var _ = Describe("FloatingIPs", func() {
 
 	Context("No floating IPs desired, no floating IP existing", func() {
 		It("should reconcile", func() {
-			scp, err := scope.NewClusterScope(scope.ClusterScopeParams{
-				Cluster:              &clusterv1.Cluster{},
-				HetznerCluster:       &infrav1.HetznerCluster{},
-				HetznerClientFactory: clientFactory,
-			})
+			scp := newClusterScope()
 			mockClient.EXPECT().ListFloatingIPs(gomock.Any(), gomock.Any()).Return(
 				[]*hcloud.FloatingIP{{
 					ID:     123,
@@ -70,8 +86,6 @@ var _ = Describe("FloatingIPs", func() {
 				}},
 				nil,
 			)
-
-			Expect(err).NotTo(HaveOccurred())
 			svc := floatingip.NewService(scp)
 			Expect(svc.Reconcile(context.TODO())).NotTo(HaveOccurred())
 			Expect(len(scp.HetznerCluster.Status.ControlPlaneFloatingIPs)).To(Equal(0))
@@ -80,16 +94,7 @@ var _ = Describe("FloatingIPs", func() {
 
 	Context("No floating IPs desired, existing IPs but none recorded in status", func() {
 		It("should reconcile and delete floating IP", func() {
-			scp, err := scope.NewClusterScope(scope.ClusterScopeParams{
-				Cluster: &clusterv1.Cluster{},
-				HetznerCluster: &infrav1.HetznerCluster{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: "christian-dev",
-					},
-				},
-				HetznerClientFactory: clientFactory,
-			})
-			scp.HetznerCluster.Name = "christian-dev"
+			scp := newClusterScope()
 			clusterTagKey := infrav1.ClusterTagKey(scp.HetznerCluster.Name)
 			gomock.InOrder(
 				mockClient.EXPECT().ListFloatingIPs(gomock.Any(), gomock.Any()).Return(
@@ -122,7 +127,6 @@ var _ = Describe("FloatingIPs", func() {
 				),
 			)
 			mockClient.EXPECT().DeleteFloatingIP(gomock.Any(), gomock.Eq(&hcloud.FloatingIP{ID: 123})).Return(nil, nil)
-			Expect(err).NotTo(HaveOccurred())
 			svc := floatingip.NewService(scp)
 			Expect(svc.Reconcile(context.TODO())).NotTo(HaveOccurred())
 			//Expect(len(scp.HetznerCluster.Status.ControlPlaneFloatingIPs)).To(Equal(1))
@@ -131,27 +135,13 @@ var _ = Describe("FloatingIPs", func() {
 
 	Context("A v4 and v6 floating IP desired, none existing", func() {
 		It("should reconcile and create floating IPs", func() {
-			scp, err := scope.NewClusterScope(scope.ClusterScopeParams{
-				Cluster: &clusterv1.Cluster{},
-				HetznerCluster: &infrav1.HetznerCluster{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: "christian-dev",
-					},
-					Spec: infrav1.HetznerClusterSpec{
-						ControlPlaneFloatingIPs: []infrav1.HetznerFloatingIPSpec{
-							{Type: infrav1.HetznerFloatingIPTypeIPv4},
-							{Type: infrav1.HetznerFloatingIPTypeIPv6},
-						},
-					},
-					Status: infrav1.HetznerClusterStatus{
-						Location: "myhome",
-					},
-				},
-				HetznerClientFactory: clientFactory,
-			})
+			scp := newClusterScope()
 			scp.HetznerCluster.Spec.ControlPlaneFloatingIPs = []infrav1.HetznerFloatingIPSpec{
 				{Type: infrav1.HetznerFloatingIPTypeIPv4},
 				{Type: infrav1.HetznerFloatingIPTypeIPv6},
+			}
+			scp.HetznerCluster.Status = infrav1.HetznerClusterStatus{
+				Location: "myhome",
 			}
 			clusterTagKey := infrav1.ClusterTagKey(scp.HetznerCluster.Name)
 			_, deadBeefNetwork, err := net.ParseCIDR("2001:dead:beef::/64")

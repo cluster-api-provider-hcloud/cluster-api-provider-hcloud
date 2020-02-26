@@ -2,19 +2,28 @@ package scope
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/go-logr/logr"
 	"github.com/hetznercloud/hcloud-go/hcloud"
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
+	clientcmd "k8s.io/client-go/tools/clientcmd"
 	"k8s.io/klog/klogr"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha2"
+	"sigs.k8s.io/cluster-api/util/kubeconfig"
 	"sigs.k8s.io/cluster-api/util/patch"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	infrav1 "github.com/simonswine/cluster-api-provider-hetzner/api/v1alpha3"
 )
+
+type Packer interface {
+}
+
+type Manifests interface {
+}
 
 // ClusterScopeParams defines the input parameters used to create a new Scope.
 type ClusterScopeParams struct {
@@ -25,6 +34,8 @@ type ClusterScopeParams struct {
 	Logger               logr.Logger
 	Cluster              *clusterv1.Cluster
 	HetznerCluster       *infrav1.HetznerCluster
+	Packer               Packer
+	Manifests            Manifests
 }
 
 // NewClusterScope creates a new Scope from the supplied parameters.
@@ -35,6 +46,12 @@ func NewClusterScope(params ClusterScopeParams) (*ClusterScope, error) {
 	}
 	if params.HetznerCluster == nil {
 		return nil, errors.New("failed to generate new scope from nil HetznerCluster")
+	}
+	if params.Packer == nil {
+		return nil, errors.New("failed to generate new scope from nil Packer")
+	}
+	if params.Manifests == nil {
+		return nil, errors.New("failed to generate new scope from nil Manifests")
 	}
 
 	if params.Logger == nil {
@@ -82,6 +99,8 @@ func NewClusterScope(params ClusterScopeParams) (*ClusterScope, error) {
 		HetznerCluster: params.HetznerCluster,
 		hetznerClient:  hc,
 		patchHelper:    helper,
+		packer:         params.Packer,
+		manifests:      params.Manifests,
 	}, nil
 }
 
@@ -92,6 +111,8 @@ type ClusterScope struct {
 	Client        client.Client
 	patchHelper   *patch.Helper
 	hetznerClient HetznerClient
+	packer        Packer
+	manifests     Manifests
 
 	Cluster        *clusterv1.Cluster
 	HetznerCluster *infrav1.HetznerCluster
@@ -113,4 +134,32 @@ func (s *ClusterScope) GetSpecLocation() infrav1.HetznerLocation {
 func (s *ClusterScope) SetStatusLocation(location infrav1.HetznerLocation, networkZone infrav1.HetznerNetworkZone) {
 	s.HetznerCluster.Status.Location = location
 	s.HetznerCluster.Status.NetworkZone = networkZone
+}
+
+// ClientConfig return a kubernetes client config for the cluster context
+func (s *ClusterScope) ClientConfig() (clientcmd.ClientConfig, error) {
+	kubeconfigBytes, err := kubeconfig.FromSecret(s.Client, s.Cluster)
+	if err != nil {
+		return nil, errors.Wrap(err, "error retrieving kubeconfig for cluster")
+	}
+	return clientcmd.NewClientConfigFromBytes(kubeconfigBytes)
+}
+
+func (s *ClusterScope) ClientConfigWithAPIEndpoint(endpoint clusterv1.APIEndpoint) (clientcmd.ClientConfig, error) {
+	c, err := s.ClientConfig()
+	if err != nil {
+		return nil, err
+	}
+
+	raw, err := c.RawConfig()
+	if err != nil {
+		return nil, errors.Wrap(err, "error retrieving rawConfig from clientConfig")
+	}
+
+	// update cluster endpint in confgi
+	for key := range raw.Clusters {
+		raw.Clusters[key].Server = fmt.Sprintf("https://%s", endpoint.Host)
+	}
+
+	return clientcmd.NewDefaultClientConfig(raw, nil), nil
 }

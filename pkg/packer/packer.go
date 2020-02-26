@@ -44,7 +44,7 @@ func (m *Packer) initializePacker() (err error) {
 	m.log.V(1).Info("packer found in path", "path", m.packerPath)
 
 	// get version of packer
-	version, err := m.packerCmd(context.Background(), "version").Output()
+	version, err := m.packerCmd(context.Background(), "-v").Output()
 	if err != nil {
 		return fmt.Errorf("error executing packer version: %w", err)
 	}

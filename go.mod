@@ -7,7 +7,7 @@ require (
 	github.com/coreos/go-systemd v0.0.0-20190321100706-95778dfbb74e
 	github.com/fatih/color v1.7.0
 	github.com/go-logr/logr v0.1.0
-	github.com/golang/mock v1.3.1
+	github.com/golang/mock v1.4.1
 	github.com/google/go-jsonnet v0.13.0
 	github.com/hetznercloud/hcloud-go v1.17.0
 	github.com/mattn/go-colorable v0.1.2 // indirect

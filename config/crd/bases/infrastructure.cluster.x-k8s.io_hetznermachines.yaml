@@ -158,6 +158,10 @@ spec:
           properties:
             imageID:
               type: integer
+            kubeadmConfigResourceVersionUpdated:
+              description: KubeadmConfigResourceVersionConfigured keeps track of the
+                ResourceVersion which we last reconfigured KubeadmConfig
+              type: string
             location:
               type: string
             networkZone:
