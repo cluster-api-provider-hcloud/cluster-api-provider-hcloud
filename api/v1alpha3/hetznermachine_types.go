@@ -62,6 +62,10 @@ type HetznerMachineStatus struct {
 	// Ready is true when the provider resource is ready.
 	// +optional
 	Ready bool `json:"ready"`
+
+	// KubeadmConfigResourceVersionConfigured keeps track of the ResourceVersion which we last reconfigured KubeadmConfig
+	// +optional
+	KubeadmConfigResourceVersionUpdated *string `json:"kubeadmConfigResourceVersionUpdated"`
 }
 
 // +kubebuilder:object:root=true

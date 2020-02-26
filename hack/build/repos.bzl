@@ -787,12 +787,12 @@ def go_repositories():
     )
     go_repository(
         name = "com_github_onsi_ginkgo",
+        build_extra_args = ["-exclude=integration"],
         build_file_generation = "on",
         build_file_proto_mode = "disable_global",
         importpath = "github.com/onsi/ginkgo",
         sum = "h1:q/mM8GF/n0shIN8SaAZ0V+jnLPzen6WIVZdiwrRlMlo=",
         version = "v1.10.1",
-        build_extra_args = ["-exclude=integration"],
     )
     go_repository(
         name = "com_github_onsi_gomega",
@@ -1303,8 +1303,8 @@ def go_repositories():
         build_file_generation = "on",
         build_file_proto_mode = "disable_global",
         importpath = "sigs.k8s.io/cluster-api-bootstrap-provider-kubeadm",
-        sum = "h1:GMpyX3FYSeHmXK+6VHq+khIKV5KkqGXfkbtAJN0Rm04=",
-        version = "v0.1.3",
+        sum = "h1:VSbJstRYt/CU2e0BXkOcE/Ux5a4TnbuO2x7Ln2AynmQ=",
+        version = "v0.1.6",
     )
     go_repository(
         name = "io_k8s_sigs_cluster_api_provider_aws",
@@ -1316,12 +1316,12 @@ def go_repositories():
     )
     go_repository(
         name = "io_k8s_sigs_controller_runtime",
+        build_extra_args = ["-exclude=pkg/webhook/conversion/testdata"],
         build_file_generation = "on",
         build_file_proto_mode = "disable_global",
         importpath = "sigs.k8s.io/controller-runtime",
         sum = "h1:wATM6/m+3w8lj8FXNaO6Fs/rq/vqoOjO1Q116Z9NPsg=",
         version = "v0.4.0",
-        build_extra_args = ["-exclude=pkg/webhook/conversion/testdata"],
     )
     go_repository(
         name = "io_k8s_sigs_structured_merge_diff",

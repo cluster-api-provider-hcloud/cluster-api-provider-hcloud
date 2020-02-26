@@ -2,6 +2,7 @@ package scope
 
 import (
 	"github.com/pkg/errors"
+	bootstrapv1 "sigs.k8s.io/cluster-api-bootstrap-provider-kubeadm/api/v1alpha2"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha2"
 	"sigs.k8s.io/cluster-api/util/patch"
 
@@ -11,6 +12,7 @@ import (
 // ClusterScopeParams defines the input parameters used to create a new Scope.
 type MachineScopeParams struct {
 	ClusterScopeParams
+	KubeadmConfig  *bootstrapv1.KubeadmConfig
 	Machine        *clusterv1.Machine
 	HetznerMachine *infrav1.HetznerMachine
 }
@@ -37,6 +39,7 @@ func NewMachineScope(params MachineScopeParams) (*MachineScope, error) {
 
 	return &MachineScope{
 		ClusterScope:   *cs,
+		KubeadmConfig:  params.KubeadmConfig,
 		Machine:        params.Machine,
 		HetznerMachine: params.HetznerMachine,
 	}, nil
@@ -45,6 +48,7 @@ func NewMachineScope(params MachineScopeParams) (*MachineScope, error) {
 // ClusterScope defines the basic context for an actuator to operate upon.
 type MachineScope struct {
 	ClusterScope
+	KubeadmConfig  *bootstrapv1.KubeadmConfig
 	Machine        *clusterv1.Machine
 	HetznerMachine *infrav1.HetznerMachine
 }

@@ -77,7 +77,7 @@ func NewClusterScope(params ClusterScopeParams) (*ClusterScope, error) {
 	return &ClusterScope{
 		Ctx:            params.Ctx,
 		Logger:         params.Logger,
-		client:         params.Client,
+		Client:         params.Client,
 		Cluster:        params.Cluster,
 		HetznerCluster: params.HetznerCluster,
 		hetznerClient:  hc,
@@ -89,7 +89,7 @@ func NewClusterScope(params ClusterScopeParams) (*ClusterScope, error) {
 type ClusterScope struct {
 	Ctx context.Context
 	logr.Logger
-	client        client.Client
+	Client        client.Client
 	patchHelper   *patch.Helper
 	hetznerClient HetznerClient
 

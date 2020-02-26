@@ -22,6 +22,8 @@ import (
 	"github.com/pkg/errors"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
+	bootstrapv1 "sigs.k8s.io/cluster-api-bootstrap-provider-kubeadm/api/v1alpha2"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha2"
 	"sigs.k8s.io/cluster-api/util"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -74,6 +76,20 @@ func (r *HetznerMachineReconciler) Reconcile(req ctrl.Request) (_ ctrl.Result, r
 	}
 	log = log.WithValues("machine", machine.Name)
 
+	// Fetch the related KubeadmConfig (if it exists at all)
+	kubeadmConfig := &bootstrapv1.KubeadmConfig{}
+	kubeadmConfigKey := types.NamespacedName{
+		Namespace: req.Namespace,
+		Name:      machine.Spec.Bootstrap.ConfigRef.Name,
+	}
+	err = r.Get(ctx, kubeadmConfigKey, kubeadmConfig)
+	if err != nil {
+		if !apierrors.IsNotFound(err) {
+			return reconcile.Result{}, err
+		}
+		kubeadmConfig = nil
+	}
+
 	// Fetch the Cluster.
 	cluster, err := util.GetClusterFromMetadata(ctx, r.Client, machine.ObjectMeta)
 	if err != nil {
@@ -104,6 +120,7 @@ func (r *HetznerMachineReconciler) Reconcile(req ctrl.Request) (_ ctrl.Result, r
 			Cluster:        cluster,
 			HetznerCluster: hetznerCluster,
 		},
+		KubeadmConfig:  kubeadmConfig,
 		Machine:        machine,
 		HetznerMachine: hetznerMachine,
 	})
