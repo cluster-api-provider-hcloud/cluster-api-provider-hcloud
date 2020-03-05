@@ -121,7 +121,7 @@ func (s *kubeadmConfig) ensureKubeadmConfigParts() {
 	}
 
 	cmdAggregateConfig := fmt.Sprintf(
-		`"cat "%s" > "%s"`,
+		`cat "%s" > "%s"`,
 		fmt.Sprintf(kubeadmConfigPartsPathTemplate, `"*"`),
 		kubeadmConfigPath,
 	)
@@ -131,6 +131,19 @@ func (s *kubeadmConfig) ensureKubeadmConfigParts() {
 			cmdAggregateConfig,
 		)
 	}
+
+	// TODO: Only do this one the control planes
+	cmdRemoveControlPlane := fmt.Sprintf(
+		"sed -i '/controlPlaneEndpoint: /d' '%s'",
+		kubeadmConfigPath,
+	)
+	if !stringSliceContains(s.s.scope.KubeadmConfig.Spec.PreKubeadmCommands, cmdRemoveControlPlane) {
+		s.s.scope.KubeadmConfig.Spec.PreKubeadmCommands = append(
+			s.s.scope.KubeadmConfig.Spec.PreKubeadmCommands,
+			cmdRemoveControlPlane,
+		)
+	}
+
 }
 
 func (k *kubeadmConfig) addKubeletConfigTLSBootstrap() {

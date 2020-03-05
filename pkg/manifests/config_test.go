@@ -12,7 +12,7 @@ func TestEvaluateJsonnet(t *testing.T) {
 	err := evaluateJsonnet(
 		bufio.NewWriter(&buf),
 		path,
-		sampleData,
+		sampleParameters().ExtVar(),
 	)
 
 	if err != nil {

@@ -157,7 +157,7 @@ func (r *HetznerClusterReconciler) reconcileNormal(clusterScope *scope.ClusterSc
 	if len(hetznerCluster.Status.ControlPlaneFloatingIPs) > 0 {
 		hetznerCluster.Status.APIEndpoints = []clusterv1.APIEndpoint{{
 			Host: hetznerCluster.Status.ControlPlaneFloatingIPs[0].IP,
-			Port: 6443,
+			Port: clusterScope.ControlPlaneAPIEndpointPort(),
 		}}
 	}
 

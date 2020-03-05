@@ -10,12 +10,8 @@ metadata:
 spec:
   additionalPrinterColumns:
   - JSONPath: .status.location
-    description: Location of the cluster
+    description: Location of the volume
     name: Location
-    type: string
-  - JSONPath: .status.networkZone
-    description: NetworkZone of the cluster
-    name: NetworkZone
     type: string
   group: infrastructure.cluster.x-k8s.io
   names:

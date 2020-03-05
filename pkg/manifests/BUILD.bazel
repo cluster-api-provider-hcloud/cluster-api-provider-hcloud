@@ -10,10 +10,14 @@ go_library(
     importpath = "github.com/simonswine/cluster-api-provider-hetzner/pkg/manifests",
     visibility = ["//visibility:public"],
     deps = [
+        "//pkg/manifests/parameters:go_default_library",
         "@com_github_fatih_color//:go_default_library",
         "@com_github_go_logr_logr//:go_default_library",
         "@com_github_google_go_jsonnet//:go_default_library",
+        "@com_github_pkg_errors//:go_default_library",
         "@in_gopkg_yaml_v3//:go_default_library",
+        "@io_k8s_apimachinery//pkg/util/intstr:go_default_library",
+        "@io_k8s_client_go//tools/clientcmd:go_default_library",
     ],
 )
 
@@ -26,7 +30,10 @@ filegroup(
 
 filegroup(
     name = "all-srcs",
-    srcs = [":package-srcs"],
+    srcs = [
+        ":package-srcs",
+        "//pkg/manifests/parameters:all-srcs",
+    ],
     tags = ["automanaged"],
     visibility = ["//visibility:public"],
 )

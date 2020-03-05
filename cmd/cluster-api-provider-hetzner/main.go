@@ -3,9 +3,11 @@ package main
 import (
 	"os"
 
+	"github.com/spf13/cobra"
 	"k8s.io/apimachinery/pkg/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
+	bootstrapv1 "sigs.k8s.io/cluster-api-bootstrap-provider-kubeadm/api/v1alpha2"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha2"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
@@ -15,7 +17,6 @@ import (
 	"github.com/simonswine/cluster-api-provider-hetzner/controllers"
 	"github.com/simonswine/cluster-api-provider-hetzner/pkg/manifests"
 	"github.com/simonswine/cluster-api-provider-hetzner/pkg/packer"
-	"github.com/spf13/cobra"
 	// +kubebuilder:scaffold:imports
 )
 
@@ -37,6 +38,7 @@ func init() {
 
 	_ = infrastructurev1alpha3.AddToScheme(scheme)
 	_ = clusterv1.AddToScheme(scheme)
+	_ = bootstrapv1.AddToScheme(scheme)
 	// +kubebuilder:scaffold:scheme
 
 	rootCmd.PersistentFlags().BoolVarP(&rootFlags.Verbose, "verbose", "v", false, "Enable verbose logging")
@@ -100,9 +102,11 @@ var rootCmd = &cobra.Command{
 			os.Exit(1)
 		}
 		if err = (&controllers.HetznerVolumeReconciler{
-			Client: mgr.GetClient(),
-			Log:    ctrl.Log.WithName("controllers").WithName("HetznerVolume"),
-			Scheme: mgr.GetScheme(),
+			Client:    mgr.GetClient(),
+			Log:       ctrl.Log.WithName("controllers").WithName("HetznerVolume"),
+			Scheme:    mgr.GetScheme(),
+			Packer:    packerMgr,
+			Manifests: manifestsMgr,
 		}).SetupWithManager(mgr, controller.Options{}); err != nil {
 			setupLog.Error(err, "unable to create controller", "controller", "HetznerVolume")
 			os.Exit(1)

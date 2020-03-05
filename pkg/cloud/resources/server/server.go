@@ -8,7 +8,10 @@ import (
 
 	"github.com/hetznercloud/hcloud-go/hcloud"
 	"github.com/pkg/errors"
+	v1 "k8s.io/api/core/v1"
 	"k8s.io/apiserver/pkg/storage/names"
+	"k8s.io/client-go/kubernetes"
+	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha2"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
@@ -41,11 +44,11 @@ func (s *Service) labels() map[string]string {
 	return m
 }
 
-func (s *Service) reconcileKubeadmConfig(ctx context.Context, volumes []*hcloud.Volume) (_ *ctrl.Result, err error) {
+func (s *Service) reconcileKubeadmConfig(ctx context.Context, volumes []*hcloud.Volume) (_ []byte, _ *ctrl.Result, err error) {
 
 	// if kubeadmConfig is not ready yet
 	if s.scope.KubeadmConfig == nil {
-		return &ctrl.Result{RequeueAfter: 2 * time.Second}, nil
+		return nil, &ctrl.Result{RequeueAfter: 2 * time.Second}, nil
 	}
 
 	k := s.newKubeadmConfig(s.scope.KubeadmConfig)
@@ -54,7 +57,7 @@ func (s *Service) reconcileKubeadmConfig(ctx context.Context, volumes []*hcloud.
 	// adding volumes
 	for pos, volume := range volumes {
 		if pos > 1 {
-			return nil, fmt.Errorf("found more than a single, which is not expected volumes: %+#v", volumes)
+			return nil, nil, fmt.Errorf("found more than a single, which is not expected volumes: %+#v", volumes)
 		}
 		mountPath := "/var/lib/etcd"
 		k.addVolumeMount(int64(volume.ID), mountPath)
@@ -63,10 +66,10 @@ func (s *Service) reconcileKubeadmConfig(ctx context.Context, volumes []*hcloud.
 
 	// check if config was just updated
 	if resourceVersionUpdated, err := k.update(ctx); err != nil {
-		return nil, err
+		return nil, nil, err
 	} else if resourceVersionUpdated != nil {
 		s.scope.HetznerMachine.Status.KubeadmConfigResourceVersionUpdated = resourceVersionUpdated
-		return &ctrl.Result{RequeueAfter: 2 * time.Second}, nil
+		return nil, &ctrl.Result{RequeueAfter: 2 * time.Second}, nil
 	}
 
 	// ensure it resource version is bigger than at the time it had been last
@@ -75,24 +78,26 @@ func (s *Service) reconcileKubeadmConfig(ctx context.Context, volumes []*hcloud.
 		s.scope.HetznerMachine.Status.KubeadmConfigResourceVersionUpdated; rvUpdatedStr != nil {
 		rvUpdated, err := strconv.ParseInt(*rvUpdatedStr, 10, 64)
 		if err != nil {
-			return nil, errors.Wrap(err, "error converting resourceVersionUpdated to int")
+			return nil, nil, errors.Wrap(err, "error converting resourceVersionUpdated to int")
 		}
 
 		rvObserved, err := strconv.ParseInt(s.scope.KubeadmConfig.ResourceVersion, 10, 64)
 		if err != nil {
-			return nil, errors.Wrap(err, "error converting resourceVersionUpdated to int")
+			return nil, nil, errors.Wrap(err, "error converting resourceVersionUpdated to int")
 		}
 
 		if rvObserved <= rvUpdated {
 			k.s.scope.Info("observed resourceVersion of KubeadmConfig not bigger than resourceVersion when last updated")
-			return &ctrl.Result{RequeueAfter: 2 * time.Second}, nil
+			return nil, &ctrl.Result{RequeueAfter: 2 * time.Second}, nil
 		}
 	}
 
-	// TODO: ensure user data is not nil
+	if !k.s.scope.KubeadmConfig.Status.Ready || len(k.s.scope.KubeadmConfig.Status.BootstrapData) == 0 {
+		k.s.scope.V(1).Info("bootstrapData not ready yet")
+		return nil, &ctrl.Result{RequeueAfter: 2 * time.Second}, nil
+	}
 
-	return nil, errors.New("not implemented")
-
+	return k.s.scope.KubeadmConfig.Status.BootstrapData, nil, nil
 }
 
 func (s *Service) Reconcile(ctx context.Context) (_ *ctrl.Result, err error) {
@@ -110,7 +115,8 @@ func (s *Service) Reconcile(ctx context.Context) (_ *ctrl.Result, err error) {
 	}
 
 	// reconcile kubeadmConfig
-	if res, err := s.reconcileKubeadmConfig(ctx, volumes); err != nil || res != nil {
+	userData, res, err := s.reconcileKubeadmConfig(ctx, volumes)
+	if err != nil || res != nil {
 		return res, err
 	}
 
@@ -118,15 +124,6 @@ func (s *Service) Reconcile(ctx context.Context) (_ *ctrl.Result, err error) {
 	actualServers, err := s.actualStatus(ctx)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to refresh server status")
-	}
-
-	if len(actualServers) == 0 {
-		return nil, nil
-	}
-
-	if s.scope.Machine.Spec.Bootstrap.Data == nil {
-		s.scope.V(1).Info("user-data not available yet")
-		return &reconcile.Result{Requeue: true}, nil
 	}
 
 	var myTrue = true
@@ -154,6 +151,8 @@ func (s *Service) Reconcile(ctx context.Context) (_ *ctrl.Result, err error) {
 		},
 		Automount:        &myFalse,
 		StartAfterCreate: &myTrue,
+		UserData:         string(userData),
+		Volumes:          volumes,
 	}
 
 	// setup network if available
@@ -163,11 +162,72 @@ func (s *Service) Reconcile(ctx context.Context) (_ *ctrl.Result, err error) {
 		}}
 	}
 
-	if _, _, err := s.scope.HetznerClient().CreateServer(s.scope.Ctx, opts); err != nil {
-		return nil, errors.Wrap(err, "failed to create server")
+	var actualServer *hcloud.Server
+
+	if len(actualServers) == 0 {
+		if res, _, err := s.scope.HetznerClient().CreateServer(s.scope.Ctx, opts); err != nil {
+			return nil, errors.Wrap(err, "failed to create server")
+		} else {
+			actualServer = res.Server
+		}
+	} else if len(actualServers) == 1 {
+		actualServer = actualServers[0]
+	} else {
+		return nil, errors.New("found more than one actual servers")
 	}
 
+	if err := setStatusFromAPI(&s.scope.HetznerMachine.Status, actualServer); err != nil {
+		return nil, errors.New("error setting status")
+	}
+
+	// wait for server being running
+	if actualServer.Status != hcloud.ServerStatusRunning {
+		s.scope.V(1).Info("server not in running state", "server", actualServer.Name, "status", actualServer.Status)
+		return &reconcile.Result{RequeueAfter: 2 * time.Second}, nil
+	}
+
+	// check if api server is ready
+	// TODO: backoff
+	clientConfig, err := s.scope.ClientConfigWithAPIEndpoint(clusterv1.APIEndpoint{
+		Host: s.scope.HetznerMachine.Status.Addresses[0].Address,
+		Port: s.scope.ControlPlaneAPIEndpointPort(),
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	restConfig, err := clientConfig.ClientConfig()
+	if err != nil {
+		return nil, err
+	}
+
+	clientSet, err := kubernetes.NewForConfig(restConfig)
+	if err != nil {
+		return nil, err
+	}
+
+	readyBody, err := clientSet.Discovery().RESTClient().Get().AbsPath("/readyz").Context(ctx).Do().Raw()
+	if err != nil {
+		return nil, errors.Wrap(err, "error getting API server readiness")
+	}
+	s.scope.V(1).Info("apiServer is ready", "ready", string(readyBody))
+
+	apiServerVersion, err := clientSet.Discovery().ServerVersion()
+	if err != nil {
+		return nil, errors.Wrap(err, "error getting API server version")
+	}
+	s.scope.V(1).Info("apiServer contacted", "version", apiServerVersion.String())
+
+	if err := s.scope.ApplyManifestsWithClientConfig(ctx, clientConfig); err != nil {
+		return nil, errors.Wrap(err, "error applying manifests to first API server")
+	}
+
+	providerID := fmt.Sprintf("hcloud://%d", actualServer.ID)
+	s.scope.HetznerMachine.Spec.ProviderID = &providerID
+	s.scope.HetznerMachine.Status.Ready = true
+
 	return nil, nil
+
 }
 
 func (s *Service) Delete(ctx context.Context) (_ *ctrl.Result, err error) {
@@ -233,6 +293,33 @@ func (s *Service) volumes(ctx context.Context) ([]*hcloud.Volume, error) {
 	}
 
 	return volumesSelected, nil
+}
+
+func setStatusFromAPI(status *infrav1.HetznerMachineStatus, server *hcloud.Server) error {
+	status.ServerState = infrav1.HetznerServerState(server.Status)
+	status.Addresses = []v1.NodeAddress{}
+
+	if ip := server.PublicNet.IPv4.IP.String(); ip != "" {
+		status.Addresses = append(
+			status.Addresses,
+			v1.NodeAddress{
+				Type:    v1.NodeExternalIP,
+				Address: ip,
+			},
+		)
+	}
+
+	if ip := server.PublicNet.IPv6.IP; ip.IsGlobalUnicast() {
+		ip[15] += 1
+		status.Addresses = append(
+			status.Addresses,
+			v1.NodeAddress{
+				Type:    v1.NodeExternalIP,
+				Address: ip.String(),
+			},
+		)
+	}
+	return nil
 }
 
 // actualStatus gathers all matching server instances, matched by tag

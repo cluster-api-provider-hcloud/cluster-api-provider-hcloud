@@ -16,6 +16,7 @@ limitations under the License.
 package v1alpha3
 
 import (
+	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -35,9 +36,15 @@ type HetznerMachineSpec struct {
 	Image *HetznerImageSpec `json:"image,omitempty"`
 
 	Type HetznerMachineTypeSpec `json:"type,omitempty"`
+
+	// ProviderID is the unique identifier as specified by the cloud provider.
+	// +optional
+	ProviderID *string `json:"providerID,omitempty"`
 }
 
 type HetznerMachineTypeSpec string
+
+type HetznerServerState string
 
 type HetznerImageID int
 
@@ -63,6 +70,13 @@ type HetznerMachineStatus struct {
 	// +optional
 	Ready bool `json:"ready"`
 
+	// Addresses contains the server's associated addresses.
+	Addresses []v1.NodeAddress `json:"addresses,omitempty"`
+
+	// ServerState is the state of the server for this machine.
+	// +optional
+	ServerState HetznerServerState `json:"serverState,omitempty"`
+
 	// KubeadmConfigResourceVersionConfigured keeps track of the ResourceVersion which we last reconfigured KubeadmConfig
 	// +optional
 	KubeadmConfigResourceVersionUpdated *string `json:"kubeadmConfigResourceVersionUpdated"`
@@ -71,6 +85,10 @@ type HetznerMachineStatus struct {
 // +kubebuilder:object:root=true
 // +kubebuilder:resource:path=hetznermachines,scope=Namespaced,categories=cluster-api
 // +kubebuilder:subresource:status
+// +kubebuilder:printcolumn:name="State",type="string",JSONPath=".status.serverState",description="Server state"
+// +kubebuilder:printcolumn:name="Ready",type="string",JSONPath=".status.ready",description="Machine ready status"
+// +kubebuilder:printcolumn:name="InstanceID",type="string",JSONPath=".spec.providerID",description="Hetzner instance ID"
+// +kubebuilder:printcolumn:name="Machine",type="string",JSONPath=".metadata.ownerReferences[?(@.kind==\"Machine\")].name",description="Machine object which owns with this HetznerMachine"
 
 // HetznerMachine is the Schema for the hetznermachine API
 type HetznerMachine struct {

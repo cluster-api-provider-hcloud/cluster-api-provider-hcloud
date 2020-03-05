@@ -163,10 +163,6 @@ func (r *HetznerMachineReconciler) reconcileDelete(machineScope *scope.MachineSc
 	hetznerMachine := machineScope.HetznerMachine
 
 	// delete servers
-	if result, err, brk := breakReconcile(server.NewService(machineScope).Reconcile(machineScope.Ctx)); brk {
-		return result, errors.Wrapf(err, "failed to reconcile server for HetznerMachine %s/%s", hetznerMachine.Namespace, hetznerMachine.Name)
-	}
-
 	if result, err, brk := breakReconcile(server.NewService(machineScope).Delete(machineScope.Ctx)); brk {
 		return result, errors.Wrapf(err, "failed to delete servers for HetznerMachine %s/%s", hetznerMachine.Namespace, hetznerMachine.Name)
 	}

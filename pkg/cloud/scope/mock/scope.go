@@ -8,6 +8,7 @@ import (
 	context "context"
 	gomock "github.com/golang/mock/gomock"
 	hcloud "github.com/hetznercloud/hcloud-go/hcloud"
+	clientcmd "k8s.io/client-go/tools/clientcmd"
 	reflect "reflect"
 )
 
@@ -285,6 +286,20 @@ func NewMockManifests(ctrl *gomock.Controller) *MockManifests {
 // EXPECT returns an object that allows the caller to indicate expected use
 func (m *MockManifests) EXPECT() *MockManifestsMockRecorder {
 	return m.recorder
+}
+
+// Apply mocks base method
+func (m *MockManifests) Apply(arg0 context.Context, arg1 clientcmd.ClientConfig, arg2 map[string]string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Apply", arg0, arg1, arg2)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// Apply indicates an expected call of Apply
+func (mr *MockManifestsMockRecorder) Apply(arg0, arg1, arg2 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Apply", reflect.TypeOf((*MockManifests)(nil).Apply), arg0, arg1, arg2)
 }
 
 // MockPacker is a mock of Packer interface

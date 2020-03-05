@@ -8,6 +8,23 @@ metadata:
   creationTimestamp: null
   name: hetznermachines.infrastructure.cluster.x-k8s.io
 spec:
+  additionalPrinterColumns:
+  - JSONPath: .status.serverState
+    description: Server state
+    name: State
+    type: string
+  - JSONPath: .status.ready
+    description: Machine ready status
+    name: Ready
+    type: string
+  - JSONPath: .spec.providerID
+    description: Hetzner instance ID
+    name: InstanceID
+    type: string
+  - JSONPath: .metadata.ownerReferences[?(@.kind=="Machine")].name
+    description: Machine object which owns with this HetznerMachine
+    name: Machine
+    type: string
   group: infrastructure.cluster.x-k8s.io
   names:
     categories:
@@ -94,6 +111,10 @@ spec:
               type: object
             location:
               type: string
+            providerID:
+              description: ProviderID is the unique identifier as specified by the
+                cloud provider.
+              type: string
             sshKeys:
               items:
                 properties:
@@ -156,6 +177,23 @@ spec:
         status:
           description: HetznerMachineStatus defines the observed state of HetznerMachine
           properties:
+            addresses:
+              description: Addresses contains the server's associated addresses.
+              items:
+                description: NodeAddress contains information for the node's address.
+                properties:
+                  address:
+                    description: The node address.
+                    type: string
+                  type:
+                    description: Node address type, one of Hostname, ExternalIP or
+                      InternalIP.
+                    type: string
+                required:
+                - address
+                - type
+                type: object
+              type: array
             imageID:
               type: integer
             kubeadmConfigResourceVersionUpdated:
@@ -169,6 +207,9 @@ spec:
             ready:
               description: Ready is true when the provider resource is ready.
               type: boolean
+            serverState:
+              description: ServerState is the state of the server for this machine.
+              type: string
           type: object
       type: object
   version: v1alpha3

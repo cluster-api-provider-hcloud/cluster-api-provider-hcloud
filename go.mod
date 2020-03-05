@@ -15,6 +15,7 @@ require (
 	github.com/onsi/gomega v1.7.0
 	github.com/pkg/errors v0.8.1
 	github.com/spf13/cobra v0.0.5
+	go.uber.org/zap v1.10.0
 	gopkg.in/yaml.v3 v3.0.0-20200121175148-a6ecf24a6d71
 	k8s.io/api v0.17.0
 	k8s.io/apiextensions-apiserver v0.17.0 // indirect

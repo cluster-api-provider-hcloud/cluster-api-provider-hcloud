@@ -70,8 +70,7 @@ type HetznerVolumeStatus struct {
 
 // +kubebuilder:object:root=true
 // +kubebuilder:resource:path=hetznervolumes,scope=Namespaced,categories=cluster-api
-// +kubebuilder:printcolumn:name="Location",type="string",JSONPath=".status.location",description="Location of the cluster"
-// +kubebuilder:printcolumn:name="NetworkZone",type="string",JSONPath=".status.networkZone",description="NetworkZone of the cluster"
+// +kubebuilder:printcolumn:name="Location",type="string",JSONPath=".status.location",description="Location of the volume"
 // +kubebuilder:subresource:status
 
 // HetznerVolume is the Schema for the hetznervolumes API

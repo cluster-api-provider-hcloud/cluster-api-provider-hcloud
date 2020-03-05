@@ -5,22 +5,36 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"net"
 	"path/filepath"
 	"sort"
 
 	"github.com/fatih/color"
 	jsonnet "github.com/google/go-jsonnet"
 	"gopkg.in/yaml.v3"
+	"k8s.io/apimachinery/pkg/util/intstr"
+
+	"github.com/simonswine/cluster-api-provider-hetzner/pkg/manifests/parameters"
 )
 
-var sampleData = map[string]string{
-	"hcloud-token":   "my-token",
-	"hcloud-network": "cluster-dev",
-	"pod-cidr-block": "192.168.128.0/17",
+func sampleParameters() *parameters.ManifestParameters {
+	hcloudNetwork := intstr.FromString("cluster-dev")
+	hcloudToken := "my-token"
+
+	_, podCIDRBlock, err := net.ParseCIDR("192.168.0.0/17")
+	if err != nil {
+		panic(err)
+	}
+
+	return &parameters.ManifestParameters{
+		HcloudToken:   &hcloudToken,
+		HcloudNetwork: &hcloudNetwork,
+		PodCIDRBlock:  podCIDRBlock,
+	}
 }
 
 func (m *Manifests) initializeConfig() (err error) {
-	if err := evaluateJsonnet(ioutil.Discard, m.manifestConfigPath, sampleData); err != nil {
+	if err := evaluateJsonnet(ioutil.Discard, m.manifestConfigPath, sampleParameters().ExtVar()); err != nil {
 		return err
 	}
 	m.log.V(1).Info("manifests config successfully validated", "path", m.manifestConfigPath)
