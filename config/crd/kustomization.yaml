@@ -8,6 +8,10 @@ resources:
 - bases/cluster-api-provider-hcloud.swine.dev_hcloudvolumes.yaml
 # +kubebuilder:scaffold:crdkustomizeresource
 
+commonLabels:
+  cluster.x-k8s.io/v1alpha3: v1alpha3
+  cluster.x-k8s.io/provide: infrastructure-hcloud
+
 patchesStrategicMerge:
 # [WEBHOOK] To enable webhook, uncomment all the sections with [WEBHOOK] prefix.
 # patches here are for enabling the conversion webhook for each CRD

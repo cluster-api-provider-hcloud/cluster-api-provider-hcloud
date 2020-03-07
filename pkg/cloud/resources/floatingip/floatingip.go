@@ -125,10 +125,10 @@ func (s *Service) createFloatingIP(ctx context.Context, spec infrav1.HcloudFloat
 	hc := s.scope.HcloudCluster
 	clusterTagKey := infrav1.ClusterTagKey(hc.Name)
 
-	if hc.Status.Location == "" {
-		return nil, errors.New("no location set on the cluster")
+	if len(hc.Status.Locations) == 0 {
+		return nil, errors.New("no locations set on the cluster")
 	}
-	homeLocation := &hcloud.Location{Name: string(hc.Status.Location)}
+	homeLocation := &hcloud.Location{Name: string(hc.Status.Locations[0])}
 	name := names.SimpleNameGenerator.GenerateName(hc.Name + "-control-plane-")
 	description := fmt.Sprintf("Kubernetes control plane %s", hc.Name)
 

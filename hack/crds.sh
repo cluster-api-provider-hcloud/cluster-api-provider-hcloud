@@ -43,7 +43,7 @@ set -o xtrace
    object:headerFile=./hack/boilerplate.go.txt paths="./..."
 
 "$controllergen" \
-   crd:trivialVersions=true rbac:roleName=manager-role webhook paths="./..." output:crd:artifacts:config=config/crd/bases
+   crd:crdVersions=v1 rbac:roleName=manager-role paths="./..." output:crd:dir=config/crd/bases
 set +o xtrace
 
 util::after_job $CMD

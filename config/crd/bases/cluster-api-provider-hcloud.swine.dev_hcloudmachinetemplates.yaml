@@ -1,6 +1,6 @@
 
 ---
-apiVersion: apiextensions.k8s.io/v1beta1
+apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
@@ -17,82 +17,79 @@ spec:
     plural: hcloudmachinetemplates
     singular: hcloudmachinetemplate
   scope: Namespaced
-  validation:
-    openAPIV3Schema:
-      description: HcloudMachineTemplate is the Schema for the hcloudmachine API
-      properties:
-        apiVersion:
-          description: 'APIVersion defines the versioned schema of this representation
-            of an object. Servers should convert recognized schemas to the latest
-            internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
-          type: string
-        kind:
-          description: 'Kind is a string value representing the REST resource this
-            object represents. Servers may infer this from the endpoint the client
-            submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
-          type: string
-        metadata:
-          type: object
-        spec:
-          description: HcloudMachineTemplateSpec defines the desired state of HcloudMachineTemplate
-          properties:
-            template:
-              description: HcloudMachineTemplateResource describes the data needed
-                to create am HcloudMachine from a template
-              properties:
-                spec:
-                  description: Spec is the specification of the desired behavior of
-                    the machine.
-                  properties:
-                    image:
-                      properties:
-                        id:
-                          type: integer
-                        name:
-                          type: string
-                      type: object
-                    location:
-                      type: string
-                    providerID:
-                      description: ProviderID is the unique identifier as specified
-                        by the cloud provider.
-                      type: string
-                    sshKeys:
-                      description: define Machine specific SSH keys, overrides cluster
-                        wide SSH keys
-                      items:
+  versions:
+  - name: v1alpha3
+    schema:
+      openAPIV3Schema:
+        description: HcloudMachineTemplate is the Schema for the hcloudmachine API
+        properties:
+          apiVersion:
+            description: 'APIVersion defines the versioned schema of this representation
+              of an object. Servers should convert recognized schemas to the latest
+              internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+            type: string
+          kind:
+            description: 'Kind is a string value representing the REST resource this
+              object represents. Servers may infer this from the endpoint the client
+              submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: HcloudMachineTemplateSpec defines the desired state of HcloudMachineTemplate
+            properties:
+              template:
+                description: HcloudMachineTemplateResource describes the data needed
+                  to create am HcloudMachine from a template
+                properties:
+                  spec:
+                    description: Spec is the specification of the desired behavior
+                      of the machine.
+                    properties:
+                      image:
                         properties:
                           id:
                             type: integer
                           name:
                             type: string
                         type: object
-                      type: array
-                    type:
-                      type: string
-                    volumes:
-                      items:
-                        description: HcloudMachineVolume represent a Volume attachment
-                        properties:
-                          mountPath:
-                            type: string
-                          name:
-                            type: string
-                          volumeRef:
-                            type: string
-                        type: object
-                      type: array
-                  type: object
-              required:
-              - spec
-              type: object
-          required:
-          - template
-          type: object
-      type: object
-  version: v1alpha3
-  versions:
-  - name: v1alpha3
+                      providerID:
+                        description: ProviderID is the unique identifier as specified
+                          by the cloud provider.
+                        type: string
+                      sshKeys:
+                        description: define Machine specific SSH keys, overrides cluster
+                          wide SSH keys
+                        items:
+                          properties:
+                            id:
+                              type: integer
+                            name:
+                              type: string
+                          type: object
+                        type: array
+                      type:
+                        type: string
+                      volumes:
+                        items:
+                          description: HcloudMachineVolume represent a Volume attachment
+                          properties:
+                            mountPath:
+                              type: string
+                            name:
+                              type: string
+                            volumeRef:
+                              type: string
+                          type: object
+                        type: array
+                    type: object
+                required:
+                - spec
+                type: object
+            required:
+            - template
+            type: object
+        type: object
     served: true
     storage: true
 status:

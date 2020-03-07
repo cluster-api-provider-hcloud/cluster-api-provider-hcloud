@@ -1,9 +1,9 @@
 package server
 
 import (
+	"bytes"
 	"context"
 	"fmt"
-	"strconv"
 	"time"
 
 	"github.com/hetznercloud/hcloud-go/hcloud"
@@ -11,15 +11,17 @@ import (
 	v1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/apiserver/pkg/storage/names"
 	"k8s.io/client-go/kubernetes"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha2"
+	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha3"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
+	kubeletv1beta1 "github.com/simonswine/cluster-api-provider-hcloud/api/kubelet/v1beta1"
 	infrav1 "github.com/simonswine/cluster-api-provider-hcloud/api/v1alpha3"
+	"github.com/simonswine/cluster-api-provider-hcloud/pkg/cloud/resources/server/userdata"
 	"github.com/simonswine/cluster-api-provider-hcloud/pkg/cloud/scope"
 	"github.com/simonswine/cluster-api-provider-hcloud/pkg/cloud/utils"
+	"github.com/simonswine/cluster-api-provider-hcloud/pkg/record"
 )
 
 type Service struct {
@@ -36,6 +38,15 @@ var errNotImplemented = errors.New("Not implemented")
 
 const etcdMountPath = "/var/lib/etcd"
 
+func stringSliceContains(s []string, e string) bool {
+	for _, a := range s {
+		if a == e {
+			return true
+		}
+	}
+	return false
+}
+
 func (s *Service) genericLabels() map[string]string {
 	return map[string]string{
 		infrav1.ClusterTagKey(s.scope.HcloudCluster.Name): string(infrav1.ResourceLifecycleOwned),
@@ -44,73 +55,17 @@ func (s *Service) genericLabels() map[string]string {
 
 func (s *Service) labels() map[string]string {
 	m := s.genericLabels()
-	m[infrav1.MachineNameTagKey] = s.scope.HcloudMachine.Name
+	m[infrav1.MachineNameTagKey] = s.scope.Name()
 	return m
 }
 
-func (s *Service) reconcileKubeadmConfig(ctx context.Context, volumes []*hcloud.Volume) (_ []byte, _ *ctrl.Result, err error) {
-
-	// if kubeadmConfig is not ready yet
-	if s.scope.KubeadmConfig == nil {
-		return nil, &ctrl.Result{RequeueAfter: 2 * time.Second}, nil
-	}
-
-	// configure control plane
-	if s.scope.IsControlPlane() {
-		k := s.newKubeadmConfig(s.scope.KubeadmConfig)
-
-		// reconfigure kubelet tls bootstrap behaviour
-		k.addKubeletConfigTLSBootstrap()
-
-		k.addControlPlaneConfig()
-
-		// adding volumes
-		for pos, volumeHcloud := range volumes {
-			volume := s.scope.HcloudMachine.Spec.Volumes[pos]
-			k.addVolumeMount(int64(volumeHcloud.ID), volume.MountPath)
-			if volume.MountPath == etcdMountPath {
-				k.addWaitForMount("kubelet.service.d/90-wait-for-mount.conf", volume.MountPath)
-			}
-		}
-
-		// check if config was just updated
-		if resourceVersionUpdated, err := k.update(ctx); err != nil {
-			return nil, nil, err
-		} else if resourceVersionUpdated != nil {
-			s.scope.HcloudMachine.Status.KubeadmConfigResourceVersionUpdated = resourceVersionUpdated
-			return nil, &ctrl.Result{RequeueAfter: 2 * time.Second}, nil
-		}
-
-		// ensure it resource version is bigger than at the time it had been last
-		// updated
-		if rvUpdatedStr :=
-			s.scope.HcloudMachine.Status.KubeadmConfigResourceVersionUpdated; rvUpdatedStr != nil {
-			rvUpdated, err := strconv.ParseInt(*rvUpdatedStr, 10, 64)
-			if err != nil {
-				return nil, nil, errors.Wrap(err, "error converting resourceVersionUpdated to int")
-			}
-
-			rvObserved, err := strconv.ParseInt(s.scope.KubeadmConfig.ResourceVersion, 10, 64)
-			if err != nil {
-				return nil, nil, errors.Wrap(err, "error converting resourceVersionUpdated to int")
-			}
-
-			if rvObserved <= rvUpdated {
-				k.s.scope.Info("observed resourceVersion of KubeadmConfig not bigger than resourceVersion when last updated", "observed", rvObserved, "lastUpdated", rvUpdated)
-				return nil, &ctrl.Result{RequeueAfter: 2 * time.Second}, nil
-			}
-		}
-	}
-
-	if !s.scope.KubeadmConfig.Status.Ready || len(s.scope.KubeadmConfig.Status.BootstrapData) == 0 {
-		s.scope.V(1).Info("bootstrapData not ready yet")
-		return nil, &ctrl.Result{RequeueAfter: 2 * time.Second}, nil
-	}
-
-	return s.scope.KubeadmConfig.Status.BootstrapData, nil, nil
-}
-
 func (s *Service) Reconcile(ctx context.Context) (_ *ctrl.Result, err error) {
+	// copy location information fron machine
+	if s.scope.Machine.Spec.FailureDomain == nil {
+		return nil, fmt.Errorf("Machine doesn't set a FailureDomain")
+	}
+	s.scope.HcloudMachine.Status.Location = infrav1.HcloudLocation(*s.scope.Machine.Spec.FailureDomain)
+
 	// gather image ID
 	imageID, err := s.findImageIDBySpec(s.scope.Ctx, s.scope.HcloudMachine.Spec.Image)
 	if err != nil {
@@ -146,10 +101,113 @@ func (s *Service) Reconcile(ctx context.Context) (_ *ctrl.Result, err error) {
 		}
 	}
 
-	// reconcile kubeadmConfig
-	userData, res, err := s.reconcileKubeadmConfig(ctx, volumes)
-	if err != nil || res != nil {
-		return res, err
+	userDataInitial, err := s.scope.GetRawBootstrapData(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	userData, err := userdata.NewFromReader(bytes.NewReader(userDataInitial))
+	if err != nil {
+		return nil, err
+	}
+
+	kubeadmConfig, err := userData.GetKubeadmConfig()
+	if err != nil {
+		return nil, err
+	}
+
+	cloudProviderKey := "cloud-provider"
+	cloudProviderValue := "external"
+
+	if s.scope.IsControlPlane() {
+		// set up iptables proxy
+		if kubeadmConfig.IsInit() {
+			iptablesProxy, err := s.getIPTablesProxyFile()
+			if err != nil {
+				return nil, err
+			}
+			if err := userData.SetOrUpdateFile(iptablesProxy); err != nil {
+				return nil, err
+			}
+
+			// enable TLS bootstrapping and rollover
+			kubeadmConfig.KubeletConfiguration = &kubeletv1beta1.KubeletConfiguration{
+				ServerTLSBootstrap: true,
+				RotateCertificates: true,
+			}
+
+			if i := kubeadmConfig.InitConfiguration; i != nil {
+				// set cloud provider external if nothing else is set
+				if i.NodeRegistration.KubeletExtraArgs == nil {
+					i.NodeRegistration.KubeletExtraArgs = make(map[string]string)
+				}
+				if _, ok := i.NodeRegistration.KubeletExtraArgs[cloudProviderKey]; !ok {
+					i.NodeRegistration.KubeletExtraArgs[cloudProviderKey] = cloudProviderValue
+				}
+			} else {
+				record.Warnf(
+					s.scope.HcloudMachine,
+					"UnexpectedUserData",
+					"UserData for a control plane comes without a InitConfiguration",
+				)
+			}
+
+			if c := kubeadmConfig.ClusterConfiguration; c != nil {
+				// set cloud provider external if nothing is set
+				if c.APIServer.ExtraArgs == nil {
+					c.APIServer.ExtraArgs = make(map[string]string)
+				}
+				if _, ok := c.APIServer.ExtraArgs[cloudProviderKey]; !ok {
+					c.APIServer.ExtraArgs[cloudProviderKey] = cloudProviderValue
+				}
+				if c.ControllerManager.ExtraArgs == nil {
+					c.ControllerManager.ExtraArgs = make(map[string]string)
+				}
+				if _, ok := c.ControllerManager.ExtraArgs[cloudProviderKey]; !ok {
+					c.ControllerManager.ExtraArgs[cloudProviderKey] = cloudProviderValue
+				}
+
+				// configure APIserver serving certificate
+				extraNames := []string{"127.0.0.1", "localhost"}
+				for _, name := range s.scope.HcloudCluster.Status.ControlPlaneFloatingIPs {
+					extraNames = append(extraNames, name.IP)
+				}
+				for _, name := range extraNames {
+					if !stringSliceContains(c.APIServer.CertSANs, name) {
+						c.APIServer.CertSANs = append(
+							c.APIServer.CertSANs,
+							name,
+						)
+					}
+				}
+			} else {
+				record.Warnf(
+					s.scope.HcloudMachine,
+					"UnexpectedUserData",
+					"UserData for a control plane comes without a ClusterConfiguration",
+				)
+			}
+		}
+	}
+
+	if j := kubeadmConfig.JoinConfiguration; j != nil {
+		if j.NodeRegistration.KubeletExtraArgs == nil {
+			j.NodeRegistration.KubeletExtraArgs = make(map[string]string)
+		}
+		if _, ok := j.NodeRegistration.KubeletExtraArgs[cloudProviderKey]; !ok {
+			j.NodeRegistration.KubeletExtraArgs[cloudProviderKey] = cloudProviderValue
+		}
+	}
+
+	// TODO: Handle volumes
+
+	if err := userData.SetKubeadmConfig(kubeadmConfig); err != nil {
+		return nil, err
+	}
+
+	userDataBytes := bytes.NewBuffer(nil)
+	if err := userData.WriteYAML(userDataBytes); err != nil {
+		return nil, err
 	}
 
 	// update current server
@@ -161,11 +219,7 @@ func (s *Service) Reconcile(ctx context.Context) (_ *ctrl.Result, err error) {
 	var myTrue = true
 	var myFalse = false
 	opts := hcloud.ServerCreateOpts{
-		Name: names.SimpleNameGenerator.GenerateName(fmt.Sprintf(
-			"%s-%s-",
-			s.scope.HcloudCluster.Name,
-			s.scope.Machine.Name,
-		)),
+		Name:   s.scope.Name(),
 		Labels: s.labels(),
 		Image: &hcloud.Image{
 			ID: int(*s.scope.HcloudMachine.Status.ImageID),
@@ -173,17 +227,12 @@ func (s *Service) Reconcile(ctx context.Context) (_ *ctrl.Result, err error) {
 		Location: &hcloud.Location{
 			Name: string(s.scope.HcloudMachine.Status.Location),
 		},
-		SSHKeys: []*hcloud.SSHKey{
-			{
-				ID: 91895,
-			},
-		},
 		ServerType: &hcloud.ServerType{
 			Name: string(s.scope.HcloudMachine.Spec.Type),
 		},
 		Automount:        &myFalse,
 		StartAfterCreate: &myTrue,
-		UserData:         string(userData),
+		UserData:         userDataBytes.String(),
 		Volumes:          volumes,
 	}
 
@@ -223,6 +272,12 @@ func (s *Service) Reconcile(ctx context.Context) (_ *ctrl.Result, err error) {
 		if res, _, err := s.scope.HcloudClient().CreateServer(s.scope.Ctx, opts); err != nil {
 			return nil, errors.Wrap(err, "failed to create server")
 		} else {
+			record.Eventf(
+				s.scope.HcloudMachine,
+				"SuccessfulCreate",
+				"Created new server with id %d",
+				res.Server.ID,
+			)
 			actualServer = res.Server
 		}
 	} else if len(actualServers) == 1 {
@@ -372,6 +427,18 @@ func setStatusFromAPI(status *infrav1.HcloudMachineStatus, server *hcloud.Server
 			},
 		)
 	}
+
+	for _, net := range server.PrivateNet {
+		status.Addresses = append(
+			status.Addresses,
+			v1.NodeAddress{
+				Type:    v1.NodeInternalIP,
+				Address: net.IP.String(),
+			},
+		)
+
+	}
+
 	return nil
 }
 

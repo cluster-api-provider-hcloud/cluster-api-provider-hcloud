@@ -18,7 +18,8 @@ package v1alpha3
 import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha2"
+	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha3"
+	"sigs.k8s.io/cluster-api/errors"
 )
 
 const (
@@ -41,7 +42,7 @@ const (
 
 // HcloudClusterSpec defines the desired state of HcloudCluster
 type HcloudClusterSpec struct {
-	Location HcloudLocation `json:"location,omitempty"`
+	Locations []HcloudLocation `json:"locations,omitempty"`
 
 	// define cluster wide SSH keys
 	SSHKeys []HcloudSSHKeySpec `json:"sshKeys,omitempty"`
@@ -49,6 +50,10 @@ type HcloudClusterSpec struct {
 	// +kubebuilder:validation:MinItems=1
 	// +kubebuilder:validation:MaxItems=10
 	ControlPlaneFloatingIPs []HcloudFloatingIPSpec `json:"controlPlaneFloatingIPs,omitempty"`
+
+	// ControlPlaneEndpoint represents the endpoint used to communicate with the control plane.
+	// +optional
+	ControlPlaneEndpoint clusterv1.APIEndpoint `json:"controlPlaneEndpoint"`
 
 	Network *HcloudNetworkSpec `json:"network,omitempty"`
 
@@ -95,25 +100,67 @@ type HcloudFloatingIPStatus struct {
 
 // HcloudClusterStatus defines the observed state of HcloudCluster
 type HcloudClusterStatus struct {
-	Location                HcloudLocation           `json:"location,omitempty"`
+	Locations               []HcloudLocation         `json:"locations,omitempty"`
 	NetworkZone             HcloudNetworkZone        `json:"networkZone,omitempty"`
 	ControlPlaneFloatingIPs []HcloudFloatingIPStatus `json:"controlPlaneFloatingIPs,omitempty"`
+
+	// +optional
+	Network *HcloudNetworkStatus `json:"network,omitempty"`
 
 	// Ready is true when the provider resource is ready.
 	// +optional
 	Ready bool `json:"ready"`
 
-	// +optional
-	Network *HcloudNetworkStatus `json:"network,omitempty"`
+	// FailureDomains contains the failure domains that machines should be
+	// placed in. failureDomains is a map, defined as
+	// map[string]FailureDomainSpec. A unique key must be used for each
+	// FailureDomainSpec
+	FailureDomains clusterv1.FailureDomains `json:"failureDomains,omitempty"`
 
-	// APIEndpoints represents the endpoints to communicate with the control plane.
+	// FailureReason will be set in the event that there is a terminal problem
+	// reconciling the Machine and will contain a succinct value suitable
+	// for machine interpretation.
+	//
+	// This field should not be set for transitive errors that a controller
+	// faces that are expected to be fixed automatically over
+	// time (like service outages), but instead indicate that something is
+	// fundamentally wrong with the Machine's spec or the configuration of
+	// the controller, and that manual intervention is required. Examples
+	// of terminal errors would be invalid combinations of settings in the
+	// spec, values that are unsupported by the controller, or the
+	// responsible controller itself being critically misconfigured.
+	//
+	// Any transient errors that occur during the reconciliation of Machines
+	// can be added as events to the Machine object and/or logged in the
+	// controller's output.
 	// +optional
-	APIEndpoints []clusterv1.APIEndpoint `json:"apiEndpoints,omitempty"`
+	FailureReason *errors.MachineStatusError `json:"failureReason,omitempty"`
+
+	// FailureMessage will be set in the event that there is a terminal problem
+	// reconciling the Machine and will contain a more verbose string suitable
+	// for logging and human consumption.
+	//
+	// This field should not be set for transitive errors that a controller
+	// faces that are expected to be fixed automatically over
+	// time (like service outages), but instead indicate that something is
+	// fundamentally wrong with the Machine's spec or the configuration of
+	// the controller, and that manual intervention is required. Examples
+	// of terminal errors would be invalid combinations of settings in the
+	// spec, values that are unsupported by the controller, or the
+	// responsible controller itself being critically misconfigured.
+	//
+	// Any transient errors that occur during the reconciliation of Machines
+	// can be added as events to the Machine object and/or logged in the
+	// controller's output.
+	// +optional
+	FailureMessage *string `json:"failureMessage,omitempty"`
 }
 
 // +kubebuilder:object:root=true
 // +kubebuilder:resource:path=hcloudclusters,scope=Namespaced,categories=cluster-api
-// +kubebuilder:printcolumn:name="Location",type="string",JSONPath=".status.location",description="Location of the cluster"
+// +kubebuilder:storageversion
+// +kubebuilder:subresource:status
+// +kubebuilder:printcolumn:name="Locations",type="string",JSONPath=".status.locations",description="Locations of the cluster"
 // +kubebuilder:printcolumn:name="NetworkZone",type="string",JSONPath=".status.networkZone",description="NetworkZone of the cluster"
 // +kubebuilder:subresource:status
 

@@ -18,6 +18,7 @@ package v1alpha3
 import (
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"sigs.k8s.io/cluster-api/errors"
 )
 
 const (
@@ -29,8 +30,6 @@ const (
 
 // HcloudMachineSpec defines the desired state of HcloudMachine
 type HcloudMachineSpec struct {
-	Location HcloudLocation `json:"location,omitempty"`
-
 	// define Machine specific SSH keys, overrides cluster wide SSH keys
 	SSHKeys []HcloudSSHKeySpec `json:"sshKeys,omitempty"`
 
@@ -74,6 +73,10 @@ type HcloudMachineStatus struct {
 	NetworkZone HcloudNetworkZone `json:"networkZone,omitempty"`
 	ImageID     *HcloudImageID    `json:"imageID,omitempty"`
 
+	// ServerState is the state of the server for this machine.
+	// +optional
+	ServerState HcloudServerState `json:"serverState,omitempty"`
+
 	// Ready is true when the provider resource is ready.
 	// +optional
 	Ready bool `json:"ready"`
@@ -81,17 +84,48 @@ type HcloudMachineStatus struct {
 	// Addresses contains the server's associated addresses.
 	Addresses []v1.NodeAddress `json:"addresses,omitempty"`
 
-	// ServerState is the state of the server for this machine.
+	// FailureReason will be set in the event that there is a terminal problem
+	// reconciling the Machine and will contain a succinct value suitable
+	// for machine interpretation.
+	//
+	// This field should not be set for transitive errors that a controller
+	// faces that are expected to be fixed automatically over
+	// time (like service outages), but instead indicate that something is
+	// fundamentally wrong with the Machine's spec or the configuration of
+	// the controller, and that manual intervention is required. Examples
+	// of terminal errors would be invalid combinations of settings in the
+	// spec, values that are unsupported by the controller, or the
+	// responsible controller itself being critically misconfigured.
+	//
+	// Any transient errors that occur during the reconciliation of Machines
+	// can be added as events to the Machine object and/or logged in the
+	// controller's output.
 	// +optional
-	ServerState HcloudServerState `json:"serverState,omitempty"`
+	FailureReason *errors.MachineStatusError `json:"failureReason,omitempty"`
 
-	// KubeadmConfigResourceVersionConfigured keeps track of the ResourceVersion which we last reconfigured KubeadmConfig
+	// FailureMessage will be set in the event that there is a terminal problem
+	// reconciling the Machine and will contain a more verbose string suitable
+	// for logging and human consumption.
+	//
+	// This field should not be set for transitive errors that a controller
+	// faces that are expected to be fixed automatically over
+	// time (like service outages), but instead indicate that something is
+	// fundamentally wrong with the Machine's spec or the configuration of
+	// the controller, and that manual intervention is required. Examples
+	// of terminal errors would be invalid combinations of settings in the
+	// spec, values that are unsupported by the controller, or the
+	// responsible controller itself being critically misconfigured.
+	//
+	// Any transient errors that occur during the reconciliation of Machines
+	// can be added as events to the Machine object and/or logged in the
+	// controller's output.
 	// +optional
-	KubeadmConfigResourceVersionUpdated *string `json:"kubeadmConfigResourceVersionUpdated"`
+	FailureMessage *string `json:"failureMessage,omitempty"`
 }
 
 // +kubebuilder:object:root=true
 // +kubebuilder:resource:path=hcloudmachines,scope=Namespaced,categories=cluster-api
+// +kubebuilder:storageversion
 // +kubebuilder:subresource:status
 // +kubebuilder:printcolumn:name="State",type="string",JSONPath=".status.serverState",description="Server state"
 // +kubebuilder:printcolumn:name="Ready",type="string",JSONPath=".status.ready",description="Machine ready status"

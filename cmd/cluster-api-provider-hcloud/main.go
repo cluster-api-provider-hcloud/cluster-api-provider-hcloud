@@ -7,8 +7,8 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
-	bootstrapv1 "sigs.k8s.io/cluster-api-bootstrap-provider-kubeadm/api/v1alpha2"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha2"
+	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha3"
+	bootstrapv1 "sigs.k8s.io/cluster-api/bootstrap/kubeadm/api/v1alpha3"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
@@ -17,6 +17,7 @@ import (
 	"github.com/simonswine/cluster-api-provider-hcloud/controllers"
 	"github.com/simonswine/cluster-api-provider-hcloud/pkg/manifests"
 	"github.com/simonswine/cluster-api-provider-hcloud/pkg/packer"
+	"github.com/simonswine/cluster-api-provider-hcloud/pkg/record"
 	// +kubebuilder:scaffold:imports
 )
 
@@ -80,6 +81,9 @@ var rootCmd = &cobra.Command{
 			setupLog.Error(err, "unable to start manager")
 			os.Exit(1)
 		}
+
+		// Initialize event recorder.
+		record.InitFromRecorder(mgr.GetEventRecorderFor("hcloud-controller"))
 
 		if err = (&controllers.HcloudClusterReconciler{
 			Client:    mgr.GetClient(),

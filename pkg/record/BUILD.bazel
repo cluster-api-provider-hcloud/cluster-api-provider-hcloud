@@ -2,13 +2,13 @@ load("@io_bazel_rules_go//go:def.bzl", "go_library")
 
 go_library(
     name = "go_default_library",
-    srcs = ["location.go"],
-    importpath = "github.com/simonswine/cluster-api-provider-hcloud/pkg/cloud/resources/location",
+    srcs = ["recorder.go"],
+    importpath = "github.com/simonswine/cluster-api-provider-hcloud/pkg/record",
     visibility = ["//visibility:public"],
     deps = [
-        "//api/v1alpha3:go_default_library",
-        "//pkg/cloud/scope:go_default_library",
-        "@com_github_hetznercloud_hcloud_go//hcloud:go_default_library",
+        "@io_k8s_api//core/v1:go_default_library",
+        "@io_k8s_apimachinery//pkg/runtime:go_default_library",
+        "@io_k8s_client_go//tools/record:go_default_library",
     ],
 )
 

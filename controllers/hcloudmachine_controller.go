@@ -22,20 +22,18 @@ import (
 	"github.com/pkg/errors"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/types"
-	bootstrapv1 "sigs.k8s.io/cluster-api-bootstrap-provider-kubeadm/api/v1alpha2"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha2"
+	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha3"
 	"sigs.k8s.io/cluster-api/util"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	controllerclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
 	infrav1 "github.com/simonswine/cluster-api-provider-hcloud/api/v1alpha3"
-	"github.com/simonswine/cluster-api-provider-hcloud/pkg/cloud/resources/location"
 	"github.com/simonswine/cluster-api-provider-hcloud/pkg/cloud/resources/server"
 	"github.com/simonswine/cluster-api-provider-hcloud/pkg/cloud/scope"
 	"github.com/simonswine/cluster-api-provider-hcloud/pkg/manifests"
@@ -54,7 +52,6 @@ type HcloudMachineReconciler struct {
 // +kubebuilder:rbac:groups=cluster-api-provider-hcloud.swine.dev,resources=hcloudmachines,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=cluster-api-provider-hcloud.swine.dev,resources=hcloudmachines/status,verbs=get;update;patch
 // +kubebuilder:rbac:groups=cluster.x-k8s.io,resources=machines;machines/status,verbs=get;list;watch
-// +kubebuilder:rbac:groups=bootstrap.cluster.x-k8s.io,resources=kubeadmconfigs,verbs=get;list;watch;update;patch
 
 func (r *HcloudMachineReconciler) Reconcile(req ctrl.Request) (_ ctrl.Result, reterr error) {
 	ctx := context.TODO()
@@ -80,20 +77,6 @@ func (r *HcloudMachineReconciler) Reconcile(req ctrl.Request) (_ ctrl.Result, re
 		return reconcile.Result{}, nil
 	}
 	log = log.WithValues("machine", machine.Name)
-
-	// Fetch the related KubeadmConfig (if it exists at all)
-	kubeadmConfig := &bootstrapv1.KubeadmConfig{}
-	kubeadmConfigKey := types.NamespacedName{
-		Namespace: req.Namespace,
-		Name:      machine.Spec.Bootstrap.ConfigRef.Name,
-	}
-	err = r.Get(ctx, kubeadmConfigKey, kubeadmConfig)
-	if err != nil {
-		if !apierrors.IsNotFound(err) {
-			return reconcile.Result{}, err
-		}
-		kubeadmConfig = nil
-	}
 
 	// Fetch the Cluster.
 	cluster, err := util.GetClusterFromMetadata(ctx, r.Client, machine.ObjectMeta)
@@ -127,7 +110,6 @@ func (r *HcloudMachineReconciler) Reconcile(req ctrl.Request) (_ ctrl.Result, re
 			Packer:        r.Packer,
 			Manifests:     r.Manifests,
 		},
-		KubeadmConfig: kubeadmConfig,
 		Machine:       machine,
 		HcloudMachine: hcloudMachine,
 	})
@@ -135,7 +117,7 @@ func (r *HcloudMachineReconciler) Reconcile(req ctrl.Request) (_ ctrl.Result, re
 		return reconcile.Result{}, errors.Errorf("failed to create scope: %+v", err)
 	}
 
-	// Always close the scope when exiting this function so we can persist any AWSMachine changes.
+	// Always close the scope when exiting this function so we can persist any HcloudMachine changes.
 	defer func() {
 		if err := machineScope.Close(); err != nil && reterr == nil {
 			reterr = err
@@ -169,7 +151,7 @@ func (r *HcloudMachineReconciler) reconcileDelete(machineScope *scope.MachineSco
 	}
 
 	// Machine is deleted so remove the finalizer.
-	machineScope.HcloudMachine.Finalizers = util.Filter(machineScope.HcloudMachine.Finalizers, infrav1.MachineFinalizer)
+	controllerutil.RemoveFinalizer(machineScope.HcloudMachine, infrav1.MachineFinalizer)
 
 	return reconcile.Result{}, nil
 }
@@ -179,13 +161,12 @@ func (r *HcloudMachineReconciler) reconcileNormal(machineScope *scope.MachineSco
 	hcloudMachine := machineScope.HcloudMachine
 
 	// If the HcloudMachine doesn't have our finalizer, add it.
-	if !util.Contains(hcloudMachine.Finalizers, infrav1.MachineFinalizer) {
-		hcloudMachine.Finalizers = append(hcloudMachine.Finalizers, infrav1.MachineFinalizer)
-	}
+	controllerutil.AddFinalizer(machineScope.HcloudMachine, infrav1.MachineFinalizer)
 
-	// ensure a valid location is set
-	if err := location.NewService(machineScope).Reconcile(machineScope.Ctx); err != nil {
-		return reconcile.Result{}, errors.Wrapf(err, "failed to reconcile location for HcloudMachine %s/%s", hcloudMachine.Namespace, hcloudMachine.Name)
+	// Register the finalizer immediately to avoid orphaning Hcloud resources
+	// on delete
+	if err := machineScope.PatchObject(machineScope.Ctx); err != nil {
+		return ctrl.Result{}, err
 	}
 
 	// reconcile server
@@ -234,7 +215,7 @@ func (r *HcloudMachineReconciler) HcloudClusterToHcloudMachines(o handler.MapObj
 		return result
 	}
 
-	labels := map[string]string{clusterv1.MachineClusterLabelName: cluster.Name}
+	labels := map[string]string{clusterv1.ClusterLabelName: cluster.Name}
 	machineList := &clusterv1.MachineList{}
 	if err := r.List(context.TODO(), machineList, client.InNamespace(c.Namespace), client.MatchingLabels(labels)); err != nil {
 		log.Error(err, "failed to list Machines")
