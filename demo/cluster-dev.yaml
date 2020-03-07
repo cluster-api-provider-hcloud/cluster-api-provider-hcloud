@@ -9,7 +9,6 @@ spec:
     key: token
   controlPlaneFloatingIPs:
     - type: IPv4
-    - type: IPv6
 ---
 apiVersion: v1
 kind: Secret

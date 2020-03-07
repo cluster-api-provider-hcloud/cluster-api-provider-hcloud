@@ -85,6 +85,7 @@ func (m *Manifests) Apply(ctx context.Context, client clientcmd.ClientConfig, ex
 	}
 
 	if err := cmdApply.Wait(); err != nil {
+		m.log.V(0).Info("kubectl failed", "stdout", stdOut.String(), "stderr", stdErr.String())
 		return errors.Wrap(err, "error kubectl apply failed")
 	}
 

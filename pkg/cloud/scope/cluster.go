@@ -181,6 +181,13 @@ func (s *ClusterScope) ClientConfigWithAPIEndpoint(endpoint clusterv1.APIEndpoin
 func (s *ClusterScope) manifestParameters() (*parameters.ManifestParameters, error) {
 	var p parameters.ManifestParameters
 
+	for _, floatingIP := range s.HetznerCluster.Status.ControlPlaneFloatingIPs {
+		p.HcloudFloatingIPs = append(
+			p.HcloudFloatingIPs,
+			floatingIP.IP,
+		)
+	}
+
 	p.HcloudToken = &s.hetznerToken
 
 	if s.HetznerCluster.Status.Network == nil {
