@@ -9,6 +9,8 @@ import (
 	"github.com/hetznercloud/hcloud-go/hcloud"
 	"github.com/pkg/errors"
 	v1 "k8s.io/api/core/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apiserver/pkg/storage/names"
 	"k8s.io/client-go/kubernetes"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha2"
@@ -32,6 +34,8 @@ func NewService(scope *scope.MachineScope) *Service {
 
 var errNotImplemented = errors.New("Not implemented")
 
+const etcdMountPath = "/var/lib/etcd"
+
 func (s *Service) genericLabels() map[string]string {
 	return map[string]string{
 		infrav1.ClusterTagKey(s.scope.HcloudCluster.Name): string(infrav1.ResourceLifecycleOwned),
@@ -52,16 +56,22 @@ func (s *Service) reconcileKubeadmConfig(ctx context.Context, volumes []*hcloud.
 	}
 
 	k := s.newKubeadmConfig(s.scope.KubeadmConfig)
+
+	// reconfigure kubelet tls bootstrap behaviour
 	k.addKubeletConfigTLSBootstrap()
 
+	// configure control plane
+	if _, ok := s.scope.HcloudMachine.Labels[clusterv1.MachineControlPlaneLabelName]; ok {
+		k.addControlPlaneConfig()
+	}
+
 	// adding volumes
-	for pos, volume := range volumes {
-		if pos > 1 {
-			return nil, nil, fmt.Errorf("found more than a single, which is not expected volumes: %+#v", volumes)
+	for pos, volumeHcloud := range volumes {
+		volume := s.scope.HcloudMachine.Spec.Volumes[pos]
+		k.addVolumeMount(int64(volumeHcloud.ID), volume.MountPath)
+		if volume.MountPath == etcdMountPath {
+			k.addWaitForMount("kubelet.service.d/90-wait-for-mount.conf", volume.MountPath)
 		}
-		mountPath := "/var/lib/etcd"
-		k.addVolumeMount(int64(volume.ID), mountPath)
-		k.addWaitForMount("kubelet.service.d/90-wait-for-mount.conf", mountPath)
 	}
 
 	// check if config was just updated
@@ -109,9 +119,28 @@ func (s *Service) Reconcile(ctx context.Context) (_ *ctrl.Result, err error) {
 	s.scope.HcloudMachine.Status.ImageID = imageID
 
 	// gather volumes
-	volumes, err := s.volumes(ctx)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to find volumes for server")
+	volumes := make([]*hcloud.Volume, len(s.scope.HcloudMachine.Spec.Volumes))
+	for pos, volume := range s.scope.HcloudMachine.Spec.Volumes {
+		volumeObjectKey := types.NamespacedName{Namespace: s.scope.HcloudMachine.Namespace, Name: volume.VolumeRef}
+		var hcloudVolume infrav1.HcloudVolume
+		err := s.scope.Client.Get(
+			ctx,
+			volumeObjectKey,
+			&hcloudVolume,
+		)
+		if apierrors.IsNotFound(err) {
+			s.scope.V(1).Info("HcloudVolume is not found", "hcloudVolume", volumeObjectKey)
+			return &reconcile.Result{}, nil
+		} else if err != nil {
+			return nil, err
+		}
+		if hcloudVolume.Status.VolumeID == nil {
+			s.scope.V(1).Info("HcloudVolume is not existing yet", "hcloudVolume", volumeObjectKey)
+			return &reconcile.Result{}, nil
+		}
+		volumes[pos] = &hcloud.Volume{
+			ID: int(*hcloudVolume.Status.VolumeID),
+		}
 	}
 
 	// reconcile kubeadmConfig
@@ -275,24 +304,6 @@ func (s *Service) Delete(ctx context.Context) (_ *ctrl.Result, err error) {
 	}
 
 	return result, nil
-}
-
-func (s *Service) volumes(ctx context.Context) ([]*hcloud.Volume, error) {
-	opts := hcloud.VolumeListOpts{}
-	opts.LabelSelector = utils.LabelsToLabelSelector(s.genericLabels())
-	volumes, err := s.scope.HcloudClient().ListVolumes(s.scope.Ctx, opts)
-	if err != nil {
-		return nil, err
-	}
-
-	var volumesSelected []*hcloud.Volume
-	for _, v := range volumes {
-		if v.Name == fmt.Sprintf("%s-%s", s.scope.HcloudCluster.Name, s.scope.HcloudMachine.Name) {
-			volumesSelected = append(volumesSelected, v)
-		}
-	}
-
-	return volumesSelected, nil
 }
 
 func setStatusFromAPI(status *infrav1.HcloudMachineStatus, server *hcloud.Server) error {

@@ -173,6 +173,18 @@ spec:
               type: array
             type:
               type: string
+            volumes:
+              items:
+                description: HcloudMachineVolume represent a Volume attachment
+                properties:
+                  mountPath:
+                    type: string
+                  name:
+                    type: string
+                  volumeRef:
+                    type: string
+                type: object
+              type: array
           type: object
         status:
           description: HcloudMachineStatus defines the observed state of HcloudMachine

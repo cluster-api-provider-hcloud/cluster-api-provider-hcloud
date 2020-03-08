@@ -37,6 +37,8 @@ type HcloudMachineSpec struct {
 
 	Type HcloudMachineTypeSpec `json:"type,omitempty"`
 
+	Volumes []HcloudMachineVolume `json:"volumes,omitempty"`
+
 	// ProviderID is the unique identifier as specified by the cloud provider.
 	// +optional
 	ProviderID *string `json:"providerID,omitempty"`
@@ -52,6 +54,13 @@ type HcloudSSHKeySpec struct {
 	LabelSelector *metav1.LabelSelector `json:"labelSelector,omitempty"`
 	Name          *string               `json:"name,omitempty"`
 	ID            *string               `json:"id,omitempty"`
+}
+
+// HcloudMachineVolume represent a Volume attachment
+type HcloudMachineVolume struct {
+	Name      string `json:"name,omitempty"`
+	VolumeRef string `json:"volumeRef,omitempty"`
+	MountPath string `json:"mountPath,omitempty"`
 }
 
 type HcloudImageSpec struct {
