@@ -8,6 +8,7 @@ import (
 	"github.com/coreos/go-systemd/unit"
 	"github.com/pkg/errors"
 	bootstrapv1 "sigs.k8s.io/cluster-api-bootstrap-provider-kubeadm/api/v1alpha2"
+	kubeadmv1beta1 "sigs.k8s.io/cluster-api-bootstrap-provider-kubeadm/kubeadm/v1beta1"
 )
 
 const (
@@ -90,9 +91,18 @@ func (k *kubeadmConfig) update(ctx context.Context) (*string, error) {
 		return nil, nil
 	}
 
+	resourceVersionBefore := k.s.scope.KubeadmConfig.ObjectMeta.ResourceVersion
 	if err := k.s.scope.Client.Update(ctx, k.s.scope.KubeadmConfig); err != nil {
 		return nil, errors.Wrap(err, "error updating changed KubeadmConfig")
 	}
+
+	k.s.scope.V(1).Info(
+		"kubeadmConfig updated",
+		"resourceVersionBefore",
+		resourceVersionBefore,
+		"resourceVersionAfter",
+		k.s.scope.KubeadmConfig.ObjectMeta.ResourceVersion,
+	)
 
 	return &k.s.scope.KubeadmConfig.ObjectMeta.ResourceVersion, nil
 }
@@ -106,17 +116,16 @@ func stringSliceContains(s []string, e string) bool {
 	return false
 }
 
-func (s *kubeadmConfig) ensureKubeadmConfigParts() {
-
+func (k *kubeadmConfig) ensureKubeadmConfigParts() {
 	cmdMoveConfig := fmt.Sprintf(
 		`mv "%s" "%s"`,
 		kubeadmConfigPath,
 		kubeadmConfigPartsPath(20, "base"),
 	)
-	if !stringSliceContains(s.s.scope.KubeadmConfig.Spec.PreKubeadmCommands, cmdMoveConfig) {
-		s.s.scope.KubeadmConfig.Spec.PreKubeadmCommands = append(
+	if !stringSliceContains(k.s.scope.KubeadmConfig.Spec.PreKubeadmCommands, cmdMoveConfig) {
+		k.s.scope.KubeadmConfig.Spec.PreKubeadmCommands = append(
 			[]string{cmdMoveConfig},
-			s.s.scope.KubeadmConfig.Spec.PreKubeadmCommands...,
+			k.s.scope.KubeadmConfig.Spec.PreKubeadmCommands...,
 		)
 	}
 
@@ -125,25 +134,47 @@ func (s *kubeadmConfig) ensureKubeadmConfigParts() {
 		fmt.Sprintf(kubeadmConfigPartsPathTemplate, `"*"`),
 		kubeadmConfigPath,
 	)
-	if !stringSliceContains(s.s.scope.KubeadmConfig.Spec.PreKubeadmCommands, cmdAggregateConfig) {
-		s.s.scope.KubeadmConfig.Spec.PreKubeadmCommands = append(
-			s.s.scope.KubeadmConfig.Spec.PreKubeadmCommands,
+	if !stringSliceContains(k.s.scope.KubeadmConfig.Spec.PreKubeadmCommands, cmdAggregateConfig) {
+		k.s.scope.KubeadmConfig.Spec.PreKubeadmCommands = append(
+			k.s.scope.KubeadmConfig.Spec.PreKubeadmCommands,
 			cmdAggregateConfig,
 		)
 	}
+}
 
-	// TODO: Only do this one the control planes
+func (k *kubeadmConfig) addControlPlaneConfig() {
+	// TODO: set external cloud-provider if not set
+	// remove the controlPlaneEndpoint to make api server connect locally
 	cmdRemoveControlPlane := fmt.Sprintf(
 		"sed -i '/controlPlaneEndpoint: /d' '%s'",
 		kubeadmConfigPath,
 	)
-	if !stringSliceContains(s.s.scope.KubeadmConfig.Spec.PreKubeadmCommands, cmdRemoveControlPlane) {
-		s.s.scope.KubeadmConfig.Spec.PreKubeadmCommands = append(
-			s.s.scope.KubeadmConfig.Spec.PreKubeadmCommands,
+	if !stringSliceContains(k.s.scope.KubeadmConfig.Spec.PreKubeadmCommands, cmdRemoveControlPlane) {
+		k.s.scope.KubeadmConfig.Spec.PreKubeadmCommands = append(
+			k.s.scope.KubeadmConfig.Spec.PreKubeadmCommands,
 			cmdRemoveControlPlane,
 		)
 	}
 
+	// add extra dns names to apiserver certificate
+	if k.s.scope.KubeadmConfig.Spec.ClusterConfiguration == nil {
+		k.s.scope.KubeadmConfig.Spec.ClusterConfiguration = &kubeadmv1beta1.ClusterConfiguration{}
+	}
+	apiServer := &k.s.scope.KubeadmConfig.Spec.ClusterConfiguration.APIServer
+
+	// add localhost and floating point addresses
+	hosts := []string{"127.0.0.1", "localhost"}
+	for _, apiEndpoint := range k.s.scope.Cluster.Status.APIEndpoints {
+		hosts = append(hosts, apiEndpoint.Host)
+	}
+	for _, host := range hosts {
+		if !stringSliceContains(apiServer.CertSANs, host) {
+			apiServer.CertSANs = append(
+				apiServer.CertSANs,
+				host,
+			)
+		}
+	}
 }
 
 func (k *kubeadmConfig) addKubeletConfigTLSBootstrap() {

@@ -61,7 +61,7 @@ func (s *Service) reconcileKubeadmConfig(ctx context.Context, volumes []*hcloud.
 	k.addKubeletConfigTLSBootstrap()
 
 	// configure control plane
-	if _, ok := s.scope.HcloudMachine.Labels[clusterv1.MachineControlPlaneLabelName]; ok {
+	if _, ok := s.scope.Machine.Labels[clusterv1.MachineControlPlaneLabelName]; ok {
 		k.addControlPlaneConfig()
 	}
 
