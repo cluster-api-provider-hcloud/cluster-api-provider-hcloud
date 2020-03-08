@@ -1,7 +1,6 @@
 local calico = import 'calico/calico.libsonnet';
 local hcloudCloudControllerManager = import 'hcloud-cloud-controller-manager/hcloud-cloud-controller-manager.libsonnet';
 local hcloudCSI = import 'hcloud-csi/hcloud-csi.libsonnet';
-local hcloudIPFloater = import 'hcloud-ip-floater/hcloud-ip-floater.libsonnet';
 local metricsServer = import 'metrics-server/metrics-server.libsonnet';
 local apiServerKeepalived = (import 'kube-keepalived-vip/kube-keepalived-vip.libsonnet') {
   _config+:: {
@@ -72,7 +71,6 @@ local apiServerKeepalived = (import 'kube-keepalived-vip/kube-keepalived-vip.lib
     calico +
     hcloudCloudControllerManager +
     hcloudCSI +
-    hcloudIPFloater +
     metricsServer +
     apiServerKeepalived +
     {
