@@ -3,11 +3,11 @@ load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
 go_library(
     name = "go_default_library",
     srcs = [
-        "hetznercluster_controller.go",
-        "hetznermachine_controller.go",
-        "hetznervolume_controller.go",
+        "hcloudcluster_controller.go",
+        "hcloudmachine_controller.go",
+        "hcloudvolume_controller.go",
     ],
-    importpath = "github.com/simonswine/cluster-api-provider-hetzner/controllers",
+    importpath = "github.com/simonswine/cluster-api-provider-hcloud/controllers",
     visibility = ["//visibility:public"],
     deps = [
         "//api/v1alpha3:go_default_library",

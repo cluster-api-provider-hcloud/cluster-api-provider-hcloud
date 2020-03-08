@@ -7,7 +7,7 @@ go_library(
         "kubectl.go",
         "manifests.go",
     ],
-    importpath = "github.com/simonswine/cluster-api-provider-hetzner/pkg/manifests",
+    importpath = "github.com/simonswine/cluster-api-provider-hcloud/pkg/manifests",
     visibility = ["//visibility:public"],
     deps = [
         "//pkg/manifests/parameters:go_default_library",

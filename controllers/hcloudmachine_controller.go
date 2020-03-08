@@ -34,16 +34,16 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
-	infrav1 "github.com/simonswine/cluster-api-provider-hetzner/api/v1alpha3"
-	"github.com/simonswine/cluster-api-provider-hetzner/pkg/cloud/resources/location"
-	"github.com/simonswine/cluster-api-provider-hetzner/pkg/cloud/resources/server"
-	"github.com/simonswine/cluster-api-provider-hetzner/pkg/cloud/scope"
-	"github.com/simonswine/cluster-api-provider-hetzner/pkg/manifests"
-	"github.com/simonswine/cluster-api-provider-hetzner/pkg/packer"
+	infrav1 "github.com/simonswine/cluster-api-provider-hcloud/api/v1alpha3"
+	"github.com/simonswine/cluster-api-provider-hcloud/pkg/cloud/resources/location"
+	"github.com/simonswine/cluster-api-provider-hcloud/pkg/cloud/resources/server"
+	"github.com/simonswine/cluster-api-provider-hcloud/pkg/cloud/scope"
+	"github.com/simonswine/cluster-api-provider-hcloud/pkg/manifests"
+	"github.com/simonswine/cluster-api-provider-hcloud/pkg/packer"
 )
 
-// HetznerMachineReconciler reconciles a HetznerMachine object
-type HetznerMachineReconciler struct {
+// HcloudMachineReconciler reconciles a HcloudMachine object
+type HcloudMachineReconciler struct {
 	controllerclient.Client
 	Log       logr.Logger
 	Scheme    *runtime.Scheme
@@ -51,17 +51,17 @@ type HetznerMachineReconciler struct {
 	Manifests *manifests.Manifests
 }
 
-// +kubebuilder:rbac:groups=infrastructure.cluster.x-k8s.io,resources=hetznermachines,verbs=get;list;watch;create;update;patch;delete
-// +kubebuilder:rbac:groups=infrastructure.cluster.x-k8s.io,resources=hetznermachines/status,verbs=get;update;patch
+// +kubebuilder:rbac:groups=cluster-api-provider-hcloud.swine.dev,resources=hcloudmachines,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=cluster-api-provider-hcloud.swine.dev,resources=hcloudmachines/status,verbs=get;update;patch
 // +kubebuilder:rbac:groups=cluster.x-k8s.io,resources=machines;machines/status,verbs=get;list;watch
 
-func (r *HetznerMachineReconciler) Reconcile(req ctrl.Request) (_ ctrl.Result, reterr error) {
+func (r *HcloudMachineReconciler) Reconcile(req ctrl.Request) (_ ctrl.Result, reterr error) {
 	ctx := context.TODO()
-	log := r.Log.WithValues("namespace", req.Namespace, "hetznerMachine", req.Name)
+	log := r.Log.WithValues("namespace", req.Namespace, "hcloudMachine", req.Name)
 
-	// Fetch the HetznerMachine instance
-	hetznerMachine := &infrav1.HetznerMachine{}
-	err := r.Get(ctx, req.NamespacedName, hetznerMachine)
+	// Fetch the HcloudMachine instance
+	hcloudMachine := &infrav1.HcloudMachine{}
+	err := r.Get(ctx, req.NamespacedName, hcloudMachine)
 	if err != nil {
 		if apierrors.IsNotFound(err) {
 			return reconcile.Result{}, nil
@@ -70,7 +70,7 @@ func (r *HetznerMachineReconciler) Reconcile(req ctrl.Request) (_ ctrl.Result, r
 	}
 
 	// Fetch the Machine
-	machine, err := util.GetOwnerMachine(ctx, r.Client, hetznerMachine.ObjectMeta)
+	machine, err := util.GetOwnerMachine(ctx, r.Client, hcloudMachine.ObjectMeta)
 	if err != nil {
 		return reconcile.Result{}, err
 	}
@@ -102,33 +102,33 @@ func (r *HetznerMachineReconciler) Reconcile(req ctrl.Request) (_ ctrl.Result, r
 	}
 	log = log.WithValues("cluster", cluster.Name)
 
-	hetznerCluster := &infrav1.HetznerCluster{}
+	hcloudCluster := &infrav1.HcloudCluster{}
 
-	hetznerClusterName := client.ObjectKey{
-		Namespace: hetznerMachine.Namespace,
+	hcloudClusterName := client.ObjectKey{
+		Namespace: hcloudMachine.Namespace,
 		Name:      cluster.Spec.InfrastructureRef.Name,
 	}
-	if err := r.Client.Get(ctx, hetznerClusterName, hetznerCluster); err != nil {
-		log.Info("HetznerCluster is not available yet")
+	if err := r.Client.Get(ctx, hcloudClusterName, hcloudCluster); err != nil {
+		log.Info("HcloudCluster is not available yet")
 		return reconcile.Result{}, nil
 	}
 
-	log = log.WithValues("hetznerCluster", hetznerCluster.Name)
+	log = log.WithValues("hcloudCluster", hcloudCluster.Name)
 
 	// Create the scope.
 	machineScope, err := scope.NewMachineScope(scope.MachineScopeParams{
 		ClusterScopeParams: scope.ClusterScopeParams{
-			Ctx:            ctx,
-			Client:         r.Client,
-			Logger:         log,
-			Cluster:        cluster,
-			HetznerCluster: hetznerCluster,
-			Packer:         r.Packer,
-			Manifests:      r.Manifests,
+			Ctx:           ctx,
+			Client:        r.Client,
+			Logger:        log,
+			Cluster:       cluster,
+			HcloudCluster: hcloudCluster,
+			Packer:        r.Packer,
+			Manifests:     r.Manifests,
 		},
-		KubeadmConfig:  kubeadmConfig,
-		Machine:        machine,
-		HetznerMachine: hetznerMachine,
+		KubeadmConfig: kubeadmConfig,
+		Machine:       machine,
+		HcloudMachine: hcloudMachine,
 	})
 	if err != nil {
 		return reconcile.Result{}, errors.Errorf("failed to create scope: %+v", err)
@@ -142,7 +142,7 @@ func (r *HetznerMachineReconciler) Reconcile(req ctrl.Request) (_ ctrl.Result, r
 	}()
 
 	// Handle deleted clusters
-	if !hetznerMachine.DeletionTimestamp.IsZero() {
+	if !hcloudMachine.DeletionTimestamp.IsZero() {
 		return r.reconcileDelete(machineScope)
 	}
 
@@ -158,71 +158,71 @@ func breakReconcile(ctrl *reconcile.Result, err error) (reconcile.Result, error,
 	return c, err, ctrl != nil || err != nil
 }
 
-func (r *HetznerMachineReconciler) reconcileDelete(machineScope *scope.MachineScope) (reconcile.Result, error) {
-	machineScope.Info("Reconciling HetznerMachine delete")
-	hetznerMachine := machineScope.HetznerMachine
+func (r *HcloudMachineReconciler) reconcileDelete(machineScope *scope.MachineScope) (reconcile.Result, error) {
+	machineScope.Info("Reconciling HcloudMachine delete")
+	hcloudMachine := machineScope.HcloudMachine
 
 	// delete servers
 	if result, err, brk := breakReconcile(server.NewService(machineScope).Delete(machineScope.Ctx)); brk {
-		return result, errors.Wrapf(err, "failed to delete servers for HetznerMachine %s/%s", hetznerMachine.Namespace, hetznerMachine.Name)
+		return result, errors.Wrapf(err, "failed to delete servers for HcloudMachine %s/%s", hcloudMachine.Namespace, hcloudMachine.Name)
 	}
 
 	// Machine is deleted so remove the finalizer.
-	machineScope.HetznerMachine.Finalizers = util.Filter(machineScope.HetznerMachine.Finalizers, infrav1.MachineFinalizer)
+	machineScope.HcloudMachine.Finalizers = util.Filter(machineScope.HcloudMachine.Finalizers, infrav1.MachineFinalizer)
 
 	return reconcile.Result{}, nil
 }
 
-func (r *HetznerMachineReconciler) reconcileNormal(machineScope *scope.MachineScope) (reconcile.Result, error) {
-	machineScope.Info("Reconciling HetznerMachine")
-	hetznerMachine := machineScope.HetznerMachine
+func (r *HcloudMachineReconciler) reconcileNormal(machineScope *scope.MachineScope) (reconcile.Result, error) {
+	machineScope.Info("Reconciling HcloudMachine")
+	hcloudMachine := machineScope.HcloudMachine
 
-	// If the HetznerMachine doesn't have our finalizer, add it.
-	if !util.Contains(hetznerMachine.Finalizers, infrav1.MachineFinalizer) {
-		hetznerMachine.Finalizers = append(hetznerMachine.Finalizers, infrav1.MachineFinalizer)
+	// If the HcloudMachine doesn't have our finalizer, add it.
+	if !util.Contains(hcloudMachine.Finalizers, infrav1.MachineFinalizer) {
+		hcloudMachine.Finalizers = append(hcloudMachine.Finalizers, infrav1.MachineFinalizer)
 	}
 
 	// ensure a valid location is set
 	if err := location.NewService(machineScope).Reconcile(machineScope.Ctx); err != nil {
-		return reconcile.Result{}, errors.Wrapf(err, "failed to reconcile location for HetznerMachine %s/%s", hetznerMachine.Namespace, hetznerMachine.Name)
+		return reconcile.Result{}, errors.Wrapf(err, "failed to reconcile location for HcloudMachine %s/%s", hcloudMachine.Namespace, hcloudMachine.Name)
 	}
 
 	// reconcile server
 	if result, err, brk := breakReconcile(server.NewService(machineScope).Reconcile(machineScope.Ctx)); brk {
-		return result, errors.Wrapf(err, "failed to reconcile server for HetznerMachine %s/%s", hetznerMachine.Namespace, hetznerMachine.Name)
+		return result, errors.Wrapf(err, "failed to reconcile server for HcloudMachine %s/%s", hcloudMachine.Namespace, hcloudMachine.Name)
 	}
 
 	return reconcile.Result{}, nil
 }
 
-func (r *HetznerMachineReconciler) SetupWithManager(mgr ctrl.Manager, options controller.Options) error {
+func (r *HcloudMachineReconciler) SetupWithManager(mgr ctrl.Manager, options controller.Options) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		WithOptions(options).
-		For(&infrav1.HetznerMachine{}).
+		For(&infrav1.HcloudMachine{}).
 		Watches(
 			&source.Kind{Type: &clusterv1.Machine{}},
 			&handler.EnqueueRequestsFromMapFunc{
-				ToRequests: util.MachineToInfrastructureMapFunc(infrav1.GroupVersion.WithKind("HetznerMachine")),
+				ToRequests: util.MachineToInfrastructureMapFunc(infrav1.GroupVersion.WithKind("HcloudMachine")),
 			},
 		).
 		Watches(
-			&source.Kind{Type: &infrav1.HetznerCluster{}},
-			&handler.EnqueueRequestsFromMapFunc{ToRequests: handler.ToRequestsFunc(r.HetznerClusterToHetznerMachines)},
+			&source.Kind{Type: &infrav1.HcloudCluster{}},
+			&handler.EnqueueRequestsFromMapFunc{ToRequests: handler.ToRequestsFunc(r.HcloudClusterToHcloudMachines)},
 		).
 		Complete(r)
 }
 
-// HetznerClusterToHetznerMachine is a handler.ToRequestsFunc to be used to
-// enqeue requests for reconciliation of HetznerMachines.
-func (r *HetznerMachineReconciler) HetznerClusterToHetznerMachines(o handler.MapObject) []ctrl.Request {
+// HcloudClusterToHcloudMachine is a handler.ToRequestsFunc to be used to
+// enqeue requests for reconciliation of HcloudMachines.
+func (r *HcloudMachineReconciler) HcloudClusterToHcloudMachines(o handler.MapObject) []ctrl.Request {
 	result := []ctrl.Request{}
 
-	c, ok := o.Object.(*infrav1.HetznerCluster)
+	c, ok := o.Object.(*infrav1.HcloudCluster)
 	if !ok {
-		r.Log.Error(errors.Errorf("expected a HetznerCluster but got a %T", o.Object), "failed to get HetznerMachine for HetznerCluster")
+		r.Log.Error(errors.Errorf("expected a HcloudCluster but got a %T", o.Object), "failed to get HcloudMachine for HcloudCluster")
 		return nil
 	}
-	log := r.Log.WithValues("HetznerCluster", c.Name, "Namespace", c.Namespace)
+	log := r.Log.WithValues("HcloudCluster", c.Name, "Namespace", c.Namespace)
 
 	cluster, err := util.GetOwnerCluster(context.TODO(), r.Client, c.ObjectMeta)
 	switch {

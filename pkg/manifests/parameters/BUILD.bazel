@@ -3,7 +3,7 @@ load("@io_bazel_rules_go//go:def.bzl", "go_library")
 go_library(
     name = "go_default_library",
     srcs = ["parameters.go"],
-    importpath = "github.com/simonswine/cluster-api-provider-hetzner/pkg/manifests/parameters",
+    importpath = "github.com/simonswine/cluster-api-provider-hcloud/pkg/manifests/parameters",
     visibility = ["//visibility:public"],
     deps = ["@io_k8s_apimachinery//pkg/util/intstr:go_default_library"],
 )

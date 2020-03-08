@@ -24,11 +24,11 @@ bin
 *~
 
 /secrets/
-/cluster-api-provider-hetzner
+/cluster-api-provider-hcloud
 /.kubeconfig*
 
 # Bazel
 /bazel-bin
-/bazel-cluster-api-provider-hetzner
+/bazel-cluster-api-provider-hcloud
 /bazel-out
 /bazel-testlogs

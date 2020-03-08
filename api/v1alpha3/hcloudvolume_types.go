@@ -21,31 +21,31 @@ import (
 )
 
 const (
-	// VolumeFinalizer allows ReconcileHetznerVolume to clean up Hetzner
-	// resources associated with HetznerVolume before removing it from the
+	// VolumeFinalizer allows ReconcileHcloudVolume to clean up Hcloud
+	// resources associated with HcloudVolume before removing it from the
 	// apiserver.
-	VolumeFinalizer = "hetznervolume.infrastructure.cluster.x-k8s.io"
+	VolumeFinalizer = "hcloudvolume.cluster-api-provider-hcloud.swine.dev"
 )
 
-type HetznerVolumeID int
+type HcloudVolumeID int
 
-// HetznerVolumeReclaimPolicy describes a policy for end-of-life maintenance of persistent volumes
-type HetznerVolumeReclaimPolicy string
+// HcloudVolumeReclaimPolicy describes a policy for end-of-life maintenance of persistent volumes
+type HcloudVolumeReclaimPolicy string
 
 const (
-	// HetznerVolumeReclaimDelete means the volume will be deleted from
+	// HcloudVolumeReclaimDelete means the volume will be deleted from
 	// Kubernetes on release from its claim.  The volume plugin must support
 	// Deletion.
-	HetznerVolumeReclaimDelete HetznerVolumeReclaimPolicy = "Delete"
-	// HetznerVolumeReclaimRetain means the volume will be left in its current
+	HcloudVolumeReclaimDelete HcloudVolumeReclaimPolicy = "Delete"
+	// HcloudVolumeReclaimRetain means the volume will be left in its current
 	// phase (Released) for manual reclamation by the administrator.  The
 	// default policy is Retain.
-	HetznerVolumeReclaimRetain HetznerVolumeReclaimPolicy = "Retain"
+	HcloudVolumeReclaimRetain HcloudVolumeReclaimPolicy = "Retain"
 )
 
-// HetznerVolumeSpec defines the desired state of HetznerVolume
-type HetznerVolumeSpec struct {
-	Location HetznerLocation `json:"location,omitempty"`
+// HcloudVolumeSpec defines the desired state of HcloudVolume
+type HcloudVolumeSpec struct {
+	Location HcloudLocation `json:"location,omitempty"`
 
 	// Size contains the minimum requested size of the volume
 	// +optional
@@ -53,44 +53,44 @@ type HetznerVolumeSpec struct {
 
 	// Size contains the minimum requested size of the volume
 	// +optional
-	ReclaimPolicy HetznerVolumeReclaimPolicy `json:"reclaimPolicy,omitempty"`
+	ReclaimPolicy HcloudVolumeReclaimPolicy `json:"reclaimPolicy,omitempty"`
 }
 
-// HetznerVolumeStatus defines the observed state of HetznerVolume
-type HetznerVolumeStatus struct {
-	Location HetznerLocation `json:"location,omitempty"`
+// HcloudVolumeStatus defines the observed state of HcloudVolume
+type HcloudVolumeStatus struct {
+	Location HcloudLocation `json:"location,omitempty"`
 
 	// Size contains the actual size of the volume
 	// +optional
 	Size *resource.Quantity `json:"size,omitempty"`
 
 	// VolumeID contains the ID of the releated volume
-	VolumeID *HetznerVolumeID `json:"volumeID,omitempty"`
+	VolumeID *HcloudVolumeID `json:"volumeID,omitempty"`
 }
 
 // +kubebuilder:object:root=true
-// +kubebuilder:resource:path=hetznervolumes,scope=Namespaced,categories=cluster-api
+// +kubebuilder:resource:path=hcloudvolumes,scope=Namespaced,categories=cluster-api
 // +kubebuilder:printcolumn:name="Location",type="string",JSONPath=".status.location",description="Location of the volume"
 // +kubebuilder:subresource:status
 
-// HetznerVolume is the Schema for the hetznervolumes API
-type HetznerVolume struct {
+// HcloudVolume is the Schema for the hcloudvolumes API
+type HcloudVolume struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   HetznerVolumeSpec   `json:"spec,omitempty"`
-	Status HetznerVolumeStatus `json:"status,omitempty"`
+	Spec   HcloudVolumeSpec   `json:"spec,omitempty"`
+	Status HcloudVolumeStatus `json:"status,omitempty"`
 }
 
 // +kubebuilder:object:root=true
 
-// HetznerVolumeList contains a list of HetznerVolume
-type HetznerVolumeList struct {
+// HcloudVolumeList contains a list of HcloudVolume
+type HcloudVolumeList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
-	Items           []HetznerVolume `json:"items"`
+	Items           []HcloudVolume `json:"items"`
 }
 
 func init() {
-	SchemeBuilder.Register(&HetznerVolume{}, &HetznerVolumeList{})
+	SchemeBuilder.Register(&HcloudVolume{}, &HcloudVolumeList{})
 }

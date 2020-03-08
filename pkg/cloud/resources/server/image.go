@@ -7,22 +7,22 @@ import (
 	"github.com/hetznercloud/hcloud-go/hcloud"
 	"github.com/pkg/errors"
 
-	infrav1 "github.com/simonswine/cluster-api-provider-hetzner/api/v1alpha3"
+	infrav1 "github.com/simonswine/cluster-api-provider-hcloud/api/v1alpha3"
 )
 
-func (s *Service) findImageIDBySpec(ctx context.Context, spec *infrav1.HetznerImageSpec) (*infrav1.HetznerImageID, error) {
+func (s *Service) findImageIDBySpec(ctx context.Context, spec *infrav1.HcloudImageSpec) (*infrav1.HcloudImageID, error) {
 	if spec == nil {
 		return nil, errors.New("no image specified")
 	}
 
 	// TODO filter with label selector
-	images, err := s.scope.HetznerClient().ListImages(ctx, hcloud.ImageListOpts{})
+	images, err := s.scope.HcloudClient().ListImages(ctx, hcloud.ImageListOpts{})
 	if err != nil {
 		return nil, fmt.Errorf("error listing images: %w", err)
 	}
 
 	for _, image := range images {
-		imageID := infrav1.HetznerImageID(image.ID)
+		imageID := infrav1.HcloudImageID(image.ID)
 
 		// match by ID
 		if specID := spec.ID; specID != nil && *specID == imageID {

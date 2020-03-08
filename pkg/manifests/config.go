@@ -14,7 +14,7 @@ import (
 	"gopkg.in/yaml.v3"
 	"k8s.io/apimachinery/pkg/util/intstr"
 
-	"github.com/simonswine/cluster-api-provider-hetzner/pkg/manifests/parameters"
+	"github.com/simonswine/cluster-api-provider-hcloud/pkg/manifests/parameters"
 )
 
 func sampleParameters() *parameters.ManifestParameters {

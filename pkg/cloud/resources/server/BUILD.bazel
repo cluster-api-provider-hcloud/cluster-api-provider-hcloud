@@ -7,7 +7,7 @@ go_library(
         "kubeadm.go",
         "server.go",
     ],
-    importpath = "github.com/simonswine/cluster-api-provider-hetzner/pkg/cloud/resources/server",
+    importpath = "github.com/simonswine/cluster-api-provider-hcloud/pkg/cloud/resources/server",
     visibility = ["//visibility:public"],
     deps = [
         "//api/v1alpha3:go_default_library",

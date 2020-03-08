@@ -21,50 +21,50 @@ import (
 )
 
 const (
-	// ClusterFinalizer allows ReconcileHetznerMachine to clean up Hetzner
-	// resources associated with HetznerMachine before removing it from the
+	// ClusterFinalizer allows ReconcileHcloudMachine to clean up Hcloud
+	// resources associated with HcloudMachine before removing it from the
 	// apiserver.
-	MachineFinalizer = "hetznermachine.infrastructure.cluster.x-k8s.io"
+	MachineFinalizer = "hcloudmachine.cluster-api-provider-hcloud.swine.dev"
 )
 
-// HetznerMachineSpec defines the desired state of HetznerMachine
-type HetznerMachineSpec struct {
-	Location HetznerLocation `json:"location,omitempty"`
+// HcloudMachineSpec defines the desired state of HcloudMachine
+type HcloudMachineSpec struct {
+	Location HcloudLocation `json:"location,omitempty"`
 
-	SSHKeys []HetznerSSHKeySpec `json:"sshKeys,omitempty"`
+	SSHKeys []HcloudSSHKeySpec `json:"sshKeys,omitempty"`
 
-	Image *HetznerImageSpec `json:"image,omitempty"`
+	Image *HcloudImageSpec `json:"image,omitempty"`
 
-	Type HetznerMachineTypeSpec `json:"type,omitempty"`
+	Type HcloudMachineTypeSpec `json:"type,omitempty"`
 
 	// ProviderID is the unique identifier as specified by the cloud provider.
 	// +optional
 	ProviderID *string `json:"providerID,omitempty"`
 }
 
-type HetznerMachineTypeSpec string
+type HcloudMachineTypeSpec string
 
-type HetznerServerState string
+type HcloudServerState string
 
-type HetznerImageID int
+type HcloudImageID int
 
-type HetznerSSHKeySpec struct {
+type HcloudSSHKeySpec struct {
 	LabelSelector *metav1.LabelSelector `json:"labelSelector,omitempty"`
 	Name          *string               `json:"name,omitempty"`
 	ID            *string               `json:"id,omitempty"`
 }
 
-type HetznerImageSpec struct {
+type HcloudImageSpec struct {
 	LabelSelector *metav1.LabelSelector `json:"labelSelector,omitempty"`
 	Name          *string               `json:"name,omitempty"`
-	ID            *HetznerImageID       `json:"id,omitempty"`
+	ID            *HcloudImageID        `json:"id,omitempty"`
 }
 
-// HetznerMachineStatus defines the observed state of HetznerMachine
-type HetznerMachineStatus struct {
-	Location    HetznerLocation    `json:"location,omitempty"`
-	NetworkZone HetznerNetworkZone `json:"networkZone,omitempty"`
-	ImageID     *HetznerImageID    `json:"imageID,omitempty"`
+// HcloudMachineStatus defines the observed state of HcloudMachine
+type HcloudMachineStatus struct {
+	Location    HcloudLocation    `json:"location,omitempty"`
+	NetworkZone HcloudNetworkZone `json:"networkZone,omitempty"`
+	ImageID     *HcloudImageID    `json:"imageID,omitempty"`
 
 	// Ready is true when the provider resource is ready.
 	// +optional
@@ -75,7 +75,7 @@ type HetznerMachineStatus struct {
 
 	// ServerState is the state of the server for this machine.
 	// +optional
-	ServerState HetznerServerState `json:"serverState,omitempty"`
+	ServerState HcloudServerState `json:"serverState,omitempty"`
 
 	// KubeadmConfigResourceVersionConfigured keeps track of the ResourceVersion which we last reconfigured KubeadmConfig
 	// +optional
@@ -83,31 +83,31 @@ type HetznerMachineStatus struct {
 }
 
 // +kubebuilder:object:root=true
-// +kubebuilder:resource:path=hetznermachines,scope=Namespaced,categories=cluster-api
+// +kubebuilder:resource:path=hcloudmachines,scope=Namespaced,categories=cluster-api
 // +kubebuilder:subresource:status
 // +kubebuilder:printcolumn:name="State",type="string",JSONPath=".status.serverState",description="Server state"
 // +kubebuilder:printcolumn:name="Ready",type="string",JSONPath=".status.ready",description="Machine ready status"
-// +kubebuilder:printcolumn:name="InstanceID",type="string",JSONPath=".spec.providerID",description="Hetzner instance ID"
-// +kubebuilder:printcolumn:name="Machine",type="string",JSONPath=".metadata.ownerReferences[?(@.kind==\"Machine\")].name",description="Machine object which owns with this HetznerMachine"
+// +kubebuilder:printcolumn:name="InstanceID",type="string",JSONPath=".spec.providerID",description="Hcloud instance ID"
+// +kubebuilder:printcolumn:name="Machine",type="string",JSONPath=".metadata.ownerReferences[?(@.kind==\"Machine\")].name",description="Machine object which owns with this HcloudMachine"
 
-// HetznerMachine is the Schema for the hetznermachine API
-type HetznerMachine struct {
+// HcloudMachine is the Schema for the hcloudmachine API
+type HcloudMachine struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   HetznerMachineSpec   `json:"spec,omitempty"`
-	Status HetznerMachineStatus `json:"status,omitempty"`
+	Spec   HcloudMachineSpec   `json:"spec,omitempty"`
+	Status HcloudMachineStatus `json:"status,omitempty"`
 }
 
 // +kubebuilder:object:root=true
 
-// HetznerMachineList contains a list of HetznerMachine
-type HetznerMachineList struct {
+// HcloudMachineList contains a list of HcloudMachine
+type HcloudMachineList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
-	Items           []HetznerMachine `json:"items"`
+	Items           []HcloudMachine `json:"items"`
 }
 
 func init() {
-	SchemeBuilder.Register(&HetznerMachine{}, &HetznerMachineList{})
+	SchemeBuilder.Register(&HcloudMachine{}, &HcloudMachineList{})
 }

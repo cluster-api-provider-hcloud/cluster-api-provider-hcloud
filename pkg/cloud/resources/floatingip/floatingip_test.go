@@ -14,10 +14,10 @@ import (
 	"k8s.io/klog"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha2"
 
-	infrav1 "github.com/simonswine/cluster-api-provider-hetzner/api/v1alpha3"
-	"github.com/simonswine/cluster-api-provider-hetzner/pkg/cloud/resources/floatingip"
-	"github.com/simonswine/cluster-api-provider-hetzner/pkg/cloud/scope"
-	mock_scope "github.com/simonswine/cluster-api-provider-hetzner/pkg/cloud/scope/mock"
+	infrav1 "github.com/simonswine/cluster-api-provider-hcloud/api/v1alpha3"
+	"github.com/simonswine/cluster-api-provider-hcloud/pkg/cloud/resources/floatingip"
+	"github.com/simonswine/cluster-api-provider-hcloud/pkg/cloud/scope"
+	mock_scope "github.com/simonswine/cluster-api-provider-hcloud/pkg/cloud/scope/mock"
 )
 
 func TestFloatingIPs(t *testing.T) {
@@ -39,10 +39,10 @@ var _ = Describe("FloatingIPs", func() {
 
 	var (
 		mockCtrl      *gomock.Controller
-		mockClient    *mock_scope.MockHetznerClient
+		mockClient    *mock_scope.MockHcloudClient
 		mockPacker    *mock_scope.MockPacker
 		mockManifests *mock_scope.MockManifests
-		clientFactory = func(ctx context.Context) (scope.HetznerClient, error) {
+		clientFactory = func(ctx context.Context) (scope.HcloudClient, error) {
 			return mockClient, nil
 		}
 		newClusterScope func() *scope.ClusterScope
@@ -50,20 +50,20 @@ var _ = Describe("FloatingIPs", func() {
 
 	BeforeEach(func() {
 		mockCtrl = gomock.NewController(GinkgoT())
-		mockClient = mock_scope.NewMockHetznerClient(mockCtrl)
+		mockClient = mock_scope.NewMockHcloudClient(mockCtrl)
 		mockPacker = mock_scope.NewMockPacker(mockCtrl)
 		mockManifests = mock_scope.NewMockManifests(mockCtrl)
 		newClusterScope = func() *scope.ClusterScope {
 			scp, err := scope.NewClusterScope(scope.ClusterScopeParams{
 				Cluster: &clusterv1.Cluster{},
-				HetznerCluster: &infrav1.HetznerCluster{
+				HcloudCluster: &infrav1.HcloudCluster{
 					ObjectMeta: metav1.ObjectMeta{
 						Name: "christian-dev",
 					},
 				},
-				HetznerClientFactory: clientFactory,
-				Packer:               mockPacker,
-				Manifests:            mockManifests,
+				HcloudClientFactory: clientFactory,
+				Packer:              mockPacker,
+				Manifests:           mockManifests,
 			})
 			Expect(err).NotTo(HaveOccurred())
 			return scp
@@ -88,14 +88,14 @@ var _ = Describe("FloatingIPs", func() {
 			)
 			svc := floatingip.NewService(scp)
 			Expect(svc.Reconcile(context.TODO())).NotTo(HaveOccurred())
-			Expect(len(scp.HetznerCluster.Status.ControlPlaneFloatingIPs)).To(Equal(0))
+			Expect(len(scp.HcloudCluster.Status.ControlPlaneFloatingIPs)).To(Equal(0))
 		})
 	})
 
 	Context("No floating IPs desired, existing IPs but none recorded in status", func() {
 		It("should reconcile and delete floating IP", func() {
 			scp := newClusterScope()
-			clusterTagKey := infrav1.ClusterTagKey(scp.HetznerCluster.Name)
+			clusterTagKey := infrav1.ClusterTagKey(scp.HcloudCluster.Name)
 			gomock.InOrder(
 				mockClient.EXPECT().ListFloatingIPs(gomock.Any(), gomock.Any()).Return(
 					[]*hcloud.FloatingIP{
@@ -129,21 +129,21 @@ var _ = Describe("FloatingIPs", func() {
 			mockClient.EXPECT().DeleteFloatingIP(gomock.Any(), gomock.Eq(&hcloud.FloatingIP{ID: 123})).Return(nil, nil)
 			svc := floatingip.NewService(scp)
 			Expect(svc.Reconcile(context.TODO())).NotTo(HaveOccurred())
-			//Expect(len(scp.HetznerCluster.Status.ControlPlaneFloatingIPs)).To(Equal(1))
+			//Expect(len(scp.HcloudCluster.Status.ControlPlaneFloatingIPs)).To(Equal(1))
 		})
 	})
 
 	Context("A v4 and v6 floating IP desired, none existing", func() {
 		It("should reconcile and create floating IPs", func() {
 			scp := newClusterScope()
-			scp.HetznerCluster.Spec.ControlPlaneFloatingIPs = []infrav1.HetznerFloatingIPSpec{
-				{Type: infrav1.HetznerFloatingIPTypeIPv4},
-				{Type: infrav1.HetznerFloatingIPTypeIPv6},
+			scp.HcloudCluster.Spec.ControlPlaneFloatingIPs = []infrav1.HcloudFloatingIPSpec{
+				{Type: infrav1.HcloudFloatingIPTypeIPv4},
+				{Type: infrav1.HcloudFloatingIPTypeIPv6},
 			}
-			scp.HetznerCluster.Status = infrav1.HetznerClusterStatus{
+			scp.HcloudCluster.Status = infrav1.HcloudClusterStatus{
 				Location: "myhome",
 			}
-			clusterTagKey := infrav1.ClusterTagKey(scp.HetznerCluster.Name)
+			clusterTagKey := infrav1.ClusterTagKey(scp.HcloudCluster.Name)
 			_, deadBeefNetwork, err := net.ParseCIDR("2001:dead:beef::/64")
 			Expect(err).NotTo(HaveOccurred())
 			fipIPV4 := &hcloud.FloatingIP{
@@ -175,14 +175,14 @@ var _ = Describe("FloatingIPs", func() {
 
 			gomock.InOrder(
 				mockClient.EXPECT().CreateFloatingIP(gomock.Any(), gomock.Any()).DoAndReturn(func(ctx context.Context, opts hcloud.FloatingIPCreateOpts) (hcloud.FloatingIPCreateResult, *hcloud.Response, error) {
-					Expect(opts.HomeLocation.Name).To(Equal(string(scp.HetznerCluster.Status.Location)))
+					Expect(opts.HomeLocation.Name).To(Equal(string(scp.HcloudCluster.Status.Location)))
 					Expect(opts.Type).To(Equal(hcloud.FloatingIPTypeIPv4))
 					return hcloud.FloatingIPCreateResult{
 						FloatingIP: fipIPV4,
 					}, nil, nil
 				}),
 				mockClient.EXPECT().CreateFloatingIP(gomock.Any(), gomock.Any()).DoAndReturn(func(ctx context.Context, opts hcloud.FloatingIPCreateOpts) (hcloud.FloatingIPCreateResult, *hcloud.Response, error) {
-					Expect(opts.HomeLocation.Name).To(Equal(string(scp.HetznerCluster.Status.Location)))
+					Expect(opts.HomeLocation.Name).To(Equal(string(scp.HcloudCluster.Status.Location)))
 					Expect(opts.Type).To(Equal(hcloud.FloatingIPTypeIPv6))
 					return hcloud.FloatingIPCreateResult{
 						FloatingIP: fipIPV6,
@@ -193,7 +193,7 @@ var _ = Describe("FloatingIPs", func() {
 			Expect(err).NotTo(HaveOccurred())
 			svc := floatingip.NewService(scp)
 			Expect(svc.Reconcile(context.TODO())).NotTo(HaveOccurred())
-			Expect(len(scp.HetznerCluster.Status.ControlPlaneFloatingIPs)).To(Equal(2))
+			Expect(len(scp.HcloudCluster.Status.ControlPlaneFloatingIPs)).To(Equal(2))
 
 			mockClient.EXPECT().ListFloatingIPs(gomock.Any(), gomock.Any()).Return(
 				[]*hcloud.FloatingIP{

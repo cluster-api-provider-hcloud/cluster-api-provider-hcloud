@@ -18,8 +18,8 @@ import (
 	"sigs.k8s.io/cluster-api/util/patch"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	infrav1 "github.com/simonswine/cluster-api-provider-hetzner/api/v1alpha3"
-	"github.com/simonswine/cluster-api-provider-hetzner/pkg/manifests/parameters"
+	infrav1 "github.com/simonswine/cluster-api-provider-hcloud/api/v1alpha3"
+	"github.com/simonswine/cluster-api-provider-hcloud/pkg/manifests/parameters"
 )
 
 const defaultControlPlaneAPIEndpointPort = 6443
@@ -33,15 +33,15 @@ type Manifests interface {
 
 // ClusterScopeParams defines the input parameters used to create a new Scope.
 type ClusterScopeParams struct {
-	HetznerClient
-	Ctx                  context.Context
-	HetznerClientFactory HetznerClientFactory
-	Client               client.Client
-	Logger               logr.Logger
-	Cluster              *clusterv1.Cluster
-	HetznerCluster       *infrav1.HetznerCluster
-	Packer               Packer
-	Manifests            Manifests
+	HcloudClient
+	Ctx                 context.Context
+	HcloudClientFactory HcloudClientFactory
+	Client              client.Client
+	Logger              logr.Logger
+	Cluster             *clusterv1.Cluster
+	HcloudCluster       *infrav1.HcloudCluster
+	Packer              Packer
+	Manifests           Manifests
 }
 
 // NewClusterScope creates a new Scope from the supplied parameters.
@@ -50,8 +50,8 @@ func NewClusterScope(params ClusterScopeParams) (*ClusterScope, error) {
 	if params.Cluster == nil {
 		return nil, errors.New("failed to generate new scope from nil Cluster")
 	}
-	if params.HetznerCluster == nil {
-		return nil, errors.New("failed to generate new scope from nil HetznerCluster")
+	if params.HcloudCluster == nil {
+		return nil, errors.New("failed to generate new scope from nil HcloudCluster")
 	}
 	if params.Packer == nil {
 		return nil, errors.New("failed to generate new scope from nil Packer")
@@ -69,47 +69,47 @@ func NewClusterScope(params ClusterScopeParams) (*ClusterScope, error) {
 	}
 
 	// setup client factory if nothing was set
-	var hetznerToken string
-	if params.HetznerClientFactory == nil {
-		params.HetznerClientFactory = func(ctx context.Context) (HetznerClient, error) {
+	var hcloudToken string
+	if params.HcloudClientFactory == nil {
+		params.HcloudClientFactory = func(ctx context.Context) (HcloudClient, error) {
 			// retrieve token secret
 			var tokenSecret corev1.Secret
-			tokenSecretName := types.NamespacedName{Namespace: params.HetznerCluster.Namespace, Name: params.HetznerCluster.Spec.TokenRef.Name}
+			tokenSecretName := types.NamespacedName{Namespace: params.HcloudCluster.Namespace, Name: params.HcloudCluster.Spec.TokenRef.Name}
 			if err := params.Client.Get(ctx, tokenSecretName, &tokenSecret); err != nil {
 				return nil, errors.Errorf("error getting referenced token secret/%s: %s", tokenSecretName, err)
 			}
 
-			tokenBytes, keyExists := tokenSecret.Data[params.HetznerCluster.Spec.TokenRef.Key]
+			tokenBytes, keyExists := tokenSecret.Data[params.HcloudCluster.Spec.TokenRef.Key]
 			if !keyExists {
-				return nil, errors.Errorf("error key %s does not exist in secret/%s", params.HetznerCluster.Spec.TokenRef.Key, tokenSecretName)
+				return nil, errors.Errorf("error key %s does not exist in secret/%s", params.HcloudCluster.Spec.TokenRef.Key, tokenSecretName)
 			}
-			hetznerToken = string(tokenBytes)
+			hcloudToken = string(tokenBytes)
 
-			return &realClient{client: hcloud.NewClient(hcloud.WithToken(hetznerToken))}, nil
+			return &realClient{client: hcloud.NewClient(hcloud.WithToken(hcloudToken))}, nil
 		}
 	}
 
-	hc, err := params.HetznerClientFactory(params.Ctx)
+	hc, err := params.HcloudClientFactory(params.Ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	helper, err := patch.NewHelper(params.HetznerCluster, params.Client)
+	helper, err := patch.NewHelper(params.HcloudCluster, params.Client)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to init patch helper")
 	}
 
 	return &ClusterScope{
-		Ctx:            params.Ctx,
-		Logger:         params.Logger,
-		Client:         params.Client,
-		Cluster:        params.Cluster,
-		HetznerCluster: params.HetznerCluster,
-		hetznerClient:  hc,
-		hetznerToken:   hetznerToken,
-		patchHelper:    helper,
-		packer:         params.Packer,
-		manifests:      params.Manifests,
+		Ctx:           params.Ctx,
+		Logger:        params.Logger,
+		Client:        params.Client,
+		Cluster:       params.Cluster,
+		HcloudCluster: params.HcloudCluster,
+		hcloudClient:  hc,
+		hcloudToken:   hcloudToken,
+		patchHelper:   helper,
+		packer:        params.Packer,
+		manifests:     params.Manifests,
 	}, nil
 }
 
@@ -117,33 +117,33 @@ func NewClusterScope(params ClusterScopeParams) (*ClusterScope, error) {
 type ClusterScope struct {
 	Ctx context.Context
 	logr.Logger
-	Client        client.Client
-	patchHelper   *patch.Helper
-	hetznerClient HetznerClient
-	hetznerToken  string
-	packer        Packer
-	manifests     Manifests
+	Client       client.Client
+	patchHelper  *patch.Helper
+	hcloudClient HcloudClient
+	hcloudToken  string
+	packer       Packer
+	manifests    Manifests
 
-	Cluster        *clusterv1.Cluster
-	HetznerCluster *infrav1.HetznerCluster
+	Cluster       *clusterv1.Cluster
+	HcloudCluster *infrav1.HcloudCluster
 }
 
 // Close closes the current scope persisting the cluster configuration and status.
 func (s *ClusterScope) Close() error {
-	return s.patchHelper.Patch(s.Ctx, s.HetznerCluster)
+	return s.patchHelper.Patch(s.Ctx, s.HcloudCluster)
 }
 
-func (s *ClusterScope) HetznerClient() HetznerClient {
-	return s.hetznerClient
+func (s *ClusterScope) HcloudClient() HcloudClient {
+	return s.hcloudClient
 }
 
-func (s *ClusterScope) GetSpecLocation() infrav1.HetznerLocation {
-	return s.HetznerCluster.Spec.Location
+func (s *ClusterScope) GetSpecLocation() infrav1.HcloudLocation {
+	return s.HcloudCluster.Spec.Location
 }
 
-func (s *ClusterScope) SetStatusLocation(location infrav1.HetznerLocation, networkZone infrav1.HetznerNetworkZone) {
-	s.HetznerCluster.Status.Location = location
-	s.HetznerCluster.Status.NetworkZone = networkZone
+func (s *ClusterScope) SetStatusLocation(location infrav1.HcloudLocation, networkZone infrav1.HcloudNetworkZone) {
+	s.HcloudCluster.Status.Location = location
+	s.HcloudCluster.Status.NetworkZone = networkZone
 }
 
 func (s *ClusterScope) ControlPlaneAPIEndpointPort() int {
@@ -181,19 +181,19 @@ func (s *ClusterScope) ClientConfigWithAPIEndpoint(endpoint clusterv1.APIEndpoin
 func (s *ClusterScope) manifestParameters() (*parameters.ManifestParameters, error) {
 	var p parameters.ManifestParameters
 
-	for _, floatingIP := range s.HetznerCluster.Status.ControlPlaneFloatingIPs {
+	for _, floatingIP := range s.HcloudCluster.Status.ControlPlaneFloatingIPs {
 		p.HcloudFloatingIPs = append(
 			p.HcloudFloatingIPs,
 			floatingIP.IP,
 		)
 	}
 
-	p.HcloudToken = &s.hetznerToken
+	p.HcloudToken = &s.hcloudToken
 
-	if s.HetznerCluster.Status.Network == nil {
+	if s.HcloudCluster.Status.Network == nil {
 		return nil, errors.New("No network found")
 	}
-	hcloudNetwork := intstr.FromInt(s.HetznerCluster.Status.Network.ID)
+	hcloudNetwork := intstr.FromInt(s.HcloudCluster.Status.Network.ID)
 	p.HcloudNetwork = &hcloudNetwork
 
 	if s.Cluster.Spec.ClusterNetwork == nil || s.Cluster.Spec.ClusterNetwork.Pods == nil || len(s.Cluster.Spec.ClusterNetwork.Pods.CIDRBlocks) == 0 {

@@ -1295,8 +1295,8 @@ def go_repositories():
         build_file_generation = "on",
         build_file_proto_mode = "disable_global",
         importpath = "sigs.k8s.io/cluster-api",
-        sum = "h1:WjhtuvyjnMgo62kKlVizhI/nYs4DJxHNf+ZMSk/uUsM=",
-        version = "v0.2.7",
+        sum = "h1:0vhn1Uy6/j98TM+ihmWRb+lenkmd2VvdbHzrttsClIk=",
+        version = "v0.2.10",
     )
     go_repository(
         name = "io_k8s_sigs_cluster_api_bootstrap_provider_kubeadm",

@@ -9,8 +9,8 @@ import (
 	"github.com/pkg/errors"
 	"k8s.io/apiserver/pkg/storage/names"
 
-	infrav1 "github.com/simonswine/cluster-api-provider-hetzner/api/v1alpha3"
-	"github.com/simonswine/cluster-api-provider-hetzner/pkg/cloud/scope"
+	infrav1 "github.com/simonswine/cluster-api-provider-hcloud/api/v1alpha3"
+	"github.com/simonswine/cluster-api-provider-hcloud/pkg/cloud/scope"
 )
 
 type Service struct {
@@ -27,7 +27,7 @@ var errNotImplemented = errors.New("Not implemented")
 
 type intSlice []int
 
-func matchFloatingIPSpecStatus(spec infrav1.HetznerFloatingIPSpec, status infrav1.HetznerFloatingIPStatus) bool {
+func matchFloatingIPSpecStatus(spec infrav1.HcloudFloatingIPSpec, status infrav1.HcloudFloatingIPStatus) bool {
 	return spec.Type == status.Type
 }
 
@@ -40,7 +40,7 @@ func (s intSlice) contains(e int) bool {
 	return false
 }
 
-func apiToStatus(ip *hcloud.FloatingIP) (*infrav1.HetznerFloatingIPStatus, error) {
+func apiToStatus(ip *hcloud.FloatingIP) (*infrav1.HcloudFloatingIPStatus, error) {
 	network := fmt.Sprintf("%s/32", ip.IP.String())
 	ipString := ip.IP.String()
 	if ip.Network != nil {
@@ -50,17 +50,17 @@ func apiToStatus(ip *hcloud.FloatingIP) (*infrav1.HetznerFloatingIPStatus, error
 		ipString = networkObj.String()
 	}
 
-	var ipType infrav1.HetznerFloatingIPType
+	var ipType infrav1.HcloudFloatingIPType
 
 	if ip.Type == hcloud.FloatingIPTypeIPv4 {
-		ipType = infrav1.HetznerFloatingIPTypeIPv4
+		ipType = infrav1.HcloudFloatingIPTypeIPv4
 	} else if ip.Type == hcloud.FloatingIPTypeIPv6 {
-		ipType = infrav1.HetznerFloatingIPTypeIPv6
+		ipType = infrav1.HcloudFloatingIPTypeIPv6
 	} else {
 		return nil, fmt.Errorf("Unknown floating IP type: %s", ip.Type)
 	}
 
-	status := &infrav1.HetznerFloatingIPStatus{
+	status := &infrav1.HcloudFloatingIPStatus{
 		ID:      ip.ID,
 		Name:    ip.Name,
 		Network: network,
@@ -78,7 +78,7 @@ func (s *Service) Reconcile(ctx context.Context) (err error) {
 	if err != nil {
 		return errors.Wrap(err, "failed to refresh floating IPs")
 	}
-	s.scope.HetznerCluster.Status.ControlPlaneFloatingIPs = floatingIPStatus
+	s.scope.HcloudCluster.Status.ControlPlaneFloatingIPs = floatingIPStatus
 
 	s.scope.V(3).Info("Reconcile floating IPs")
 	needCreation, needDeletion := s.compare(floatingIPStatus)
@@ -104,25 +104,25 @@ func (s *Service) Reconcile(ctx context.Context) (err error) {
 	if err != nil {
 		return errors.Wrap(err, "failed to refresh floating IPs")
 	}
-	s.scope.HetznerCluster.Status.ControlPlaneFloatingIPs = floatingIPStatus
+	s.scope.HcloudCluster.Status.ControlPlaneFloatingIPs = floatingIPStatus
 
 	return nil
 }
 
-func (s *Service) createFloatingIP(ctx context.Context, spec infrav1.HetznerFloatingIPSpec) (*infrav1.HetznerFloatingIPStatus, error) {
+func (s *Service) createFloatingIP(ctx context.Context, spec infrav1.HcloudFloatingIPSpec) (*infrav1.HcloudFloatingIPStatus, error) {
 	s.scope.V(2).Info("Create a new floating IP", "type", spec.Type)
 
 	// gather ip type
 	var ipType hcloud.FloatingIPType
-	if spec.Type == infrav1.HetznerFloatingIPTypeIPv4 {
+	if spec.Type == infrav1.HcloudFloatingIPTypeIPv4 {
 		ipType = hcloud.FloatingIPTypeIPv4
-	} else if spec.Type == infrav1.HetznerFloatingIPTypeIPv6 {
+	} else if spec.Type == infrav1.HcloudFloatingIPTypeIPv6 {
 		ipType = hcloud.FloatingIPTypeIPv6
 	} else {
 		return nil, fmt.Errorf("error invalid floating IP type: %s", spec.Type)
 	}
 
-	hc := s.scope.HetznerCluster
+	hc := s.scope.HcloudCluster
 	clusterTagKey := infrav1.ClusterTagKey(hc.Name)
 
 	if hc.Status.Location == "" {
@@ -142,7 +142,7 @@ func (s *Service) createFloatingIP(ctx context.Context, spec infrav1.HetznerFloa
 		},
 	}
 
-	ip, _, err := s.scope.HetznerClient().CreateFloatingIP(ctx, opts)
+	ip, _, err := s.scope.HcloudClient().CreateFloatingIP(ctx, opts)
 	if err != nil {
 		return nil, fmt.Errorf("error creating floating IP: %s", err)
 	}
@@ -155,14 +155,14 @@ func (s *Service) createFloatingIP(ctx context.Context, spec infrav1.HetznerFloa
 	return status, nil
 }
 
-func (s *Service) deleteFloatingIP(ctx context.Context, status infrav1.HetznerFloatingIPStatus) error {
+func (s *Service) deleteFloatingIP(ctx context.Context, status infrav1.HcloudFloatingIPStatus) error {
 	// ensure deleted floating IP is actually owned by us
-	clusterTagKey := infrav1.ClusterTagKey(s.scope.HetznerCluster.Name)
+	clusterTagKey := infrav1.ClusterTagKey(s.scope.HcloudCluster.Name)
 	if status.Labels == nil || infrav1.ResourceLifecycle(status.Labels[clusterTagKey]) != infrav1.ResourceLifecycleOwned {
 		s.scope.V(3).Info("Ignore request to delete floating IP, as it is not owned", "id", status.ID, "name", status.Name, "network", status.Network)
 		return nil
 	}
-	_, err := s.scope.HetznerClient().DeleteFloatingIP(ctx, &hcloud.FloatingIP{ID: status.ID})
+	_, err := s.scope.HcloudClient().DeleteFloatingIP(ctx, &hcloud.FloatingIP{ID: status.ID})
 	s.scope.V(2).Info("Delete floating IP", "id", status.ID, "name", status.Name, "network", status.Network)
 	return err
 }
@@ -183,12 +183,12 @@ func (s *Service) Delete(ctx context.Context) (err error) {
 	return nil
 }
 
-func (s *Service) compare(actualStatus []infrav1.HetznerFloatingIPStatus) (needCreation []infrav1.HetznerFloatingIPSpec, needDeletion []infrav1.HetznerFloatingIPStatus) {
-	var matchedSpecToStatusMap = make(map[int]*infrav1.HetznerFloatingIPStatus)
-	var matchedStatusToSpecMap = make(map[int]*infrav1.HetznerFloatingIPSpec)
+func (s *Service) compare(actualStatus []infrav1.HcloudFloatingIPStatus) (needCreation []infrav1.HcloudFloatingIPSpec, needDeletion []infrav1.HcloudFloatingIPStatus) {
+	var matchedSpecToStatusMap = make(map[int]*infrav1.HcloudFloatingIPStatus)
+	var matchedStatusToSpecMap = make(map[int]*infrav1.HcloudFloatingIPSpec)
 
-	for posSpec, ipSpec := range s.scope.HetznerCluster.Spec.ControlPlaneFloatingIPs {
-		for posStatus, ipStatus := range s.scope.HetznerCluster.Status.ControlPlaneFloatingIPs {
+	for posSpec, ipSpec := range s.scope.HcloudCluster.Spec.ControlPlaneFloatingIPs {
+		for posStatus, ipStatus := range s.scope.HcloudCluster.Status.ControlPlaneFloatingIPs {
 			if _, ok := matchedStatusToSpecMap[posStatus]; ok {
 				continue
 			}
@@ -201,14 +201,14 @@ func (s *Service) compare(actualStatus []infrav1.HetznerFloatingIPStatus) (needC
 	}
 
 	// floating IPs to create
-	for pos, spec := range s.scope.HetznerCluster.Spec.ControlPlaneFloatingIPs {
+	for pos, spec := range s.scope.HcloudCluster.Spec.ControlPlaneFloatingIPs {
 		if _, ok := matchedSpecToStatusMap[pos]; ok {
 			continue
 		}
 		needCreation = append(needCreation, spec)
 	}
 
-	for pos, status := range s.scope.HetznerCluster.Status.ControlPlaneFloatingIPs {
+	for pos, status := range s.scope.HcloudCluster.Status.ControlPlaneFloatingIPs {
 		if _, ok := matchedStatusToSpecMap[pos]; ok {
 			continue
 		}
@@ -220,24 +220,24 @@ func (s *Service) compare(actualStatus []infrav1.HetznerFloatingIPStatus) (needC
 
 // actualStatus gathers all floating IPs referenced by ID on object or a
 // appropriate tag and converts them into the status object
-func (s *Service) actualStatus(ctx context.Context) ([]infrav1.HetznerFloatingIPStatus, error) {
+func (s *Service) actualStatus(ctx context.Context) ([]infrav1.HcloudFloatingIPStatus, error) {
 	// index existing status entries
 	var ids intSlice
-	ipStatusByID := make(map[int]*infrav1.HetznerFloatingIPStatus)
-	for pos := range s.scope.HetznerCluster.Status.ControlPlaneFloatingIPs {
-		ipStatus := &s.scope.HetznerCluster.Status.ControlPlaneFloatingIPs[pos]
+	ipStatusByID := make(map[int]*infrav1.HcloudFloatingIPStatus)
+	for pos := range s.scope.HcloudCluster.Status.ControlPlaneFloatingIPs {
+		ipStatus := &s.scope.HcloudCluster.Status.ControlPlaneFloatingIPs[pos]
 		ipStatusByID[ipStatus.ID] = ipStatus
 		ids = append(ids, ipStatus.ID)
 	}
-	for _, ipSpec := range s.scope.HetznerCluster.Spec.ControlPlaneFloatingIPs {
+	for _, ipSpec := range s.scope.HcloudCluster.Spec.ControlPlaneFloatingIPs {
 		if ipSpec.ID != nil {
 			ids = append(ids, *ipSpec.ID)
 		}
 	}
 
 	// refresh existing floating IPs
-	clusterTagKey := infrav1.ClusterTagKey(s.scope.HetznerCluster.Name)
-	ipStatuses, err := s.scope.HetznerClient().ListFloatingIPs(ctx, hcloud.FloatingIPListOpts{})
+	clusterTagKey := infrav1.ClusterTagKey(s.scope.HcloudCluster.Name)
+	ipStatuses, err := s.scope.HcloudClient().ListFloatingIPs(ctx, hcloud.FloatingIPListOpts{})
 	if err != nil {
 		return nil, fmt.Errorf("error listing floating IPs: %w", err)
 	}
@@ -260,7 +260,7 @@ func (s *Service) actualStatus(ctx context.Context) ([]infrav1.HetznerFloatingIP
 	}
 	sort.Ints(ids)
 
-	var floatingIPs []infrav1.HetznerFloatingIPStatus
+	var floatingIPs []infrav1.HcloudFloatingIPStatus
 
 	for _, id := range ids {
 		status := ipStatusByID[id]

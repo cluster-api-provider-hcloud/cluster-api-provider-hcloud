@@ -3,7 +3,7 @@ load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library")
 go_library(
     name = "go_default_library",
     srcs = ["main.go"],
-    importpath = "github.com/simonswine/cluster-api-provider-hetzner/cmd/cluster-api-provider-hetzner",
+    importpath = "github.com/simonswine/cluster-api-provider-hcloud/cmd/cluster-api-provider-hcloud",
     visibility = ["//visibility:private"],
     deps = [
         "//api/v1alpha3:go_default_library",
@@ -23,7 +23,7 @@ go_library(
 )
 
 go_binary(
-    name = "cluster-api-provider-hetzner",
+    name = "cluster-api-provider-hcloud",
     embed = [":go_default_library"],
     pure = "on",
     visibility = ["//visibility:public"],
@@ -33,11 +33,11 @@ sh_binary(
     name = "run",
     srcs = ["run.sh"],
     args = [
-        "$(location :cluster-api-provider-hetzner)",
+        "$(location :cluster-api-provider-hcloud)",
         "$(location :host_all_tar.tar)",
     ],
     data = [
-        ":cluster-api-provider-hetzner",
+        ":cluster-api-provider-hcloud",
         ":host_all_tar.tar",
     ],
 )
@@ -112,7 +112,7 @@ go_image(
         "/packer-config/packer-centos7-crio.json",
     ],
     base = ":base_image",
-    binary = ":cluster-api-provider-hetzner",
+    binary = ":cluster-api-provider-hcloud",
     entrypoint = [],
     visibility = ["//visibility:public"],
 )

@@ -32,37 +32,37 @@ const (
 	// if the cluster is destroyed.
 	ResourceLifecycleShared = ResourceLifecycle("shared")
 
-	// NameKubernetesHetznerCloudProviderPrefix is the tag name used by the cloud provider to logically
+	// NameKubernetesHcloudCloudProviderPrefix is the tag name used by the cloud provider to logically
 	// separate independent cluster resources. We use it to identify which resources we expect
 	// to be permissive about state changes.
 	// logically independent clusters running in the same AZ.
-	// The tag key = NameKubernetesHetznerCloudProviderPrefix + clusterID
+	// The tag key = NameKubernetesHcloudCloudProviderPrefix + clusterID
 	// The tag value is an ownership value
-	NameKubernetesHetznerCloudProviderPrefix = "kubernetes.io/cluster/"
+	NameKubernetesHcloudCloudProviderPrefix = "kubernetes.io/cluster/"
 
-	// NameHetznerProviderPrefix is the tag prefix we use to differentiate
-	// cluster-api-provider-hetzner owned components from other tooling that
+	// NameHcloudProviderPrefix is the tag prefix we use to differentiate
+	// cluster-api-provider-hcloud owned components from other tooling that
 	// uses NameKubernetesClusterPrefix
-	NameHetznerProviderPrefix = "cluster-api-provider-hetzner.sigs.k8s.io/"
+	NameHcloudProviderPrefix = "cluster-api-provider-hcloud.sigs.k8s.io/"
 
-	// NameHetznerProviderOwned is the tag name we use to differentiate
-	// cluster-api-provider-hetzner owned components from other tooling that
+	// NameHcloudProviderOwned is the tag name we use to differentiate
+	// cluster-api-provider-hcloud owned components from other tooling that
 	// uses NameKubernetesClusterPrefix
-	NameHetznerProviderOwned = "cluster." + NameHetznerProviderPrefix
+	NameHcloudProviderOwned = "cluster." + NameHcloudProviderPrefix
 
 	// MachineNameTag tags related MachineNameTag
-	MachineNameTagKey = "machine." + NameHetznerProviderPrefix + "name"
+	MachineNameTagKey = "machine." + NameHcloudProviderPrefix + "name"
 
 	// MachineTempalteHashTag tags server resources
-	MachineTemplateHashTagKey = "machine." + NameHetznerProviderPrefix + "template"
+	MachineTemplateHashTagKey = "machine." + NameHcloudProviderPrefix + "template"
 )
 
 // ClusterTagKey generates the key for resources associated with a cluster.
 func ClusterTagKey(name string) string {
-	return fmt.Sprintf("%s%s", NameHetznerProviderOwned, name)
+	return fmt.Sprintf("%s%s", NameHcloudProviderOwned, name)
 }
 
-// ClusterHetznerCloudProviderTagKey generates the key for resources associated a cluster's Hetzner cloud provider.
-func ClusterHetznerCloudProviderTagKey(name string) string {
-	return fmt.Sprintf("%s%s", NameKubernetesHetznerCloudProviderPrefix, name)
+// ClusterHcloudCloudProviderTagKey generates the key for resources associated a cluster's Hcloud cloud provider.
+func ClusterHcloudCloudProviderTagKey(name string) string {
+	return fmt.Sprintf("%s%s", NameKubernetesHcloudCloudProviderPrefix, name)
 }

@@ -7,6 +7,66 @@ metadata:
   name: manager-role
 rules:
 - apiGroups:
+  - cluster-api-provider-hcloud.swine.dev
+  resources:
+  - hcloudclusters
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - cluster-api-provider-hcloud.swine.dev
+  resources:
+  - hcloudclusters/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
+  - cluster-api-provider-hcloud.swine.dev
+  resources:
+  - hcloudmachines
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - cluster-api-provider-hcloud.swine.dev
+  resources:
+  - hcloudmachines/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
+  - cluster-api-provider-hcloud.swine.dev
+  resources:
+  - hcloudvolumes
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - cluster-api-provider-hcloud.swine.dev
+  resources:
+  - hcloudvolumes/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
   - cluster.x-k8s.io
   resources:
   - clusters
@@ -24,63 +84,3 @@ rules:
   - get
   - list
   - watch
-- apiGroups:
-  - infrastructure.cluster.x-k8s.io
-  resources:
-  - hetznerclusters
-  verbs:
-  - create
-  - delete
-  - get
-  - list
-  - patch
-  - update
-  - watch
-- apiGroups:
-  - infrastructure.cluster.x-k8s.io
-  resources:
-  - hetznerclusters/status
-  verbs:
-  - get
-  - patch
-  - update
-- apiGroups:
-  - infrastructure.cluster.x-k8s.io
-  resources:
-  - hetznermachines
-  verbs:
-  - create
-  - delete
-  - get
-  - list
-  - patch
-  - update
-  - watch
-- apiGroups:
-  - infrastructure.cluster.x-k8s.io
-  resources:
-  - hetznermachines/status
-  verbs:
-  - get
-  - patch
-  - update
-- apiGroups:
-  - infrastructure.cluster.x-k8s.io
-  resources:
-  - hetznervolumes
-  verbs:
-  - create
-  - delete
-  - get
-  - list
-  - patch
-  - update
-  - watch
-- apiGroups:
-  - infrastructure.cluster.x-k8s.io
-  resources:
-  - hetznervolumes/status
-  verbs:
-  - get
-  - patch
-  - update

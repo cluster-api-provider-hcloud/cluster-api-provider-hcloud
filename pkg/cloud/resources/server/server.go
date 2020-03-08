@@ -15,9 +15,9 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
-	infrav1 "github.com/simonswine/cluster-api-provider-hetzner/api/v1alpha3"
-	"github.com/simonswine/cluster-api-provider-hetzner/pkg/cloud/scope"
-	"github.com/simonswine/cluster-api-provider-hetzner/pkg/cloud/utils"
+	infrav1 "github.com/simonswine/cluster-api-provider-hcloud/api/v1alpha3"
+	"github.com/simonswine/cluster-api-provider-hcloud/pkg/cloud/scope"
+	"github.com/simonswine/cluster-api-provider-hcloud/pkg/cloud/utils"
 )
 
 type Service struct {
@@ -34,13 +34,13 @@ var errNotImplemented = errors.New("Not implemented")
 
 func (s *Service) genericLabels() map[string]string {
 	return map[string]string{
-		infrav1.ClusterTagKey(s.scope.HetznerCluster.Name): string(infrav1.ResourceLifecycleOwned),
+		infrav1.ClusterTagKey(s.scope.HcloudCluster.Name): string(infrav1.ResourceLifecycleOwned),
 	}
 }
 
 func (s *Service) labels() map[string]string {
 	m := s.genericLabels()
-	m[infrav1.MachineNameTagKey] = s.scope.HetznerMachine.Name
+	m[infrav1.MachineNameTagKey] = s.scope.HcloudMachine.Name
 	return m
 }
 
@@ -68,14 +68,14 @@ func (s *Service) reconcileKubeadmConfig(ctx context.Context, volumes []*hcloud.
 	if resourceVersionUpdated, err := k.update(ctx); err != nil {
 		return nil, nil, err
 	} else if resourceVersionUpdated != nil {
-		s.scope.HetznerMachine.Status.KubeadmConfigResourceVersionUpdated = resourceVersionUpdated
+		s.scope.HcloudMachine.Status.KubeadmConfigResourceVersionUpdated = resourceVersionUpdated
 		return nil, &ctrl.Result{RequeueAfter: 2 * time.Second}, nil
 	}
 
 	// ensure it resource version is bigger than at the time it had been last
 	// updated
 	if rvUpdatedStr :=
-		s.scope.HetznerMachine.Status.KubeadmConfigResourceVersionUpdated; rvUpdatedStr != nil {
+		s.scope.HcloudMachine.Status.KubeadmConfigResourceVersionUpdated; rvUpdatedStr != nil {
 		rvUpdated, err := strconv.ParseInt(*rvUpdatedStr, 10, 64)
 		if err != nil {
 			return nil, nil, errors.Wrap(err, "error converting resourceVersionUpdated to int")
@@ -102,11 +102,11 @@ func (s *Service) reconcileKubeadmConfig(ctx context.Context, volumes []*hcloud.
 
 func (s *Service) Reconcile(ctx context.Context) (_ *ctrl.Result, err error) {
 	// gather image ID
-	imageID, err := s.findImageIDBySpec(s.scope.Ctx, s.scope.HetznerMachine.Spec.Image)
+	imageID, err := s.findImageIDBySpec(s.scope.Ctx, s.scope.HcloudMachine.Spec.Image)
 	if err != nil {
 		return nil, err
 	}
-	s.scope.HetznerMachine.Status.ImageID = imageID
+	s.scope.HcloudMachine.Status.ImageID = imageID
 
 	// gather volumes
 	volumes, err := s.volumes(ctx)
@@ -131,15 +131,15 @@ func (s *Service) Reconcile(ctx context.Context) (_ *ctrl.Result, err error) {
 	opts := hcloud.ServerCreateOpts{
 		Name: names.SimpleNameGenerator.GenerateName(fmt.Sprintf(
 			"%s-%s-",
-			s.scope.HetznerCluster.Name,
+			s.scope.HcloudCluster.Name,
 			s.scope.Machine.Name,
 		)),
 		Labels: s.labels(),
 		Image: &hcloud.Image{
-			ID: int(*s.scope.HetznerMachine.Status.ImageID),
+			ID: int(*s.scope.HcloudMachine.Status.ImageID),
 		},
 		Location: &hcloud.Location{
-			Name: string(s.scope.HetznerMachine.Status.Location),
+			Name: string(s.scope.HcloudMachine.Status.Location),
 		},
 		SSHKeys: []*hcloud.SSHKey{
 			{
@@ -147,7 +147,7 @@ func (s *Service) Reconcile(ctx context.Context) (_ *ctrl.Result, err error) {
 			},
 		},
 		ServerType: &hcloud.ServerType{
-			Name: string(s.scope.HetznerMachine.Spec.Type),
+			Name: string(s.scope.HcloudMachine.Spec.Type),
 		},
 		Automount:        &myFalse,
 		StartAfterCreate: &myTrue,
@@ -156,7 +156,7 @@ func (s *Service) Reconcile(ctx context.Context) (_ *ctrl.Result, err error) {
 	}
 
 	// setup network if available
-	if net := s.scope.HetznerCluster.Status.Network; net != nil {
+	if net := s.scope.HcloudCluster.Status.Network; net != nil {
 		opts.Networks = []*hcloud.Network{{
 			ID: net.ID,
 		}}
@@ -165,7 +165,7 @@ func (s *Service) Reconcile(ctx context.Context) (_ *ctrl.Result, err error) {
 	var actualServer *hcloud.Server
 
 	if len(actualServers) == 0 {
-		if res, _, err := s.scope.HetznerClient().CreateServer(s.scope.Ctx, opts); err != nil {
+		if res, _, err := s.scope.HcloudClient().CreateServer(s.scope.Ctx, opts); err != nil {
 			return nil, errors.Wrap(err, "failed to create server")
 		} else {
 			actualServer = res.Server
@@ -176,7 +176,7 @@ func (s *Service) Reconcile(ctx context.Context) (_ *ctrl.Result, err error) {
 		return nil, errors.New("found more than one actual servers")
 	}
 
-	if err := setStatusFromAPI(&s.scope.HetznerMachine.Status, actualServer); err != nil {
+	if err := setStatusFromAPI(&s.scope.HcloudMachine.Status, actualServer); err != nil {
 		return nil, errors.New("error setting status")
 	}
 
@@ -189,7 +189,7 @@ func (s *Service) Reconcile(ctx context.Context) (_ *ctrl.Result, err error) {
 	// check if api server is ready
 	// TODO: backoff
 	clientConfig, err := s.scope.ClientConfigWithAPIEndpoint(clusterv1.APIEndpoint{
-		Host: s.scope.HetznerMachine.Status.Addresses[0].Address,
+		Host: s.scope.HcloudMachine.Status.Addresses[0].Address,
 		Port: s.scope.ControlPlaneAPIEndpointPort(),
 	})
 	if err != nil {
@@ -223,8 +223,8 @@ func (s *Service) Reconcile(ctx context.Context) (_ *ctrl.Result, err error) {
 	}
 
 	providerID := fmt.Sprintf("hcloud://%d", actualServer.ID)
-	s.scope.HetznerMachine.Spec.ProviderID = &providerID
-	s.scope.HetznerMachine.Status.Ready = true
+	s.scope.HcloudMachine.Spec.ProviderID = &providerID
+	s.scope.HcloudMachine.Status.Ready = true
 
 	return nil, nil
 
@@ -254,7 +254,7 @@ func (s *Service) Delete(ctx context.Context) (_ *ctrl.Result, err error) {
 
 	// shutdown servers
 	for _, server := range actionShutdown {
-		if _, _, err := s.scope.HetznerClient().ShutdownServer(ctx, server); err != nil {
+		if _, _, err := s.scope.HcloudClient().ShutdownServer(ctx, server); err != nil {
 			return nil, errors.Wrap(err, "failed to shutdown server")
 		}
 		actionWait = append(actionWait, server)
@@ -262,7 +262,7 @@ func (s *Service) Delete(ctx context.Context) (_ *ctrl.Result, err error) {
 
 	// delete servers that need delete
 	for _, server := range actionDelete {
-		if _, err := s.scope.HetznerClient().DeleteServer(ctx, server); err != nil {
+		if _, err := s.scope.HcloudClient().DeleteServer(ctx, server); err != nil {
 			return nil, errors.Wrap(err, "failed to delete server")
 		}
 	}
@@ -280,14 +280,14 @@ func (s *Service) Delete(ctx context.Context) (_ *ctrl.Result, err error) {
 func (s *Service) volumes(ctx context.Context) ([]*hcloud.Volume, error) {
 	opts := hcloud.VolumeListOpts{}
 	opts.LabelSelector = utils.LabelsToLabelSelector(s.genericLabels())
-	volumes, err := s.scope.HetznerClient().ListVolumes(s.scope.Ctx, opts)
+	volumes, err := s.scope.HcloudClient().ListVolumes(s.scope.Ctx, opts)
 	if err != nil {
 		return nil, err
 	}
 
 	var volumesSelected []*hcloud.Volume
 	for _, v := range volumes {
-		if v.Name == fmt.Sprintf("%s-%s", s.scope.HetznerCluster.Name, s.scope.HetznerMachine.Name) {
+		if v.Name == fmt.Sprintf("%s-%s", s.scope.HcloudCluster.Name, s.scope.HcloudMachine.Name) {
 			volumesSelected = append(volumesSelected, v)
 		}
 	}
@@ -295,8 +295,8 @@ func (s *Service) volumes(ctx context.Context) ([]*hcloud.Volume, error) {
 	return volumesSelected, nil
 }
 
-func setStatusFromAPI(status *infrav1.HetznerMachineStatus, server *hcloud.Server) error {
-	status.ServerState = infrav1.HetznerServerState(server.Status)
+func setStatusFromAPI(status *infrav1.HcloudMachineStatus, server *hcloud.Server) error {
+	status.ServerState = infrav1.HcloudServerState(server.Status)
 	status.Addresses = []v1.NodeAddress{}
 
 	if ip := server.PublicNet.IPv4.IP.String(); ip != "" {
@@ -326,7 +326,7 @@ func setStatusFromAPI(status *infrav1.HetznerMachineStatus, server *hcloud.Serve
 func (s *Service) actualStatus(ctx context.Context) ([]*hcloud.Server, error) {
 	opts := hcloud.ServerListOpts{}
 	opts.LabelSelector = utils.LabelsToLabelSelector(s.labels())
-	servers, err := s.scope.HetznerClient().ListServers(s.scope.Ctx, opts)
+	servers, err := s.scope.HcloudClient().ListServers(s.scope.Ctx, opts)
 	if err != nil {
 		return nil, err
 	}

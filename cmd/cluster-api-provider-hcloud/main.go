@@ -13,10 +13,10 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
-	infrastructurev1alpha3 "github.com/simonswine/cluster-api-provider-hetzner/api/v1alpha3"
-	"github.com/simonswine/cluster-api-provider-hetzner/controllers"
-	"github.com/simonswine/cluster-api-provider-hetzner/pkg/manifests"
-	"github.com/simonswine/cluster-api-provider-hetzner/pkg/packer"
+	infrastructurev1alpha3 "github.com/simonswine/cluster-api-provider-hcloud/api/v1alpha3"
+	"github.com/simonswine/cluster-api-provider-hcloud/controllers"
+	"github.com/simonswine/cluster-api-provider-hcloud/pkg/manifests"
+	"github.com/simonswine/cluster-api-provider-hcloud/pkg/packer"
 	// +kubebuilder:scaffold:imports
 )
 
@@ -49,7 +49,7 @@ func init() {
 }
 
 var rootCmd = &cobra.Command{
-	Use:  "cluster-api-provider-hetzner",
+	Use:  "cluster-api-provider-hcloud",
 	Args: cobra.NoArgs,
 	Run: func(cmd *cobra.Command, args []string) {
 		ctrl.SetLogger(zap.New(func(o *zap.Options) {
@@ -81,34 +81,34 @@ var rootCmd = &cobra.Command{
 			os.Exit(1)
 		}
 
-		if err = (&controllers.HetznerClusterReconciler{
+		if err = (&controllers.HcloudClusterReconciler{
 			Client:    mgr.GetClient(),
-			Log:       ctrl.Log.WithName("controllers").WithName("HetznerCluster"),
+			Log:       ctrl.Log.WithName("controllers").WithName("HcloudCluster"),
 			Scheme:    mgr.GetScheme(),
 			Packer:    packerMgr,
 			Manifests: manifestsMgr,
 		}).SetupWithManager(mgr, controller.Options{}); err != nil {
-			setupLog.Error(err, "unable to create controller", "controller", "HetznerCluster")
+			setupLog.Error(err, "unable to create controller", "controller", "HcloudCluster")
 			os.Exit(1)
 		}
-		if err = (&controllers.HetznerMachineReconciler{
+		if err = (&controllers.HcloudMachineReconciler{
 			Client:    mgr.GetClient(),
-			Log:       ctrl.Log.WithName("controllers").WithName("HetznerMachine"),
+			Log:       ctrl.Log.WithName("controllers").WithName("HcloudMachine"),
 			Scheme:    mgr.GetScheme(),
 			Packer:    packerMgr,
 			Manifests: manifestsMgr,
 		}).SetupWithManager(mgr, controller.Options{}); err != nil {
-			setupLog.Error(err, "unable to create controller", "controller", "HetznerMachine")
+			setupLog.Error(err, "unable to create controller", "controller", "HcloudMachine")
 			os.Exit(1)
 		}
-		if err = (&controllers.HetznerVolumeReconciler{
+		if err = (&controllers.HcloudVolumeReconciler{
 			Client:    mgr.GetClient(),
-			Log:       ctrl.Log.WithName("controllers").WithName("HetznerVolume"),
+			Log:       ctrl.Log.WithName("controllers").WithName("HcloudVolume"),
 			Scheme:    mgr.GetScheme(),
 			Packer:    packerMgr,
 			Manifests: manifestsMgr,
 		}).SetupWithManager(mgr, controller.Options{}); err != nil {
-			setupLog.Error(err, "unable to create controller", "controller", "HetznerVolume")
+			setupLog.Error(err, "unable to create controller", "controller", "HcloudVolume")
 			os.Exit(1)
 		}
 		// +kubebuilder:scaffold:builder

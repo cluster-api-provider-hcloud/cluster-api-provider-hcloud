@@ -2,9 +2,10 @@
 # since it depends on service name and namespace that are out of this kustomize package.
 # It should be run by config/default
 resources:
-- bases/infrastructure.cluster.x-k8s.io_hetznerclusters.yaml
-- bases/infrastructure.cluster.x-k8s.io_hetznermachines.yaml
-- bases/infrastructure.cluster.x-k8s.io_hetznervolumes.yaml
+- bases/cluster-api-provider-hcloud.swine.dev_hcloudclusters.yaml
+- bases/cluster-api-provider-hcloud.swine.dev_hcloudmachines.yaml
+- bases/cluster-api-provider-hcloud.swine.dev_hcloudmachinetemplates.yaml
+- bases/cluster-api-provider-hcloud.swine.dev_hcloudvolumes.yaml
 # +kubebuilder:scaffold:crdkustomizeresource
 
 patchesStrategicMerge:
