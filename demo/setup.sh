@@ -24,7 +24,7 @@ rules:
   resources:
   - hcloudclusters
   - hcloudmachines
-  - hcloudtemplates
+  - hcloudmachinetemplates
   verbs:
   - create
   - delete
