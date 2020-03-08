@@ -1,0 +1,22 @@
+{
+   "configMapData": {
+      "1.2.3.4": "default/kubernetes"
+   },
+   "envFloatingIP": [
+      {
+         "name": "NOTIFY_FLOATING_IPS",
+         "value": "1.2.3.4"
+      }
+   ],
+   "envHcloudTokenRef": [
+      {
+         "name": "NOTIFY_HCLOUD_TOKEN",
+         "valueFrom": {
+            "secretKeyRef": {
+               "key": "token-123",
+               "name": "hcloud-123"
+            }
+         }
+      }
+   ]
+}

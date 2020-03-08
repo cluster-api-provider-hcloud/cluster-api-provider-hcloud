@@ -3,11 +3,12 @@ load("@io_bazel_rules_go//go:def.bzl", "go_library")
 go_library(
     name = "go_default_library",
     srcs = ["scope.go"],
-    importpath = "github.com/simonswine/cluster-api-provider-hetzner/pkg/cloud/scope/mock",
+    importpath = "github.com/simonswine/cluster-api-provider-hcloud/pkg/cloud/scope/mock",
     visibility = ["//visibility:public"],
     deps = [
         "@com_github_golang_mock//gomock:go_default_library",
         "@com_github_hetznercloud_hcloud_go//hcloud:go_default_library",
+        "@io_k8s_client_go//tools/clientcmd:go_default_library",
     ],
 )
 

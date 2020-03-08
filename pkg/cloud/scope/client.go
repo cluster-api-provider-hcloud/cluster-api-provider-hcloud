@@ -6,8 +6,8 @@ import (
 	"github.com/hetznercloud/hcloud-go/hcloud"
 )
 
-// HetznerClient collects all methods used by the controller in the hetzner cloud API
-type HetznerClient interface {
+// HcloudClient collects all methods used by the controller in the hcloud cloud API
+type HcloudClient interface {
 	ListLocation(context.Context) ([]*hcloud.Location, error)
 	CreateFloatingIP(context.Context, hcloud.FloatingIPCreateOpts) (hcloud.FloatingIPCreateResult, *hcloud.Response, error)
 	DeleteFloatingIP(context.Context, *hcloud.FloatingIP) (*hcloud.Response, error)
@@ -25,9 +25,9 @@ type HetznerClient interface {
 	DeleteNetwork(context.Context, *hcloud.Network) (*hcloud.Response, error)
 }
 
-type HetznerClientFactory func(context.Context) (HetznerClient, error)
+type HcloudClientFactory func(context.Context) (HcloudClient, error)
 
-var _ HetznerClient = &realClient{}
+var _ HcloudClient = &realClient{}
 
 type realClient struct {
 	client *hcloud.Client

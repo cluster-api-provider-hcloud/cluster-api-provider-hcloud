@@ -11,7 +11,7 @@ test: ## Run all tests through bazel
 
 .PHONY: run
 run: ## Run controller's binary
-	bazel run //cmd/cluster-api-provider-hetzner:run
+	bazel run //cmd/cluster-api-provider-hcloud:run
 
 .PHONY: install
 install: manifests ## Install CRDs into a cluster
@@ -37,4 +37,4 @@ vet:
 # TODO: Bazelify
 mockgen:
 	mkdir -p pkg/cloud/scope/mock
-	mockgen github.com/simonswine/cluster-api-provider-hetzner/pkg/cloud/scope HetznerClient > pkg/cloud/scope/mock/scope.go
+	mockgen github.com/simonswine/cluster-api-provider-hcloud/pkg/cloud/scope HcloudClient,Manifests,Packer > pkg/cloud/scope/mock/scope.go

@@ -438,8 +438,8 @@ def go_repositories():
         build_file_generation = "on",
         build_file_proto_mode = "disable_global",
         importpath = "github.com/golang/mock",
-        sum = "h1:qGJ6qTW+x6xX/my+8YUVl4WNpX9B7+/l2tRsHGZ7f2s=",
-        version = "v1.3.1",
+        sum = "h1:ocYkMQY5RrXTYgXl7ICpV0IXwlEQGwKIsery4gyXa1U=",
+        version = "v1.4.1",
     )
     go_repository(
         name = "com_github_golang_protobuf",
@@ -787,6 +787,7 @@ def go_repositories():
     )
     go_repository(
         name = "com_github_onsi_ginkgo",
+        build_extra_args = ["-exclude=integration"],
         build_file_generation = "on",
         build_file_proto_mode = "disable_global",
         importpath = "github.com/onsi/ginkgo",
@@ -1294,16 +1295,16 @@ def go_repositories():
         build_file_generation = "on",
         build_file_proto_mode = "disable_global",
         importpath = "sigs.k8s.io/cluster-api",
-        sum = "h1:WjhtuvyjnMgo62kKlVizhI/nYs4DJxHNf+ZMSk/uUsM=",
-        version = "v0.2.7",
+        sum = "h1:0vhn1Uy6/j98TM+ihmWRb+lenkmd2VvdbHzrttsClIk=",
+        version = "v0.2.10",
     )
     go_repository(
         name = "io_k8s_sigs_cluster_api_bootstrap_provider_kubeadm",
         build_file_generation = "on",
         build_file_proto_mode = "disable_global",
         importpath = "sigs.k8s.io/cluster-api-bootstrap-provider-kubeadm",
-        sum = "h1:GMpyX3FYSeHmXK+6VHq+khIKV5KkqGXfkbtAJN0Rm04=",
-        version = "v0.1.3",
+        sum = "h1:VSbJstRYt/CU2e0BXkOcE/Ux5a4TnbuO2x7Ln2AynmQ=",
+        version = "v0.1.6",
     )
     go_repository(
         name = "io_k8s_sigs_cluster_api_provider_aws",
@@ -1315,6 +1316,7 @@ def go_repositories():
     )
     go_repository(
         name = "io_k8s_sigs_controller_runtime",
+        build_extra_args = ["-exclude=pkg/webhook/conversion/testdata"],
         build_file_generation = "on",
         build_file_proto_mode = "disable_global",
         importpath = "sigs.k8s.io/controller-runtime",
@@ -1864,4 +1866,28 @@ def go_repositories():
         importpath = "go.mongodb.org/mongo-driver",
         sum = "h1:jxcFYjlkl8xaERsgLo+RNquI0epW6zuy/ZRQs6jnrFA=",
         version = "v1.1.2",
+    )
+    go_repository(
+        name = "com_github_google_go_jsonnet",
+        build_file_generation = "on",
+        build_file_proto_mode = "disable_global",
+        importpath = "github.com/google/go-jsonnet",
+        sum = "h1:Ul0FtJiQl705JIyGKaBZug/W2LBY5p0xwY08Q69eOAg=",
+        version = "v0.13.0",
+    )
+    go_repository(
+        name = "io_rsc_quote_v3",
+        build_file_generation = "on",
+        build_file_proto_mode = "disable_global",
+        importpath = "rsc.io/quote/v3",
+        sum = "h1:9JKUTTIUgS6kzR9mK1YuGKv6Nl+DijDNIc0ghT58FaY=",
+        version = "v3.1.0",
+    )
+    go_repository(
+        name = "io_rsc_sampler",
+        build_file_generation = "on",
+        build_file_proto_mode = "disable_global",
+        importpath = "rsc.io/sampler",
+        sum = "h1:7uVkIFmeBqHfdjD+gZwtXXI+RODJ2Wc4O7MPEh/QiW4=",
+        version = "v1.3.0",
     )

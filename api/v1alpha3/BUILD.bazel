@@ -4,13 +4,14 @@ go_library(
     name = "go_default_library",
     srcs = [
         "groupversion_info.go",
-        "hetznercluster_types.go",
-        "hetznermachine_types.go",
-        "hetznervolume_types.go",
+        "hcloudcluster_types.go",
+        "hcloudmachine_types.go",
+        "hcloudmachinetemplate_types.go",
+        "hcloudvolume_types.go",
         "tags.go",
         "zz_generated.deepcopy.go",
     ],
-    importpath = "github.com/simonswine/cluster-api-provider-hetzner/api/v1alpha3",
+    importpath = "github.com/simonswine/cluster-api-provider-hcloud/api/v1alpha3",
     visibility = ["//visibility:public"],
     deps = [
         "@io_k8s_api//core/v1:go_default_library",

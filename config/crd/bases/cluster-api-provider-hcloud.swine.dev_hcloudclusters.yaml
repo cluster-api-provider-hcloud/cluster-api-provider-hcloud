@@ -6,7 +6,7 @@ metadata:
   annotations:
     controller-gen.kubebuilder.io/version: (unknown)
   creationTimestamp: null
-  name: hetznerclusters.infrastructure.cluster.x-k8s.io
+  name: hcloudclusters.cluster-api-provider-hcloud.swine.dev
 spec:
   additionalPrinterColumns:
   - JSONPath: .status.location
@@ -17,20 +17,20 @@ spec:
     description: NetworkZone of the cluster
     name: NetworkZone
     type: string
-  group: infrastructure.cluster.x-k8s.io
+  group: cluster-api-provider-hcloud.swine.dev
   names:
     categories:
     - cluster-api
-    kind: HetznerCluster
-    listKind: HetznerClusterList
-    plural: hetznerclusters
-    singular: hetznercluster
+    kind: HcloudCluster
+    listKind: HcloudClusterList
+    plural: hcloudclusters
+    singular: hcloudcluster
   scope: Namespaced
   subresources:
     status: {}
   validation:
     openAPIV3Schema:
-      description: HetznerCluster is the Schema for the hetznerclusters API
+      description: HcloudCluster is the Schema for the hcloudclusters API
       properties:
         apiVersion:
           description: 'APIVersion defines the versioned schema of this representation
@@ -45,7 +45,7 @@ spec:
         metadata:
           type: object
         spec:
-          description: HetznerClusterSpec defines the desired state of HetznerCluster
+          description: HcloudClusterSpec defines the desired state of HcloudCluster
           properties:
             controlPlaneFloatingIPs:
               items:
@@ -100,7 +100,7 @@ spec:
               type: object
           type: object
         status:
-          description: HetznerClusterStatus defines the observed state of HetznerCluster
+          description: HcloudClusterStatus defines the observed state of HcloudCluster
           properties:
             apiEndpoints:
               description: APIEndpoints represents the endpoints to communicate with

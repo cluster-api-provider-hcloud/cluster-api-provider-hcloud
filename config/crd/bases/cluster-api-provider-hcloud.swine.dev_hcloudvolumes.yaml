@@ -6,31 +6,27 @@ metadata:
   annotations:
     controller-gen.kubebuilder.io/version: (unknown)
   creationTimestamp: null
-  name: hetznervolumes.infrastructure.cluster.x-k8s.io
+  name: hcloudvolumes.cluster-api-provider-hcloud.swine.dev
 spec:
   additionalPrinterColumns:
   - JSONPath: .status.location
-    description: Location of the cluster
+    description: Location of the volume
     name: Location
     type: string
-  - JSONPath: .status.networkZone
-    description: NetworkZone of the cluster
-    name: NetworkZone
-    type: string
-  group: infrastructure.cluster.x-k8s.io
+  group: cluster-api-provider-hcloud.swine.dev
   names:
     categories:
     - cluster-api
-    kind: HetznerVolume
-    listKind: HetznerVolumeList
-    plural: hetznervolumes
-    singular: hetznervolume
+    kind: HcloudVolume
+    listKind: HcloudVolumeList
+    plural: hcloudvolumes
+    singular: hcloudvolume
   scope: Namespaced
   subresources:
     status: {}
   validation:
     openAPIV3Schema:
-      description: HetznerVolume is the Schema for the hetznervolumes API
+      description: HcloudVolume is the Schema for the hcloudvolumes API
       properties:
         apiVersion:
           description: 'APIVersion defines the versioned schema of this representation
@@ -45,7 +41,7 @@ spec:
         metadata:
           type: object
         spec:
-          description: HetznerVolumeSpec defines the desired state of HetznerVolume
+          description: HcloudVolumeSpec defines the desired state of HcloudVolume
           properties:
             location:
               type: string
@@ -61,7 +57,7 @@ spec:
               x-kubernetes-int-or-string: true
           type: object
         status:
-          description: HetznerVolumeStatus defines the observed state of HetznerVolume
+          description: HcloudVolumeStatus defines the observed state of HcloudVolume
           properties:
             location:
               type: string

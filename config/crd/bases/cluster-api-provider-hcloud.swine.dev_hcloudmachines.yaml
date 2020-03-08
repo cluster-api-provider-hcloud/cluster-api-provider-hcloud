@@ -6,22 +6,39 @@ metadata:
   annotations:
     controller-gen.kubebuilder.io/version: (unknown)
   creationTimestamp: null
-  name: hetznermachines.infrastructure.cluster.x-k8s.io
+  name: hcloudmachines.cluster-api-provider-hcloud.swine.dev
 spec:
-  group: infrastructure.cluster.x-k8s.io
+  additionalPrinterColumns:
+  - JSONPath: .status.serverState
+    description: Server state
+    name: State
+    type: string
+  - JSONPath: .status.ready
+    description: Machine ready status
+    name: Ready
+    type: string
+  - JSONPath: .spec.providerID
+    description: Hcloud instance ID
+    name: InstanceID
+    type: string
+  - JSONPath: .metadata.ownerReferences[?(@.kind=="Machine")].name
+    description: Machine object which owns with this HcloudMachine
+    name: Machine
+    type: string
+  group: cluster-api-provider-hcloud.swine.dev
   names:
     categories:
     - cluster-api
-    kind: HetznerMachine
-    listKind: HetznerMachineList
-    plural: hetznermachines
-    singular: hetznermachine
+    kind: HcloudMachine
+    listKind: HcloudMachineList
+    plural: hcloudmachines
+    singular: hcloudmachine
   scope: Namespaced
   subresources:
     status: {}
   validation:
     openAPIV3Schema:
-      description: HetznerMachine is the Schema for the hetznermachine API
+      description: HcloudMachine is the Schema for the hcloudmachine API
       properties:
         apiVersion:
           description: 'APIVersion defines the versioned schema of this representation
@@ -36,7 +53,7 @@ spec:
         metadata:
           type: object
         spec:
-          description: HetznerMachineSpec defines the desired state of HetznerMachine
+          description: HcloudMachineSpec defines the desired state of HcloudMachine
           properties:
             image:
               properties:
@@ -93,6 +110,10 @@ spec:
                   type: string
               type: object
             location:
+              type: string
+            providerID:
+              description: ProviderID is the unique identifier as specified by the
+                cloud provider.
               type: string
             sshKeys:
               items:
@@ -152,12 +173,45 @@ spec:
               type: array
             type:
               type: string
+            volumes:
+              items:
+                description: HcloudMachineVolume represent a Volume attachment
+                properties:
+                  mountPath:
+                    type: string
+                  name:
+                    type: string
+                  volumeRef:
+                    type: string
+                type: object
+              type: array
           type: object
         status:
-          description: HetznerMachineStatus defines the observed state of HetznerMachine
+          description: HcloudMachineStatus defines the observed state of HcloudMachine
           properties:
+            addresses:
+              description: Addresses contains the server's associated addresses.
+              items:
+                description: NodeAddress contains information for the node's address.
+                properties:
+                  address:
+                    description: The node address.
+                    type: string
+                  type:
+                    description: Node address type, one of Hostname, ExternalIP or
+                      InternalIP.
+                    type: string
+                required:
+                - address
+                - type
+                type: object
+              type: array
             imageID:
               type: integer
+            kubeadmConfigResourceVersionUpdated:
+              description: KubeadmConfigResourceVersionConfigured keeps track of the
+                ResourceVersion which we last reconfigured KubeadmConfig
+              type: string
             location:
               type: string
             networkZone:
@@ -165,6 +219,9 @@ spec:
             ready:
               description: Ready is true when the provider resource is ready.
               type: boolean
+            serverState:
+              description: ServerState is the state of the server for this machine.
+              type: string
           type: object
       type: object
   version: v1alpha3

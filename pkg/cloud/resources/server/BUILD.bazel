@@ -1,13 +1,13 @@
-load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
 
 go_library(
     name = "go_default_library",
     srcs = [
         "image.go",
+        "kubeadm.go",
         "server.go",
-        "userdata.go",
     ],
-    importpath = "github.com/simonswine/cluster-api-provider-hetzner/pkg/cloud/resources/server",
+    importpath = "github.com/simonswine/cluster-api-provider-hcloud/pkg/cloud/resources/server",
     visibility = ["//visibility:public"],
     deps = [
         "//api/v1alpha3:go_default_library",
@@ -16,20 +16,16 @@ go_library(
         "@com_github_coreos_go_systemd//unit:go_default_library",
         "@com_github_hetznercloud_hcloud_go//hcloud:go_default_library",
         "@com_github_pkg_errors//:go_default_library",
-        "@in_gopkg_yaml_v3//:go_default_library",
+        "@io_k8s_api//core/v1:go_default_library",
+        "@io_k8s_apimachinery//pkg/api/errors:go_default_library",
+        "@io_k8s_apimachinery//pkg/types:go_default_library",
         "@io_k8s_apiserver//pkg/storage/names:go_default_library",
+        "@io_k8s_client_go//kubernetes:go_default_library",
+        "@io_k8s_sigs_cluster_api//api/v1alpha2:go_default_library",
+        "@io_k8s_sigs_cluster_api_bootstrap_provider_kubeadm//api/v1alpha2:go_default_library",
+        "@io_k8s_sigs_cluster_api_bootstrap_provider_kubeadm//kubeadm/v1beta1:go_default_library",
         "@io_k8s_sigs_controller_runtime//:go_default_library",
         "@io_k8s_sigs_controller_runtime//pkg/reconcile:go_default_library",
-    ],
-)
-
-go_test(
-    name = "go_default_test",
-    srcs = ["userdata_test.go"],
-    embed = [":go_default_library"],
-    deps = [
-        "@com_github_onsi_ginkgo//:go_default_library",
-        "@com_github_onsi_gomega//:go_default_library",
     ],
 )
 

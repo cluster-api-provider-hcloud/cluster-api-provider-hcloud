@@ -1,6 +1,6 @@
 load("@bazel_gazelle//:def.bzl", "gazelle")
 
-# gazelle:prefix github.com/simonswine/cluster-api-provider-hetzner
+# gazelle:prefix github.com/simonswine/cluster-api-provider-hcloud
 # gazelle:proto disable_global
 gazelle(name = "gazelle")
 
@@ -9,7 +9,7 @@ load("@io_bazel_rules_docker//container:container.bzl", "container_bundle")
 container_bundle(
     name = "images",
     images = {
-        "{STABLE_DOCKER_REGISTRY}/cluster-api-provider-hetzner:{STABLE_DOCKER_TAG}": "//cmd/cluster-api-provider-hetzner:image",
+        "{STABLE_DOCKER_REGISTRY}/cluster-api-provider-hcloud:{STABLE_DOCKER_TAG}": "//cmd/cluster-api-provider-hcloud:image",
     },
 )
 
@@ -18,7 +18,7 @@ filegroup(
     srcs = [
         ":package-srcs",
         "//api/v1alpha3:all-srcs",
-        "//cmd/cluster-api-provider-hetzner:all-srcs",
+        "//cmd/cluster-api-provider-hcloud:all-srcs",
         "//controllers:all-srcs",
         "//hack:all-srcs",
         "//manifests:all-srcs",
@@ -30,6 +30,8 @@ filegroup(
         "//pkg/cloud/resources/volume:all-srcs",
         "//pkg/cloud/scope:all-srcs",
         "//pkg/cloud/utils:all-srcs",
+        "//pkg/manifests:all-srcs",
+        "//pkg/packer:all-srcs",
     ],
     tags = ["automanaged"],
     visibility = ["//visibility:public"],

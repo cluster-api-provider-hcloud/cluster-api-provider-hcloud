@@ -4,6 +4,7 @@ filegroup(
     name = "config_files",
     srcs = [
         "config.jsonnet",
+        "config-extvar.jsonnet",
     ],
 )
 
@@ -18,6 +19,7 @@ jsonnet_library(
         "//manifests/hcloud-cloud-controller-manager:lib",
         "//manifests/hcloud-csi:lib",
         "//manifests/hcloud-ip-floater:lib",
+        "//manifests/kube-keepalived-vip:lib",
         "//manifests/metrics-server:lib",
     ],
 )
@@ -80,6 +82,7 @@ filegroup(
         "//manifests/hcloud-cloud-controller-manager:all-srcs",
         "//manifests/hcloud-csi:all-srcs",
         "//manifests/hcloud-ip-floater:all-srcs",
+        "//manifests/kube-keepalived-vip:all-srcs",
         "//manifests/metrics-server:all-srcs",
     ],
     tags = ["automanaged"],

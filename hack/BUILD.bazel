@@ -21,15 +21,15 @@ alias(
 alias(
     name = "kubectl_host_bin",
     actual = select({
-        "//hack:darwin_amd64": "@packer_darwin_amd64_bin//:bin",
-        "//conditions:default": "@packer_linux_amd64_bin//:bin",
+        "//hack:darwin_amd64": "@kubectl_darwin_amd64_bin//file",
+        "//conditions:default": "@kubectl_linux_amd64_bin//file",
     }),
 )
 
 go_library(
     name = "go_default_library",
     srcs = ["yaml2json.go"],
-    importpath = "github.com/simonswine/cluster-api-provider-hetzner/hack",
+    importpath = "github.com/simonswine/cluster-api-provider-hcloud/hack",
     visibility = ["//visibility:private"],
     deps = ["@com_github_bronze1man_yaml2json//y2jLib:go_default_library"],
 )

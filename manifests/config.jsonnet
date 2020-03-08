@@ -1,8 +1,33 @@
 local calico = import 'calico/calico.libsonnet';
 local hcloudCloudControllerManager = import 'hcloud-cloud-controller-manager/hcloud-cloud-controller-manager.libsonnet';
 local hcloudCSI = import 'hcloud-csi/hcloud-csi.libsonnet';
-local hcloudIPFloater = import 'hcloud-ip-floater/hcloud-ip-floater.libsonnet';
 local metricsServer = import 'metrics-server/metrics-server.libsonnet';
+local apiServerKeepalived = (import 'kube-keepalived-vip/kube-keepalived-vip.libsonnet') {
+  _config+:: {
+    name: 'kube-apiserver-keepalived-vip',
+    backendService: 'default/kubernetes',
+  },
+  daemonSet+: {
+    spec+: {
+      template+: {
+        spec+: {
+          nodeSelector+: {
+            'node-role.kubernetes.io/master': '',
+          },
+          tolerations+: [
+            {
+              key: 'CriticalAddonsOnly',
+              operator: 'Exists',
+            },
+            {
+              operator: 'Exists',
+            },
+          ],
+        },
+      },
+    },
+  },
+};
 
 {
   _config:: {
@@ -25,6 +50,7 @@ local metricsServer = import 'metrics-server/metrics-server.libsonnet';
     podsCIDRBlock: '192.168.0.0/16',
     hcloudToken: 'xx',
     hcloudNetwork: 'yy',
+    hcloudFloatingIPs: ['1.1.1.1'],
   },
 
   hcloudSecret: {
@@ -45,8 +71,8 @@ local metricsServer = import 'metrics-server/metrics-server.libsonnet';
     calico +
     hcloudCloudControllerManager +
     hcloudCSI +
-    hcloudIPFloater +
     metricsServer +
+    apiServerKeepalived +
     {
       _config+:: $._config,
     },

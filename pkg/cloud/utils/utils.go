@@ -5,7 +5,7 @@ import (
 	"strings"
 )
 
-// LabelsToLabelSelector is converting a map of labels to Hetzner label
+// LabelsToLabelSelector is converting a map of labels to Hcloud label
 // selector
 func LabelsToLabelSelector(labels map[string]string) string {
 	var parts []string

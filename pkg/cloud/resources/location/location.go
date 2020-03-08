@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 
-	infrav1 "github.com/simonswine/cluster-api-provider-hetzner/api/v1alpha3"
-	"github.com/simonswine/cluster-api-provider-hetzner/pkg/cloud/scope"
+	infrav1 "github.com/simonswine/cluster-api-provider-hcloud/api/v1alpha3"
+	"github.com/simonswine/cluster-api-provider-hcloud/pkg/cloud/scope"
 )
 
 type Service struct {
@@ -19,13 +19,13 @@ func NewService(scope localScope) *Service {
 }
 
 type localScope interface {
-	HetznerClient() scope.HetznerClient
-	GetSpecLocation() infrav1.HetznerLocation
-	SetStatusLocation(location infrav1.HetznerLocation, networkZone infrav1.HetznerNetworkZone)
+	HcloudClient() scope.HcloudClient
+	GetSpecLocation() infrav1.HcloudLocation
+	SetStatusLocation(location infrav1.HcloudLocation, networkZone infrav1.HcloudNetworkZone)
 }
 
 func (s *Service) Reconcile(ctx context.Context) (err error) {
-	locations, err := s.scope.HetznerClient().ListLocation(ctx)
+	locations, err := s.scope.HcloudClient().ListLocation(ctx)
 	if err != nil {
 		return err
 	}
@@ -33,7 +33,7 @@ func (s *Service) Reconcile(ctx context.Context) (err error) {
 	specLocation := s.scope.GetSpecLocation()
 	for _, location := range locations {
 		if location.Name == string(specLocation) {
-			s.scope.SetStatusLocation(specLocation, infrav1.HetznerNetworkZone(location.NetworkZone))
+			s.scope.SetStatusLocation(specLocation, infrav1.HcloudNetworkZone(location.NetworkZone))
 			return nil
 		}
 	}

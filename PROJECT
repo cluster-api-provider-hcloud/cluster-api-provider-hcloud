@@ -1,6 +1,6 @@
 version: "2"
 domain: cluster.x-k8s.io
-repo: github.com/simonswine/cluster-api-provider-hetzner
+repo: github.com/simonswine/cluster-api-provider-hcloud
 resources:
 - group: infrastructure
   version: v1alpha3
