@@ -4,9 +4,80 @@ set -o errexit
 set -o nounset
 set -o pipefail
 
-KUBERNETES_VERSION=${PACKER_KUBERNETES_VERSION:-1.15.6-0}
+KUBERNETES_VERSION=${PACKER_KUBERNETES_VERSION:-1.16.6}
+KUBERNETES_VERSION_RPM=${PACKER_KUBERNETES_VERSION_RPM:-$KUBERNETES_VERSION-0}
 
-env
+kubernetes_selinux_fix_versions=(
+    "1.16.6"
+    "1.17.2"
+)
+
+kubernetes_selinux_fix_hash=(
+    "aba7f145f269a9f5ffa765b89f6627ab79d88d0d23e565ed9bb20c0b5e754ea8"
+    "4064e6f5679912334ee3df4187ac050309fe69e51b2631a76ad4f0f9f897b36a"
+)
+
+# Tests kubernetes version (returns 0 if everthing is ok, 1 if it needs to
+# download a selinux fix, 2 if the version would not work)
+test_version () {
+    local IFS=.
+    local version_split=($1)
+    unset IFS
+
+    # Return early if we are not speaking about 1.x
+    if (("${version_split[0]}" != 1)); then
+        return 0
+    fi
+
+    # Everything before 1.16 is fine
+    if ((10#${version_split[1]} < 16 )); then
+        return 0
+    fi
+
+    # Everything after 1.17 is fine
+    if ((10#${version_split[1]} > 17 )); then
+        return 0
+    fi
+
+    # 1.16.8 will release a fix
+    if ((10#${version_split[1]} == 16 )) && ((10#${version_split[2]} > 7 )); then
+        return 0
+    fi
+
+    # 1.17.4 will release a fix
+    if ((10#${version_split[1]} == 17 )) && ((10#${version_split[2]} > 3 )); then
+        return 0
+    fi
+
+    for e in ${kubernetes_selinux_fix_versions[@]}; do
+        [[ "$e" == "$1" ]] && return 1
+    done
+
+    return 2
+}
+
+test_version_string () {
+    test_version $1
+    case $? in
+        0) str='fine';;
+        1) str='selinux-fixed';;
+        2) str='not-avail';;
+    esac
+    echo $str
+}
+
+echo $(test_version_string $KUBERNETES_VERSION)
+echo $(test_version_string 2.18.0)
+echo $(test_version_string 1.18.0)
+echo $(test_version_string 1.17.0)
+echo $(test_version_string 1.17.4)
+echo $(test_version_string 1.15.34)
+echo $(test_version_string 1.16.1)
+echo $(test_version_string 1.16.6)
+echo $(test_version_string 1.16.7)
+echo $(test_version_string 1.16.8)
+
+exit 1
 
 cat <<EOF > /etc/yum.repos.d/kubernetes.repo
 [kubernetes]
