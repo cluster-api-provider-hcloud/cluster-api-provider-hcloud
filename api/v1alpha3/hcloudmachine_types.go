@@ -51,9 +51,8 @@ type HcloudServerState string
 type HcloudImageID int
 
 type HcloudSSHKeySpec struct {
-	LabelSelector *metav1.LabelSelector `json:"labelSelector,omitempty"`
-	Name          *string               `json:"name,omitempty"`
-	ID            *string               `json:"id,omitempty"`
+	Name *string `json:"name,omitempty"`
+	ID   *string `json:"id,omitempty"`
 }
 
 // HcloudMachineVolume represent a Volume attachment
@@ -64,9 +63,8 @@ type HcloudMachineVolume struct {
 }
 
 type HcloudImageSpec struct {
-	LabelSelector *metav1.LabelSelector `json:"labelSelector,omitempty"`
-	Name          *string               `json:"name,omitempty"`
-	ID            *HcloudImageID        `json:"id,omitempty"`
+	Name *string        `json:"name,omitempty"`
+	ID   *HcloudImageID `json:"id,omitempty"`
 }
 
 // HcloudMachineStatus defines the observed state of HcloudMachine

@@ -8,6 +8,7 @@ import (
 
 // HcloudClient collects all methods used by the controller in the hcloud cloud API
 type HcloudClient interface {
+	Token() string
 	ListLocation(context.Context) ([]*hcloud.Location, error)
 	CreateFloatingIP(context.Context, hcloud.FloatingIPCreateOpts) (hcloud.FloatingIPCreateResult, *hcloud.Response, error)
 	DeleteFloatingIP(context.Context, *hcloud.FloatingIP) (*hcloud.Response, error)
@@ -31,6 +32,11 @@ var _ HcloudClient = &realClient{}
 
 type realClient struct {
 	client *hcloud.Client
+	token  string
+}
+
+func (c *realClient) Token() string {
+	return c.token
 }
 
 func (c *realClient) ListLocation(ctx context.Context) ([]*hcloud.Location, error) {

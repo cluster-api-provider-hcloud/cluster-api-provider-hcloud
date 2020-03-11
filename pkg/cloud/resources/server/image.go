@@ -3,19 +3,27 @@ package server
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/hetznercloud/hcloud-go/hcloud"
 	"github.com/pkg/errors"
 
 	infrav1 "github.com/simonswine/cluster-api-provider-hcloud/api/v1alpha3"
+	packerapi "github.com/simonswine/cluster-api-provider-hcloud/pkg/packer/api"
 )
 
 func (s *Service) findImageIDBySpec(ctx context.Context, spec *infrav1.HcloudImageSpec) (*infrav1.HcloudImageID, error) {
 	if spec == nil {
-		return nil, errors.New("no image specified")
+		version := s.scope.Machine.Spec.Version
+		if version == nil {
+			return nil, errors.New("Machine has no Version set")
+		}
+		return s.scope.EnsureImage(ctx, &packerapi.PackerParameters{
+			KubernetesVersion: strings.Trim(*version, "v"),
+		})
 	}
 
-	// TODO filter with label selector
+	// specific image specified
 	images, err := s.scope.HcloudClient().ListImages(ctx, hcloud.ImageListOpts{})
 	if err != nil {
 		return nil, fmt.Errorf("error listing images: %w", err)

@@ -6,8 +6,11 @@ package mock_scope
 
 import (
 	context "context"
+	logr "github.com/go-logr/logr"
 	gomock "github.com/golang/mock/gomock"
 	hcloud "github.com/hetznercloud/hcloud-go/hcloud"
+	v1alpha3 "github.com/simonswine/cluster-api-provider-hcloud/api/v1alpha3"
+	api "github.com/simonswine/cluster-api-provider-hcloud/pkg/packer/api"
 	clientcmd "k8s.io/client-go/tools/clientcmd"
 	reflect "reflect"
 )
@@ -265,6 +268,20 @@ func (mr *MockHcloudClientMockRecorder) ShutdownServer(arg0, arg1 interface{}) *
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ShutdownServer", reflect.TypeOf((*MockHcloudClient)(nil).ShutdownServer), arg0, arg1)
 }
 
+// Token mocks base method
+func (m *MockHcloudClient) Token() string {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Token")
+	ret0, _ := ret[0].(string)
+	return ret0
+}
+
+// Token indicates an expected call of Token
+func (mr *MockHcloudClientMockRecorder) Token() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Token", reflect.TypeOf((*MockHcloudClient)(nil).Token))
+}
+
 // MockManifests is a mock of Manifests interface
 type MockManifests struct {
 	ctrl     *gomock.Controller
@@ -323,4 +340,19 @@ func NewMockPacker(ctrl *gomock.Controller) *MockPacker {
 // EXPECT returns an object that allows the caller to indicate expected use
 func (m *MockPacker) EXPECT() *MockPackerMockRecorder {
 	return m.recorder
+}
+
+// EnsureImage mocks base method
+func (m *MockPacker) EnsureImage(arg0 context.Context, arg1 logr.Logger, arg2 api.HcloudClient, arg3 *api.PackerParameters) (*v1alpha3.HcloudImageID, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "EnsureImage", arg0, arg1, arg2, arg3)
+	ret0, _ := ret[0].(*v1alpha3.HcloudImageID)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// EnsureImage indicates an expected call of EnsureImage
+func (mr *MockPackerMockRecorder) EnsureImage(arg0, arg1, arg2, arg3 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "EnsureImage", reflect.TypeOf((*MockPacker)(nil).EnsureImage), arg0, arg1, arg2, arg3)
 }

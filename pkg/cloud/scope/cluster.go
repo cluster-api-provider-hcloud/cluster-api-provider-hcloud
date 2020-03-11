@@ -20,11 +20,13 @@ import (
 
 	infrav1 "github.com/simonswine/cluster-api-provider-hcloud/api/v1alpha3"
 	"github.com/simonswine/cluster-api-provider-hcloud/pkg/manifests/parameters"
+	packerapi "github.com/simonswine/cluster-api-provider-hcloud/pkg/packer/api"
 )
 
 const defaultControlPlaneAPIEndpointPort = 6443
 
 type Packer interface {
+	EnsureImage(ctx context.Context, log logr.Logger, hc packerapi.HcloudClient, parameters *packerapi.PackerParameters) (*infrav1.HcloudImageID, error)
 }
 
 type Manifests interface {
@@ -85,7 +87,7 @@ func NewClusterScope(params ClusterScopeParams) (*ClusterScope, error) {
 			}
 			hcloudToken = string(tokenBytes)
 
-			return &realClient{client: hcloud.NewClient(hcloud.WithToken(hcloudToken))}, nil
+			return &realClient{client: hcloud.NewClient(hcloud.WithToken(hcloudToken)), token: hcloudToken}, nil
 		}
 	}
 

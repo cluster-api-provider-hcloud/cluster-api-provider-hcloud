@@ -116,6 +116,9 @@ func (s *Service) Reconcile(ctx context.Context) (_ *ctrl.Result, err error) {
 	if err != nil {
 		return nil, err
 	}
+	if imageID == nil {
+		return &ctrl.Result{RequeueAfter: 2 * time.Second}, nil
+	}
 	s.scope.HcloudMachine.Status.ImageID = imageID
 
 	// gather volumes

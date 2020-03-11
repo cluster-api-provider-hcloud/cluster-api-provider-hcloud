@@ -1,12 +1,14 @@
 package scope
 
 import (
+	"context"
 	"github.com/pkg/errors"
 	bootstrapv1 "sigs.k8s.io/cluster-api-bootstrap-provider-kubeadm/api/v1alpha2"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha2"
 	"sigs.k8s.io/cluster-api/util/patch"
 
 	infrav1 "github.com/simonswine/cluster-api-provider-hcloud/api/v1alpha3"
+	packerapi "github.com/simonswine/cluster-api-provider-hcloud/pkg/packer/api"
 )
 
 // ClusterScopeParams defines the input parameters used to create a new Scope.
@@ -65,4 +67,8 @@ func (s *MachineScope) GetSpecLocation() infrav1.HcloudLocation {
 func (s *MachineScope) SetStatusLocation(location infrav1.HcloudLocation, networkZone infrav1.HcloudNetworkZone) {
 	s.HcloudMachine.Status.Location = location
 	s.HcloudMachine.Status.NetworkZone = networkZone
+}
+
+func (s *MachineScope) EnsureImage(ctx context.Context, parameters *packerapi.PackerParameters) (*infrav1.HcloudImageID, error) {
+	return s.packer.EnsureImage(ctx, s, s.hcloudClient, parameters)
 }

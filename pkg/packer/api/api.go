@@ -1,13 +1,21 @@
 package api
 
 import (
-	"crypto/sha256"
+	"context"
+	"crypto/md5"
 	"fmt"
+
+	"github.com/hetznercloud/hcloud-go/hcloud"
 )
 
 // this variable needs to raised, to rebuild images (e.g. after packer config
 // changes)
 const imageVersion = 1
+
+type HcloudClient interface {
+	Token() string
+	ListImages(context.Context, hcloud.ImageListOpts) ([]*hcloud.Image, error)
+}
 
 type PackerParameters struct {
 	KubernetesVersion string
@@ -16,7 +24,7 @@ type PackerParameters struct {
 }
 
 func (p *PackerParameters) Hash() string {
-	h := sha256.New()
+	h := md5.New()
 	h.Write([]byte(fmt.Sprintf("%d", imageVersion)))
 	h.Write([]byte(p.KubernetesVersion))
 	return fmt.Sprintf("%x", h.Sum(nil))
