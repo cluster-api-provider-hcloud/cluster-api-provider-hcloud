@@ -3,18 +3,25 @@
     "hcloud_token": "{{env `HCLOUD_TOKEN`}}",
     "scripts": "{{template_dir}}/scripts",
     "os": "centos-7",
-    "kubernetes_version": "1.16.6-0"
+    "kubernetes_version": "{{env `PACKER_KUBERNETES_VERSION`}}",
+    "template_hash": "{{env `PACKER_TEMPLATE_HASH`}}"
   },
+  "sensitive-variables": ["hcloud_token"],
   "builders": [
-    {
-      "type": "hcloud",
-      "token": "{{user `hcloud_token`}}",
-      "image": "{{user `os`}}",
-      "location": "nbg1",
-      "server_type": "cx11",
-      "ssh_username": "root",
-      "snapshot_name": "centos-7-test-{{isotime \"2006-01-02-030405\"}}"
-    }
+      {
+          "type": "hcloud",
+          "token": "{{user `hcloud_token`}}",
+          "image": "{{user `os`}}",
+          "location": "nbg1",
+          "server_type": "cx11",
+          "ssh_username": "root",
+          "snapshot_name": "capi-hcloud-{{user `os`}}-{{isotime \"2006-01-02-030405\"}}",
+          "snapshot_labels": {
+              "cluster-api-provider-hcloud.swine.dev/os": "{{user `os`}}",
+              "cluster-api-provider-hcloud.swine.dev/kubernetes-version": "{{user `kubernetes_version`}}",
+              "cluster-api-provider-hcloud.swine.dev/template-hash": "{{user `template_hash`}}"
+          }
+      }
   ],
   "provisioners": [
     {
