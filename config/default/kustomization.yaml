@@ -14,4 +14,4 @@ resources:
 images:
 - name: controller
   newName: docker.io/simonswine/cluster-api-provider-hcloud
-  newTag: v0.1.0-rc.1-dirty
+  newTag: v0.1.0-rc.1
