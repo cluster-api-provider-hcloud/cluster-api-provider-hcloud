@@ -26,12 +26,16 @@ spec:
       - name: manager
         args:
         - --enable-leader-election
+        - --manifests-config-path
+        - /manifests-config/config-extvar.jsonnet
+        - --packer-config-path
+        - /packer-config/packer-centos7-crio.json
         image: controller:latest
         resources:
           limits:
-            cpu: 100m
-            memory: 30Mi
+            cpu: 500m
+            memory: 256Mi
           requests:
             cpu: 100m
-            memory: 20Mi
+            memory: 64Mi
       terminationGracePeriodSeconds: 10

@@ -23,3 +23,7 @@ spec:
         args:
         - "--metrics-addr=127.0.0.1:8080"
         - "--enable-leader-election"
+        - --manifests-config-path
+        - /manifests-config/config-extvar.jsonnet
+        - --packer-config-path
+        - /packer-config/packer-centos7-crio.json
