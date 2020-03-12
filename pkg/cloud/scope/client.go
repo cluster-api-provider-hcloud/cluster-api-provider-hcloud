@@ -24,6 +24,7 @@ type HcloudClient interface {
 	CreateNetwork(context.Context, hcloud.NetworkCreateOpts) (*hcloud.Network, *hcloud.Response, error)
 	ListNetworks(context.Context, hcloud.NetworkListOpts) ([]*hcloud.Network, error)
 	DeleteNetwork(context.Context, *hcloud.Network) (*hcloud.Response, error)
+	ListSSHKeys(ctx context.Context, opts hcloud.SSHKeyListOpts) ([]*hcloud.SSHKey, *hcloud.Response, error)
 }
 
 type HcloudClientFactory func(context.Context) (HcloudClient, error)
@@ -98,4 +99,8 @@ func (c *realClient) ListNetworks(ctx context.Context, opts hcloud.NetworkListOp
 
 func (c *realClient) DeleteNetwork(ctx context.Context, server *hcloud.Network) (*hcloud.Response, error) {
 	return c.client.Network.Delete(ctx, server)
+}
+
+func (c *realClient) ListSSHKeys(ctx context.Context, opts hcloud.SSHKeyListOpts) ([]*hcloud.SSHKey, *hcloud.Response, error) {
+	return c.client.SSHKey.List(ctx, opts)
 }

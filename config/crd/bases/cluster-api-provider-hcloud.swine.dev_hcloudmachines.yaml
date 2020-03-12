@@ -69,10 +69,12 @@ spec:
                 cloud provider.
               type: string
             sshKeys:
+              description: define Machine specific SSH keys, overrides cluster wide
+                SSH keys
               items:
                 properties:
                   id:
-                    type: string
+                    type: integer
                   name:
                     type: string
                 type: object

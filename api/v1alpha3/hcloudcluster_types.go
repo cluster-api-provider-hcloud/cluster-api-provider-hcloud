@@ -43,6 +43,9 @@ const (
 type HcloudClusterSpec struct {
 	Location HcloudLocation `json:"location,omitempty"`
 
+	// define cluster wide SSH keys
+	SSHKeys []HcloudSSHKeySpec `json:"sshKeys,omitempty"`
+
 	// +kubebuilder:validation:MinItems=1
 	// +kubebuilder:validation:MaxItems=10
 	ControlPlaneFloatingIPs []HcloudFloatingIPSpec `json:"controlPlaneFloatingIPs,omitempty"`

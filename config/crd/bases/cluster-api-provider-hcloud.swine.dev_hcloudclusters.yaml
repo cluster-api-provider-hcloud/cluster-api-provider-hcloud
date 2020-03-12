@@ -81,6 +81,16 @@ spec:
                     type: object
                   type: array
               type: object
+            sshKeys:
+              description: define cluster wide SSH keys
+              items:
+                properties:
+                  id:
+                    type: integer
+                  name:
+                    type: string
+                type: object
+              type: array
             tokenRef:
               description: SecretKeySelector selects a key of a Secret.
               properties:

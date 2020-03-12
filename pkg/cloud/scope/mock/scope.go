@@ -222,6 +222,22 @@ func (mr *MockHcloudClientMockRecorder) ListNetworks(arg0, arg1 interface{}) *go
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListNetworks", reflect.TypeOf((*MockHcloudClient)(nil).ListNetworks), arg0, arg1)
 }
 
+// ListSSHKeys mocks base method
+func (m *MockHcloudClient) ListSSHKeys(arg0 context.Context, arg1 hcloud.SSHKeyListOpts) ([]*hcloud.SSHKey, *hcloud.Response, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ListSSHKeys", arg0, arg1)
+	ret0, _ := ret[0].([]*hcloud.SSHKey)
+	ret1, _ := ret[1].(*hcloud.Response)
+	ret2, _ := ret[2].(error)
+	return ret0, ret1, ret2
+}
+
+// ListSSHKeys indicates an expected call of ListSSHKeys
+func (mr *MockHcloudClientMockRecorder) ListSSHKeys(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListSSHKeys", reflect.TypeOf((*MockHcloudClient)(nil).ListSSHKeys), arg0, arg1)
+}
+
 // ListServers mocks base method
 func (m *MockHcloudClient) ListServers(arg0 context.Context, arg1 hcloud.ServerListOpts) ([]*hcloud.Server, error) {
 	m.ctrl.T.Helper()

@@ -31,6 +31,7 @@ const (
 type HcloudMachineSpec struct {
 	Location HcloudLocation `json:"location,omitempty"`
 
+	// define Machine specific SSH keys, overrides cluster wide SSH keys
 	SSHKeys []HcloudSSHKeySpec `json:"sshKeys,omitempty"`
 
 	Image *HcloudImageSpec `json:"image,omitempty"`
@@ -52,7 +53,7 @@ type HcloudImageID int
 
 type HcloudSSHKeySpec struct {
 	Name *string `json:"name,omitempty"`
-	ID   *string `json:"id,omitempty"`
+	ID   *int    `json:"id,omitempty"`
 }
 
 // HcloudMachineVolume represent a Volume attachment

@@ -187,6 +187,29 @@ func (s *Service) Reconcile(ctx context.Context) (_ *ctrl.Result, err error) {
 		Volumes:          volumes,
 	}
 
+	// setup SSH keys
+	sshKeySpecs := s.scope.HcloudMachine.Spec.SSHKeys
+	if len(sshKeySpecs) == 0 {
+		sshKeySpecs = s.scope.HcloudCluster.Spec.SSHKeys
+	}
+	sshKeys, _, err := s.scope.HcloudClient().ListSSHKeys(ctx, hcloud.SSHKeyListOpts{})
+	if err != nil {
+	}
+	for _, sshKey := range sshKeys {
+		var match bool
+		for _, sshKeySpec := range sshKeySpecs {
+			if sshKeySpec.Name != nil && *sshKeySpec.Name == sshKey.Name {
+				match = true
+			}
+			if sshKeySpec.ID != nil && *sshKeySpec.ID == sshKey.ID {
+				match = true
+			}
+		}
+		if match {
+			opts.SSHKeys = append(opts.SSHKeys, sshKey)
+		}
+	}
+
 	// setup network if available
 	if net := s.scope.HcloudCluster.Status.Network; net != nil {
 		opts.Networks = []*hcloud.Network{{
