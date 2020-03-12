@@ -72,3 +72,8 @@ func (s *MachineScope) SetStatusLocation(location infrav1.HcloudLocation, networ
 func (s *MachineScope) EnsureImage(ctx context.Context, parameters *packerapi.PackerParameters) (*infrav1.HcloudImageID, error) {
 	return s.packer.EnsureImage(ctx, s, s.hcloudClient, parameters)
 }
+
+func (s *MachineScope) IsControlPlane() bool {
+	_, ok := s.Machine.Labels[clusterv1.MachineControlPlaneLabelName]
+	return ok
+}

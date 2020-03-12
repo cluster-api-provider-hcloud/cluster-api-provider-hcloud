@@ -61,7 +61,7 @@ func (s *Service) reconcileKubeadmConfig(ctx context.Context, volumes []*hcloud.
 	k.addKubeletConfigTLSBootstrap()
 
 	// configure control plane
-	if _, ok := s.scope.Machine.Labels[clusterv1.MachineControlPlaneLabelName]; ok {
+	if s.scope.IsControlPlane() {
 		k.addControlPlaneConfig()
 	}
 
@@ -241,6 +241,13 @@ func (s *Service) Reconcile(ctx context.Context) (_ *ctrl.Result, err error) {
 		return &reconcile.Result{RequeueAfter: 2 * time.Second}, nil
 	}
 
+	providerID := fmt.Sprintf("hcloud://%d", actualServer.ID)
+
+	if !s.scope.IsControlPlane() {
+		s.scope.HcloudMachine.Spec.ProviderID = &providerID
+		s.scope.HcloudMachine.Status.Ready = true
+	}
+
 	// check if api server is ready
 	// TODO: backoff
 	clientConfig, err := s.scope.ClientConfigWithAPIEndpoint(clusterv1.APIEndpoint{
@@ -263,8 +270,17 @@ func (s *Service) Reconcile(ctx context.Context) (_ *ctrl.Result, err error) {
 
 	readyBody, err := clientSet.Discovery().RESTClient().Get().AbsPath("/readyz").Context(ctx).Do().Raw()
 	if err != nil {
-		return nil, errors.Wrap(err, "error getting API server readiness")
+		s.scope.V(1).Info("apiServer is not ready", "error", err)
+		s.scope.HcloudMachine.Status.Ready = false
+		return &reconcile.Result{RequeueAfter: 5 * time.Second}, nil
 	}
+
+	// end early if already ready
+	if s.scope.HcloudMachine.Status.Ready {
+		return nil, nil
+	}
+
+	s.scope.HcloudMachine.Status.Ready = true
 	s.scope.V(1).Info("apiServer is ready", "ready", string(readyBody))
 
 	apiServerVersion, err := clientSet.Discovery().ServerVersion()
@@ -277,7 +293,6 @@ func (s *Service) Reconcile(ctx context.Context) (_ *ctrl.Result, err error) {
 		return nil, errors.Wrap(err, "error applying manifests to first API server")
 	}
 
-	providerID := fmt.Sprintf("hcloud://%d", actualServer.ID)
 	s.scope.HcloudMachine.Spec.ProviderID = &providerID
 	s.scope.HcloudMachine.Status.Ready = true
 
