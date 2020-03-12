@@ -1,8 +1,21 @@
-# cluster-api-provider-hetzner
+# cluster-api-provider-hcloud
+
+Cluster API infrastructure provider for Hetzner Cloud https://hetzner.cloud
 
 ## Quick start
 
 - Deploy kind cluster + cluster api prerequisites using `./demo/setup.sh`
-- Run controller `bazel run //cmd/cluster-api-provider-hetzner:run`
-- Fill out token and image in `./demo/cluster-dev-*.yaml` deploy to kind
-- Once cluster master is up get kubeadm's kubeconfig manually and apply ./manifests/config.jsonnet manually using kubecfg
+- Deploy hcloud infra-provider: `kubectl apply -f xx`
+- Create the token secret in the kubernetes API: `kubectl create secret generic hcloud-token --from-literal=token=$my-token`
+- Create cluster `kubectl apply -f https://raw.githubusercontent.com/simonswine/cluster-api-provider-hcloud/v0.1.0-rc.1/demo/cluster-dev.yaml`
+- Create control plane `kubectl apply -f https://raw.githubusercontent.com/simonswine/cluster-api-provider-hcloud/v0.1.0-rc.1/demo/cluster-dev-controlplane.yaml`
+- Create worker nodes `kubectl apply -f kubectl apply -f https://raw.githubusercontent.com/simonswine/cluster-api-provider-hcloud/v0.1.0-rc.1/demo/cluster-dev-worker.yaml`
+- Watch meanwhile `watch kubectl get hcloudclusters,cluster,hcloudmachines,machines`
+- Create kubeconfig for hcloud cluster and test connectivity:
+
+```sh
+
+kubectl get secrets christian-dev-kubeconfig -o json | jq -r .data.value | base64 -d > .kubeconfig-hcloud
+KUBECONFIG=.kubeconfig-hcloud kubectl get nodes,pods -A
+
+```

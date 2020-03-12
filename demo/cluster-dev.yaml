@@ -7,16 +7,10 @@ spec:
   tokenRef:
     name: hcloud-token
     key: token
+  sshKeys:
+    - name: id_rsa
   controlPlaneFloatingIPs:
     - type: IPv4
----
-apiVersion: v1
-kind: Secret
-metadata:
-  name: hcloud-token
-type: Opaque
-stringData:
-  token: {ISHOULDBEATOKEN}
 ---
 apiVersion: cluster.x-k8s.io/v1alpha2
 kind: Cluster

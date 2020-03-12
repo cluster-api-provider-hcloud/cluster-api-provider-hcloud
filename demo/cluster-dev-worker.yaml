@@ -1,0 +1,51 @@
+apiVersion: cluster.x-k8s.io/v1alpha2
+kind: MachineDeployment
+metadata:
+  name: worker
+  labels:
+    cluster.x-k8s.io/cluster-name: cluster-dev
+    nodepool: worker
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      cluster.x-k8s.io/cluster-name: cluster-dev
+      nodepool: worker
+  template:
+    metadata:
+      labels:
+        cluster.x-k8s.io/cluster-name: cluster-dev
+        nodepool: worker
+    spec:
+      version: "v1.16.7"
+      bootstrap:
+        configRef:
+          apiVersion: bootstrap.cluster.x-k8s.io/v1alpha2
+          kind: KubeadmConfigTemplate
+          name: worker
+      infrastructureRef:
+        apiVersion: cluster-api-provider-hcloud.swine.dev/v1alpha3
+        kind: HcloudMachineTemplate
+        name: worker
+---
+apiVersion: cluster-api-provider-hcloud.swine.dev/v1alpha3
+kind: HcloudMachineTemplate
+metadata:
+  name: worker
+spec:
+  template:
+    spec:
+      location: nbg1
+      type: cx11
+---
+apiVersion: bootstrap.cluster.x-k8s.io/v1alpha2
+kind: KubeadmConfigTemplate
+metadata:
+  name: worker
+spec:
+  template:
+    spec:
+      joinConfiguration:
+        nodeRegistration:
+          kubeletExtraArgs:
+            cloud-provider: external

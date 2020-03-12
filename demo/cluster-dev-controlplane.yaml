@@ -24,9 +24,11 @@ metadata:
   name: controller
 spec:
   location: nbg1
-  image:
-    name: {ISHOULDBEANIMAGENAME}
   type: cx21
+  volumes:
+    - name: etcd
+      mountPath: /var/lib/etcd
+      volumeRef: controller-etcd
 ---
 apiVersion: cluster.x-k8s.io/v1alpha2
 kind: Machine
@@ -36,7 +38,7 @@ metadata:
     cluster.x-k8s.io/cluster-name: cluster-dev
     cluster.x-k8s.io/control-plane: "true"
 spec:
-  version: "v1.16.6"
+  version: "v1.16.7"
   bootstrap:
     configRef:
       apiVersion: bootstrap.cluster.x-k8s.io/v1alpha2
@@ -50,10 +52,9 @@ spec:
 apiVersion: cluster-api-provider-hcloud.swine.dev/v1alpha3
 kind: HcloudVolume
 metadata:
-  name: controller
+  name: controller-etcd
   labels:
     cluster.x-k8s.io/cluster-name: cluster-dev
-    cluster.x-k8s.io/control-plane: "true"
 spec:
   size: 16Gi
   location: nbg1
