@@ -23,12 +23,10 @@ spec:
         control-plane: controller-manager
     spec:
       containers:
-      - command:
-        - /manager
+      - name: manager
         args:
         - --enable-leader-election
         image: controller:latest
-        name: manager
         resources:
           limits:
             cpu: 100m
