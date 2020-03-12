@@ -55,59 +55,59 @@ func (s *Service) reconcileKubeadmConfig(ctx context.Context, volumes []*hcloud.
 		return nil, &ctrl.Result{RequeueAfter: 2 * time.Second}, nil
 	}
 
-	k := s.newKubeadmConfig(s.scope.KubeadmConfig)
-
-	// reconfigure kubelet tls bootstrap behaviour
-	k.addKubeletConfigTLSBootstrap()
-
 	// configure control plane
 	if s.scope.IsControlPlane() {
+		k := s.newKubeadmConfig(s.scope.KubeadmConfig)
+
+		// reconfigure kubelet tls bootstrap behaviour
+		k.addKubeletConfigTLSBootstrap()
+
 		k.addControlPlaneConfig()
-	}
 
-	// adding volumes
-	for pos, volumeHcloud := range volumes {
-		volume := s.scope.HcloudMachine.Spec.Volumes[pos]
-		k.addVolumeMount(int64(volumeHcloud.ID), volume.MountPath)
-		if volume.MountPath == etcdMountPath {
-			k.addWaitForMount("kubelet.service.d/90-wait-for-mount.conf", volume.MountPath)
-		}
-	}
-
-	// check if config was just updated
-	if resourceVersionUpdated, err := k.update(ctx); err != nil {
-		return nil, nil, err
-	} else if resourceVersionUpdated != nil {
-		s.scope.HcloudMachine.Status.KubeadmConfigResourceVersionUpdated = resourceVersionUpdated
-		return nil, &ctrl.Result{RequeueAfter: 2 * time.Second}, nil
-	}
-
-	// ensure it resource version is bigger than at the time it had been last
-	// updated
-	if rvUpdatedStr :=
-		s.scope.HcloudMachine.Status.KubeadmConfigResourceVersionUpdated; rvUpdatedStr != nil {
-		rvUpdated, err := strconv.ParseInt(*rvUpdatedStr, 10, 64)
-		if err != nil {
-			return nil, nil, errors.Wrap(err, "error converting resourceVersionUpdated to int")
+		// adding volumes
+		for pos, volumeHcloud := range volumes {
+			volume := s.scope.HcloudMachine.Spec.Volumes[pos]
+			k.addVolumeMount(int64(volumeHcloud.ID), volume.MountPath)
+			if volume.MountPath == etcdMountPath {
+				k.addWaitForMount("kubelet.service.d/90-wait-for-mount.conf", volume.MountPath)
+			}
 		}
 
-		rvObserved, err := strconv.ParseInt(s.scope.KubeadmConfig.ResourceVersion, 10, 64)
-		if err != nil {
-			return nil, nil, errors.Wrap(err, "error converting resourceVersionUpdated to int")
-		}
-
-		if rvObserved <= rvUpdated {
-			k.s.scope.Info("observed resourceVersion of KubeadmConfig not bigger than resourceVersion when last updated")
+		// check if config was just updated
+		if resourceVersionUpdated, err := k.update(ctx); err != nil {
+			return nil, nil, err
+		} else if resourceVersionUpdated != nil {
+			s.scope.HcloudMachine.Status.KubeadmConfigResourceVersionUpdated = resourceVersionUpdated
 			return nil, &ctrl.Result{RequeueAfter: 2 * time.Second}, nil
 		}
+
+		// ensure it resource version is bigger than at the time it had been last
+		// updated
+		if rvUpdatedStr :=
+			s.scope.HcloudMachine.Status.KubeadmConfigResourceVersionUpdated; rvUpdatedStr != nil {
+			rvUpdated, err := strconv.ParseInt(*rvUpdatedStr, 10, 64)
+			if err != nil {
+				return nil, nil, errors.Wrap(err, "error converting resourceVersionUpdated to int")
+			}
+
+			rvObserved, err := strconv.ParseInt(s.scope.KubeadmConfig.ResourceVersion, 10, 64)
+			if err != nil {
+				return nil, nil, errors.Wrap(err, "error converting resourceVersionUpdated to int")
+			}
+
+			if rvObserved <= rvUpdated {
+				k.s.scope.Info("observed resourceVersion of KubeadmConfig not bigger than resourceVersion when last updated", "observed", rvObserved, "lastUpdated", rvUpdated)
+				return nil, &ctrl.Result{RequeueAfter: 2 * time.Second}, nil
+			}
+		}
 	}
 
-	if !k.s.scope.KubeadmConfig.Status.Ready || len(k.s.scope.KubeadmConfig.Status.BootstrapData) == 0 {
-		k.s.scope.V(1).Info("bootstrapData not ready yet")
+	if !s.scope.KubeadmConfig.Status.Ready || len(s.scope.KubeadmConfig.Status.BootstrapData) == 0 {
+		s.scope.V(1).Info("bootstrapData not ready yet")
 		return nil, &ctrl.Result{RequeueAfter: 2 * time.Second}, nil
 	}
 
-	return k.s.scope.KubeadmConfig.Status.BootstrapData, nil, nil
+	return s.scope.KubeadmConfig.Status.BootstrapData, nil, nil
 }
 
 func (s *Service) Reconcile(ctx context.Context) (_ *ctrl.Result, err error) {
@@ -246,6 +246,7 @@ func (s *Service) Reconcile(ctx context.Context) (_ *ctrl.Result, err error) {
 	if !s.scope.IsControlPlane() {
 		s.scope.HcloudMachine.Spec.ProviderID = &providerID
 		s.scope.HcloudMachine.Status.Ready = true
+		return nil, nil
 	}
 
 	// check if api server is ready
