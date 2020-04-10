@@ -18,7 +18,7 @@ enabled=1
 enabled_metadata=1
 EOF
 
-yum -y install cri-o cri-tools
+yum -y install cri-o-1.16 cri-tools
 
 # remove default CNIs
 rm -f /etc/cni/net.d/100-crio-bridge.conf /etc/cni/net.d/200-loopback.conf
