@@ -6,6 +6,13 @@ upstream {
     podsCIDRBlock: '192.168.0.0/17',
   },
 
+  'calico-config'+: {
+    configMap+: {
+      data+: {
+        veth_mtu: '1430',
+      },
+    },
+  },
 
   'calico-node'+: {
     local this = self,
