@@ -18,7 +18,7 @@ hcloud-csi/manifests.json:
 		go run ../hack/yaml2json.go | \
 		jq -s  > $@
 
-CALICO_VERSION := 3.11
+CALICO_VERSION := 3.13
 calico/manifests.json:
 	mkdir -p $(shell dirname "$@")
 	curl -sL https://docs.projectcalico.org/v$(CALICO_VERSION)/manifests/calico.yaml | \
