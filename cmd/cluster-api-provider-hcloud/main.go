@@ -18,6 +18,7 @@ import (
 	"github.com/simonswine/cluster-api-provider-hcloud/pkg/manifests"
 	"github.com/simonswine/cluster-api-provider-hcloud/pkg/packer"
 	"github.com/simonswine/cluster-api-provider-hcloud/pkg/record"
+	controlplanev1 "sigs.k8s.io/cluster-api/controlplane/kubeadm/api/v1alpha3"
 	// +kubebuilder:scaffold:imports
 )
 
@@ -40,6 +41,7 @@ func init() {
 	_ = infrastructurev1alpha3.AddToScheme(scheme)
 	_ = clusterv1.AddToScheme(scheme)
 	_ = bootstrapv1.AddToScheme(scheme)
+	_ = controlplanev1.AddToScheme(scheme)
 	// +kubebuilder:scaffold:scheme
 
 	rootCmd.PersistentFlags().BoolVarP(&rootFlags.Verbose, "verbose", "v", false, "Enable verbose logging")
@@ -115,6 +117,16 @@ var rootCmd = &cobra.Command{
 			setupLog.Error(err, "unable to create controller", "controller", "HcloudVolume")
 			os.Exit(1)
 		}
+		/*
+			if err = (&controllers.KubeadmControlPlaneReconciler{
+				Client: mgr.GetClient(),
+				Log:    ctrl.Log.WithName("controllers").WithName("KubeadmControlPlane"),
+				Scheme: mgr.GetScheme(),
+			}).SetupWithManager(mgr, controller.Options{}); err != nil {
+				setupLog.Error(err, "unable to create controller", "controller", "KubeadmControlPlane")
+				os.Exit(1)
+			}
+		*/
 		// +kubebuilder:scaffold:builder
 
 		setupLog.Info("starting manager")

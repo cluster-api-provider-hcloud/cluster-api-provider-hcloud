@@ -55,6 +55,11 @@ const (
 
 	// MachineTempalteHashTag tags server resources
 	MachineTemplateHashTagKey = "machine." + NameHcloudProviderPrefix + "template"
+
+	// KubeadmControlPlaneFinalizer allows ReconcileKubeadmControlPlane to
+	// clean up Hcloud resources associated with HcloudCluster before removing
+	// it from the apiserver.
+	KubeadmControlPlaneFinalizer = "kubeadmcontrolplane.cluster-api-provider-hcloud.swine.dev"
 )
 
 // ClusterTagKey generates the key for resources associated with a cluster.

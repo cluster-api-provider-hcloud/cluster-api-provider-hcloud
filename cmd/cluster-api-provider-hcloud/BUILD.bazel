@@ -17,6 +17,7 @@ go_library(
         "@io_k8s_client_go//plugin/pkg/client/auth/gcp:go_default_library",
         "@io_k8s_sigs_cluster_api//api/v1alpha3:go_default_library",
         "@io_k8s_sigs_cluster_api//bootstrap/kubeadm/api/v1alpha3:go_default_library",
+        "@io_k8s_sigs_cluster_api//controlplane/kubeadm/api/v1alpha3:go_default_library",
         "@io_k8s_sigs_controller_runtime//:go_default_library",
         "@io_k8s_sigs_controller_runtime//pkg/controller:go_default_library",
         "@io_k8s_sigs_controller_runtime//pkg/log/zap:go_default_library",
