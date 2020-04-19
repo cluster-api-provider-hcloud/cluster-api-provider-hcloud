@@ -142,6 +142,10 @@ func (s *Service) Delete(ctx context.Context) (err error) {
 		return errors.Wrap(err, "failed to refresh networks")
 	}
 
+	if networkStatus == nil {
+		return nil
+	}
+
 	if err := s.deleteNetwork(ctx, networkStatus); err != nil {
 		return errors.Wrap(err, "failed to delete network")
 	}

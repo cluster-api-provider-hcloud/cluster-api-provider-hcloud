@@ -335,6 +335,21 @@ func (mr *MockManifestsMockRecorder) Apply(arg0, arg1, arg2 interface{}) *gomock
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Apply", reflect.TypeOf((*MockManifests)(nil).Apply), arg0, arg1, arg2)
 }
 
+// Hash mocks base method
+func (m *MockManifests) Hash(arg0 map[string]string) (string, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Hash", arg0)
+	ret0, _ := ret[0].(string)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// Hash indicates an expected call of Hash
+func (mr *MockManifestsMockRecorder) Hash(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Hash", reflect.TypeOf((*MockManifests)(nil).Hash), arg0)
+}
+
 // MockPacker is a mock of Packer interface
 type MockPacker struct {
 	ctrl     *gomock.Controller

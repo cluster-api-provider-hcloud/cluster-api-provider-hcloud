@@ -1,6 +1,6 @@
 
 ---
-apiVersion: apiextensions.k8s.io/v1beta1
+apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
@@ -8,23 +8,6 @@ metadata:
   creationTimestamp: null
   name: hcloudmachines.cluster-api-provider-hcloud.swine.dev
 spec:
-  additionalPrinterColumns:
-  - JSONPath: .status.serverState
-    description: Server state
-    name: State
-    type: string
-  - JSONPath: .status.ready
-    description: Machine ready status
-    name: Ready
-    type: string
-  - JSONPath: .spec.providerID
-    description: Hcloud instance ID
-    name: InstanceID
-    type: string
-  - JSONPath: .metadata.ownerReferences[?(@.kind=="Machine")].name
-    description: Machine object which owns with this HcloudMachine
-    name: Machine
-    type: string
   group: cluster-api-provider-hcloud.swine.dev
   names:
     categories:
@@ -34,109 +17,149 @@ spec:
     plural: hcloudmachines
     singular: hcloudmachine
   scope: Namespaced
-  subresources:
-    status: {}
-  validation:
-    openAPIV3Schema:
-      description: HcloudMachine is the Schema for the hcloudmachine API
-      properties:
-        apiVersion:
-          description: 'APIVersion defines the versioned schema of this representation
-            of an object. Servers should convert recognized schemas to the latest
-            internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
-          type: string
-        kind:
-          description: 'Kind is a string value representing the REST resource this
-            object represents. Servers may infer this from the endpoint the client
-            submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
-          type: string
-        metadata:
-          type: object
-        spec:
-          description: HcloudMachineSpec defines the desired state of HcloudMachine
-          properties:
-            image:
-              properties:
-                id:
-                  type: integer
-                name:
-                  type: string
-              type: object
-            location:
-              type: string
-            providerID:
-              description: ProviderID is the unique identifier as specified by the
-                cloud provider.
-              type: string
-            sshKeys:
-              description: define Machine specific SSH keys, overrides cluster wide
-                SSH keys
-              items:
+  versions:
+  - additionalPrinterColumns:
+    - description: Server state
+      jsonPath: .status.serverState
+      name: State
+      type: string
+    - description: Machine ready status
+      jsonPath: .status.ready
+      name: Ready
+      type: string
+    - description: Hcloud instance ID
+      jsonPath: .spec.providerID
+      name: InstanceID
+      type: string
+    - description: Machine object which owns with this HcloudMachine
+      jsonPath: .metadata.ownerReferences[?(@.kind=="Machine")].name
+      name: Machine
+      type: string
+    name: v1alpha3
+    schema:
+      openAPIV3Schema:
+        description: HcloudMachine is the Schema for the hcloudmachine API
+        properties:
+          apiVersion:
+            description: 'APIVersion defines the versioned schema of this representation
+              of an object. Servers should convert recognized schemas to the latest
+              internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+            type: string
+          kind:
+            description: 'Kind is a string value representing the REST resource this
+              object represents. Servers may infer this from the endpoint the client
+              submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: HcloudMachineSpec defines the desired state of HcloudMachine
+            properties:
+              image:
                 properties:
                   id:
                     type: integer
                   name:
                     type: string
                 type: object
-              type: array
-            type:
-              type: string
-            volumes:
-              items:
-                description: HcloudMachineVolume represent a Volume attachment
-                properties:
-                  mountPath:
-                    type: string
-                  name:
-                    type: string
-                  volumeRef:
-                    type: string
-                type: object
-              type: array
-          type: object
-        status:
-          description: HcloudMachineStatus defines the observed state of HcloudMachine
-          properties:
-            addresses:
-              description: Addresses contains the server's associated addresses.
-              items:
-                description: NodeAddress contains information for the node's address.
-                properties:
-                  address:
-                    description: The node address.
-                    type: string
-                  type:
-                    description: Node address type, one of Hostname, ExternalIP or
-                      InternalIP.
-                    type: string
-                required:
-                - address
-                - type
-                type: object
-              type: array
-            imageID:
-              type: integer
-            kubeadmConfigResourceVersionUpdated:
-              description: KubeadmConfigResourceVersionConfigured keeps track of the
-                ResourceVersion which we last reconfigured KubeadmConfig
-              type: string
-            location:
-              type: string
-            networkZone:
-              type: string
-            ready:
-              description: Ready is true when the provider resource is ready.
-              type: boolean
-            serverState:
-              description: ServerState is the state of the server for this machine.
-              type: string
-          type: object
-      type: object
-  version: v1alpha3
-  versions:
-  - name: v1alpha3
+              providerID:
+                description: ProviderID is the unique identifier as specified by the
+                  cloud provider.
+                type: string
+              sshKeys:
+                description: define Machine specific SSH keys, overrides cluster wide
+                  SSH keys
+                items:
+                  properties:
+                    id:
+                      type: integer
+                    name:
+                      type: string
+                  type: object
+                type: array
+              type:
+                type: string
+              volumes:
+                items:
+                  description: HcloudMachineVolume represent a Volume attachment
+                  properties:
+                    mountPath:
+                      type: string
+                    name:
+                      type: string
+                    volumeRef:
+                      type: string
+                  type: object
+                type: array
+            type: object
+          status:
+            description: HcloudMachineStatus defines the observed state of HcloudMachine
+            properties:
+              addresses:
+                description: Addresses contains the server's associated addresses.
+                items:
+                  description: NodeAddress contains information for the node's address.
+                  properties:
+                    address:
+                      description: The node address.
+                      type: string
+                    type:
+                      description: Node address type, one of Hostname, ExternalIP
+                        or InternalIP.
+                      type: string
+                  required:
+                  - address
+                  - type
+                  type: object
+                type: array
+              failureMessage:
+                description: "FailureMessage will be set in the event that there is
+                  a terminal problem reconciling the Machine and will contain a more
+                  verbose string suitable for logging and human consumption. \n This
+                  field should not be set for transitive errors that a controller
+                  faces that are expected to be fixed automatically over time (like
+                  service outages), but instead indicate that something is fundamentally
+                  wrong with the Machine's spec or the configuration of the controller,
+                  and that manual intervention is required. Examples of terminal errors
+                  would be invalid combinations of settings in the spec, values that
+                  are unsupported by the controller, or the responsible controller
+                  itself being critically misconfigured. \n Any transient errors that
+                  occur during the reconciliation of Machines can be added as events
+                  to the Machine object and/or logged in the controller's output."
+                type: string
+              failureReason:
+                description: "FailureReason will be set in the event that there is
+                  a terminal problem reconciling the Machine and will contain a succinct
+                  value suitable for machine interpretation. \n This field should
+                  not be set for transitive errors that a controller faces that are
+                  expected to be fixed automatically over time (like service outages),
+                  but instead indicate that something is fundamentally wrong with
+                  the Machine's spec or the configuration of the controller, and that
+                  manual intervention is required. Examples of terminal errors would
+                  be invalid combinations of settings in the spec, values that are
+                  unsupported by the controller, or the responsible controller itself
+                  being critically misconfigured. \n Any transient errors that occur
+                  during the reconciliation of Machines can be added as events to
+                  the Machine object and/or logged in the controller's output."
+                type: string
+              imageID:
+                type: integer
+              location:
+                type: string
+              networkZone:
+                type: string
+              ready:
+                description: Ready is true when the provider resource is ready.
+                type: boolean
+              serverState:
+                description: ServerState is the state of the server for this machine.
+                type: string
+            type: object
+        type: object
     served: true
     storage: true
+    subresources:
+      status: {}
 status:
   acceptedNames:
     kind: ""

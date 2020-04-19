@@ -11,9 +11,10 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/intstr"
+	"k8s.io/client-go/kubernetes"
 	clientcmd "k8s.io/client-go/tools/clientcmd"
 	"k8s.io/klog/klogr"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha2"
+	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha3"
 	"sigs.k8s.io/cluster-api/util/kubeconfig"
 	"sigs.k8s.io/cluster-api/util/patch"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -31,6 +32,7 @@ type Packer interface {
 
 type Manifests interface {
 	Apply(ctx context.Context, client clientcmd.ClientConfig, extVar map[string]string) error
+	Hash(extVar map[string]string) (string, error)
 }
 
 // ClusterScopeParams defines the input parameters used to create a new Scope.
@@ -130,6 +132,16 @@ type ClusterScope struct {
 	HcloudCluster *infrav1.HcloudCluster
 }
 
+// Name returns the HcloudCluster name.
+func (m *ClusterScope) Name() string {
+	return m.HcloudCluster.Name
+}
+
+// Namespace returns the namespace name.
+func (m *ClusterScope) Namespace() string {
+	return m.HcloudCluster.Namespace
+}
+
 // Close closes the current scope persisting the cluster configuration and status.
 func (s *ClusterScope) Close() error {
 	return s.patchHelper.Patch(s.Ctx, s.HcloudCluster)
@@ -139,22 +151,33 @@ func (s *ClusterScope) HcloudClient() HcloudClient {
 	return s.hcloudClient
 }
 
-func (s *ClusterScope) GetSpecLocation() infrav1.HcloudLocation {
-	return s.HcloudCluster.Spec.Location
+func (s *ClusterScope) GetSpecLocations() []infrav1.HcloudLocation {
+	return s.HcloudCluster.Spec.Locations
 }
 
-func (s *ClusterScope) SetStatusLocation(location infrav1.HcloudLocation, networkZone infrav1.HcloudNetworkZone) {
-	s.HcloudCluster.Status.Location = location
+func (s *ClusterScope) SetStatusLocations(locations []infrav1.HcloudLocation, networkZone infrav1.HcloudNetworkZone) {
+	s.HcloudCluster.Spec.Locations = locations
+	s.HcloudCluster.Status.Locations = locations
+	s.HcloudCluster.Status.FailureDomains = make(clusterv1.FailureDomains)
+	for _, l := range locations {
+		s.HcloudCluster.Status.FailureDomains[string(l)] = clusterv1.FailureDomainSpec{
+			ControlPlane: true,
+		}
+	}
 	s.HcloudCluster.Status.NetworkZone = networkZone
 }
 
-func (s *ClusterScope) ControlPlaneAPIEndpointPort() int {
+func (s *ClusterScope) ControlPlaneAPIEndpointPort() int32 {
 	return defaultControlPlaneAPIEndpointPort
 }
 
 // ClientConfig return a kubernetes client config for the cluster context
 func (s *ClusterScope) ClientConfig() (clientcmd.ClientConfig, error) {
-	kubeconfigBytes, err := kubeconfig.FromSecret(s.Client, s.Cluster)
+	var cluster = client.ObjectKey{
+		Name:      s.Cluster.Name,
+		Namespace: s.Cluster.Namespace,
+	}
+	kubeconfigBytes, err := kubeconfig.FromSecret(s.Ctx, s.Client, cluster)
 	if err != nil {
 		return nil, errors.Wrap(err, "error retrieving kubeconfig for cluster")
 	}
@@ -213,11 +236,72 @@ func (s *ClusterScope) manifestParameters() (*parameters.ManifestParameters, err
 	return &p, nil
 }
 
+func (s *ClusterScope) ListMachines(ctx context.Context) ([]*clusterv1.Machine, []*infrav1.HcloudMachine, error) {
+	// get and index Machines by HcloudMachine name
+	var machineListRaw clusterv1.MachineList
+	var machineByHcloudMachineName = make(map[string]*clusterv1.Machine)
+	if err := s.Client.List(ctx, &machineListRaw, client.InNamespace(s.Namespace())); err != nil {
+		return nil, nil, err
+	}
+	expectedGK := infrav1.GroupVersion.WithKind("HcloudMachine").GroupKind()
+	for pos := range machineListRaw.Items {
+		m := &machineListRaw.Items[pos]
+		actualGK := m.Spec.InfrastructureRef.GroupVersionKind().GroupKind()
+		if m.Spec.ClusterName != s.Cluster.Name ||
+			actualGK.String() != expectedGK.String() {
+			continue
+		}
+		machineByHcloudMachineName[m.Spec.InfrastructureRef.Name] = m
+	}
+
+	// match HcloudMachines to Machines
+	var hcloudMachineListRaw infrav1.HcloudMachineList
+	if err := s.Client.List(ctx, &hcloudMachineListRaw, client.InNamespace(s.Namespace())); err != nil {
+		return nil, nil, err
+	}
+	var machineList []*clusterv1.Machine
+	var hcloudMachineList []*infrav1.HcloudMachine
+	for pos := range hcloudMachineListRaw.Items {
+		hm := &hcloudMachineListRaw.Items[pos]
+		m, ok := machineByHcloudMachineName[hm.Name]
+		if !ok {
+			continue
+		}
+
+		machineList = append(machineList, m)
+		hcloudMachineList = append(hcloudMachineList, hm)
+	}
+
+	return machineList, hcloudMachineList, nil
+}
+
+func IsControlPlaneReady(ctx context.Context, c clientcmd.ClientConfig) error {
+	restConfig, err := c.ClientConfig()
+	if err != nil {
+		return err
+	}
+
+	clientSet, err := kubernetes.NewForConfig(restConfig)
+	if err != nil {
+		return err
+	}
+
+	_, err = clientSet.Discovery().RESTClient().Get().AbsPath("/readyz").Context(ctx).Do().Raw()
+	return err
+}
+
+func (s *ClusterScope) ManifestsHash() (string, error) {
+	manifestParameters, err := s.manifestParameters()
+	if err != nil {
+		return "", err
+	}
+	return s.manifests.Hash(manifestParameters.ExtVar())
+}
+
 func (s *ClusterScope) ApplyManifestsWithClientConfig(ctx context.Context, c clientcmd.ClientConfig) error {
 	manifestParameters, err := s.manifestParameters()
 	if err != nil {
 		return err
 	}
-
 	return s.manifests.Apply(ctx, c, manifestParameters.ExtVar())
 }

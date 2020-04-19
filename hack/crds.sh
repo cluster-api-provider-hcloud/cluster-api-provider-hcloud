@@ -40,10 +40,17 @@ util::before_job $CMD
 
 set -o xtrace
 "$controllergen" \
-   object:headerFile=./hack/boilerplate.go.txt paths="./..."
+    paths=./api/... \
+    crd:crdVersions=v1 \
+    output:crd:dir=config/crd/bases \
+    output:webhook:dir=config/webhook \
+    webhook
 
 "$controllergen" \
-   crd:trivialVersions=true rbac:roleName=manager-role webhook paths="./..." output:crd:artifacts:config=config/crd/bases
+    paths=./controllers/... \
+    output:rbac:dir=config/rbac \
+    rbac:roleName=manager-role
+
 set +o xtrace
 
 util::after_job $CMD

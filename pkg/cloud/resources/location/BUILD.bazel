@@ -8,6 +8,7 @@ go_library(
     deps = [
         "//api/v1alpha3:go_default_library",
         "//pkg/cloud/scope:go_default_library",
+        "@com_github_hetznercloud_hcloud_go//hcloud:go_default_library",
     ],
 )
 

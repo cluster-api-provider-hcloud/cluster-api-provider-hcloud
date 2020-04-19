@@ -3,7 +3,10 @@ package location
 import (
 	"context"
 	"fmt"
+	"sort"
+	"strings"
 
+	"github.com/hetznercloud/hcloud-go/hcloud"
 	infrav1 "github.com/simonswine/cluster-api-provider-hcloud/api/v1alpha3"
 	"github.com/simonswine/cluster-api-provider-hcloud/pkg/cloud/scope"
 )
@@ -20,22 +23,68 @@ func NewService(scope localScope) *Service {
 
 type localScope interface {
 	HcloudClient() scope.HcloudClient
-	GetSpecLocation() infrav1.HcloudLocation
-	SetStatusLocation(location infrav1.HcloudLocation, networkZone infrav1.HcloudNetworkZone)
+	GetSpecLocations() []infrav1.HcloudLocation
+	SetStatusLocations(locations []infrav1.HcloudLocation, networkZone infrav1.HcloudNetworkZone)
 }
 
 func (s *Service) Reconcile(ctx context.Context) (err error) {
-	locations, err := s.scope.HcloudClient().ListLocation(ctx)
+	allLocations, err := s.scope.HcloudClient().ListLocation(ctx)
 	if err != nil {
 		return err
 	}
+	allLocationsMap := make(map[string]*hcloud.Location)
+	for _, l := range allLocations {
+		allLocationsMap[l.Name] = l
+	}
 
-	specLocation := s.scope.GetSpecLocation()
-	for _, location := range locations {
-		if location.Name == string(specLocation) {
-			s.scope.SetStatusLocation(specLocation, infrav1.HcloudNetworkZone(location.NetworkZone))
-			return nil
+	var locations []string
+	var networkZone *infrav1.HcloudNetworkZone
+
+	// if no locations have been specified, use the default networkZone
+	specLocations := s.scope.GetSpecLocations()
+	if len(specLocations) == 0 {
+		nZ := infrav1.HcloudNetworkZone(hcloud.NetworkZoneEUCentral)
+		networkZone = &nZ
+		for _, l := range allLocations {
+			if nZ == infrav1.HcloudNetworkZone(l.NetworkZone) {
+				locations = append(locations, l.Name)
+			}
 		}
 	}
-	return fmt.Errorf("error location '%s' cannot be found", specLocation)
+
+	for _, l := range specLocations {
+		location, ok := allLocationsMap[string(l)]
+		if !ok {
+			return fmt.Errorf("error location '%s' cannot be found", l)
+		}
+		nZ := infrav1.HcloudNetworkZone(location.NetworkZone)
+
+		if networkZone == nil {
+			networkZone = &nZ
+		}
+
+		if *networkZone != nZ {
+			return fmt.Errorf(
+				"error all locations need to be in the same NetworkZone. %s in NetworkZone %s, %s in NetworkZone %s",
+				strings.Join(locations, ","),
+				*networkZone,
+				location.Name,
+				nZ,
+			)
+		}
+		locations = append(locations, location.Name)
+	}
+
+	if len(locations) == 0 {
+		return fmt.Errorf("error locations is empty")
+	}
+
+	sort.Strings(locations)
+	locationsTyped := make([]infrav1.HcloudLocation, len(locations))
+	for pos := range locations {
+		locationsTyped[pos] = infrav1.HcloudLocation(locations[pos])
+	}
+
+	s.scope.SetStatusLocations(locationsTyped, *networkZone)
+	return nil
 }

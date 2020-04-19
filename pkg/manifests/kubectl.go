@@ -3,6 +3,7 @@ package manifests
 import (
 	"bytes"
 	"context"
+	"crypto/sha256"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -32,6 +33,15 @@ func (m *Manifests) initializeKubectl() (err error) {
 
 func (m *Manifests) kubectlCmd(ctx context.Context, args ...string) *exec.Cmd {
 	return exec.CommandContext(ctx, m.kubectlPath, args...)
+}
+
+// Hash builds a sha256 hash over the applied manifests
+func (m *Manifests) Hash(extVar map[string]string) (string, error) {
+	h := sha256.New()
+	if err := evaluateJsonnet(h, m.manifestConfigPath, extVar); err != nil {
+		return "", errors.Wrap(err, "error generating manifests")
+	}
+	return fmt.Sprintf("%x", h.Sum(nil)), nil
 }
 
 func (m *Manifests) Apply(ctx context.Context, client clientcmd.ClientConfig, extVar map[string]string) error {

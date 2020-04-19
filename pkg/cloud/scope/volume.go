@@ -47,10 +47,10 @@ func (s *VolumeScope) Close() error {
 	return s.patchHelper.Patch(s.Ctx, s.HcloudVolume)
 }
 
-func (s *VolumeScope) GetSpecLocation() infrav1.HcloudLocation {
-	return s.HcloudVolume.Spec.Location
+func (s *VolumeScope) GetSpecLocations() []infrav1.HcloudLocation {
+	return []infrav1.HcloudLocation{s.HcloudVolume.Spec.Location}
 }
 
-func (s *VolumeScope) SetStatusLocation(location infrav1.HcloudLocation, networkZone infrav1.HcloudNetworkZone) {
-	s.HcloudVolume.Status.Location = location
+func (s *VolumeScope) SetStatusLocations(location []infrav1.HcloudLocation, networkZone infrav1.HcloudNetworkZone) {
+	s.HcloudVolume.Status.Location = location[0]
 }

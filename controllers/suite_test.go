@@ -63,9 +63,10 @@ var testEnv *envtest.Environment
 func TestAPIs(t *testing.T) {
 	RegisterFailHandler(Fail)
 
-	RunSpecsWithDefaultAndCustomReporters(t,
+	RunSpecs(
+		t,
 		"Controller Suite",
-		[]Reporter{envtest.NewlineReporter{}})
+	)
 }
 
 var _ = BeforeSuite(func(done Done) {

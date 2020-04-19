@@ -17,17 +17,27 @@ package controllers
 
 import (
 	"context"
+	"fmt"
+	"reflect"
+	"strings"
+	"time"
 
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
+	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha2"
+	errorutil "k8s.io/apimachinery/pkg/util/errors"
+	clientcmd "k8s.io/client-go/tools/clientcmd"
+	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha3"
 	"sigs.k8s.io/cluster-api/util"
 	ctrl "sigs.k8s.io/controller-runtime"
 	controllerclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
+	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
+	"sigs.k8s.io/controller-runtime/pkg/source"
 
 	infrav1 "github.com/simonswine/cluster-api-provider-hcloud/api/v1alpha3"
 	"github.com/simonswine/cluster-api-provider-hcloud/pkg/cloud/resources/floatingip"
@@ -36,7 +46,10 @@ import (
 	"github.com/simonswine/cluster-api-provider-hcloud/pkg/cloud/scope"
 	"github.com/simonswine/cluster-api-provider-hcloud/pkg/manifests"
 	"github.com/simonswine/cluster-api-provider-hcloud/pkg/packer"
+	"github.com/simonswine/cluster-api-provider-hcloud/pkg/record"
 )
+
+var errNoReadyAPIServer = errors.New("No ready API server was found")
 
 // HcloudClusterReconciler reconciles a HcloudCluster object
 type HcloudClusterReconciler struct {
@@ -76,6 +89,11 @@ func (r *HcloudClusterReconciler) Reconcile(req ctrl.Request) (_ ctrl.Result, re
 		return reconcile.Result{}, nil
 	}
 
+	if util.IsPaused(cluster, hcloudCluster) {
+		log.Info("HcloudCluster or linked Cluster is marked as paused. Won't reconcile")
+		return reconcile.Result{}, nil
+	}
+
 	log = log.WithValues("cluster", cluster.Name)
 
 	// Create the scope.
@@ -92,7 +110,7 @@ func (r *HcloudClusterReconciler) Reconcile(req ctrl.Request) (_ ctrl.Result, re
 		return reconcile.Result{}, errors.Errorf("failed to create scope: %+v", err)
 	}
 
-	// Always close the scope when exiting this function so we can persist any AWSMachine changes.
+	// Always close the scope when exiting this function so we can persist any HcloudCluster changes.
 	defer func() {
 		if err := clusterScope.Close(); err != nil && reterr == nil {
 			reterr = err
@@ -123,8 +141,26 @@ func (r *HcloudClusterReconciler) reconcileDelete(clusterScope *scope.ClusterSco
 		return reconcile.Result{}, errors.Wrapf(err, "failed to delete network for HcloudCluster %s/%s", hcloudCluster.Namespace, hcloudCluster.Name)
 	}
 
+	// wait for all hcloudMachines to be deleted
+	if machines, _, err := clusterScope.ListMachines(ctx); err != nil {
+		return reconcile.Result{}, errors.Wrapf(err, "failed to list machines for HcloudCluster %s/%s", hcloudCluster.Namespace, hcloudCluster.Name)
+	} else if len(machines) > 0 {
+		var names []string
+		for _, m := range machines {
+			names = append(names, fmt.Sprintf("machine/%s", m.Name))
+		}
+		record.Eventf(
+			hcloudCluster,
+			"WaitingForMachineDeletion",
+			"Machines %s still running, waiting with deletion of HcloudCluster",
+			strings.Join(names, ", "),
+		)
+		// TODO: send delete for machines still running
+		return reconcile.Result{RequeueAfter: 10 * time.Second}, nil
+	}
+
 	// Cluster is deleted so remove the finalizer.
-	clusterScope.HcloudCluster.Finalizers = util.Filter(clusterScope.HcloudCluster.Finalizers, infrav1.ClusterFinalizer)
+	controllerutil.RemoveFinalizer(clusterScope.HcloudCluster, infrav1.ClusterFinalizer)
 
 	return reconcile.Result{}, nil
 }
@@ -134,10 +170,8 @@ func (r *HcloudClusterReconciler) reconcileNormal(clusterScope *scope.ClusterSco
 	hcloudCluster := clusterScope.HcloudCluster
 	ctx := context.TODO()
 
-	// If the AWSCluster doesn't have our finalizer, add it.
-	if !util.Contains(hcloudCluster.Finalizers, infrav1.ClusterFinalizer) {
-		hcloudCluster.Finalizers = append(hcloudCluster.Finalizers, infrav1.ClusterFinalizer)
-	}
+	// If the HcloudCluster doesn't have our finalizer, add it.
+	controllerutil.AddFinalizer(hcloudCluster, infrav1.ClusterFinalizer)
 
 	// ensure a valid location is set
 	if err := location.NewService(clusterScope).Reconcile(ctx); err != nil {
@@ -154,21 +188,156 @@ func (r *HcloudClusterReconciler) reconcileNormal(clusterScope *scope.ClusterSco
 		return reconcile.Result{}, errors.Wrapf(err, "failed to reconcile floating IPs for HcloudCluster %s/%s", hcloudCluster.Namespace, hcloudCluster.Name)
 	}
 
-	// add the first controlplan floating IP to the status
+	// add the first control plane  floating IP to the status
 	if len(hcloudCluster.Status.ControlPlaneFloatingIPs) > 0 {
-		hcloudCluster.Status.APIEndpoints = []clusterv1.APIEndpoint{{
+		hcloudCluster.Spec.ControlPlaneEndpoint = clusterv1.APIEndpoint{
 			Host: hcloudCluster.Status.ControlPlaneFloatingIPs[0].IP,
 			Port: clusterScope.ControlPlaneAPIEndpointPort(),
-		}}
+		}
 	}
 
+	// set cluster infrastructure as ready
 	hcloudCluster.Status.Ready = true
+
+	// reconcile cluster manifests
+	if err := r.reconcileManifests(clusterScope); err == errNoReadyAPIServer {
+		record.Eventf(
+			hcloudCluster,
+			"APIServerNotReady",
+			"No ready API server available yet to reconcile: %s",
+			err,
+		)
+		return reconcile.Result{RequeueAfter: 10 * time.Second}, nil
+	} else if err != nil {
+		return reconcile.Result{}, errors.Wrapf(err, "failed to reconcile manifests for HcloudCluster %s/%s", hcloudCluster.Namespace, hcloudCluster.Name)
+	}
+
 	return reconcile.Result{}, nil
 }
 
+func (r *HcloudClusterReconciler) reconcileManifests(clusterScope *scope.ClusterScope) error {
+	hcloudCluster := clusterScope.HcloudCluster
+
+	// Check if manifests need to be applied or reapplied
+	expectedHash, err := clusterScope.ManifestsHash()
+	if err != nil {
+		return err
+	}
+
+	applyManifests := func() error {
+		machines, hcloudMachines, err := clusterScope.ListMachines(clusterScope.Ctx)
+		if err != nil {
+			return errors.Wrapf(err, "failed to list machines for HcloudCluster %s/%s", hcloudCluster.Namespace, hcloudCluster.Name)
+		}
+
+		var clientConfig clientcmd.ClientConfig
+		var readyErrors []error
+	machines:
+		for pos, m := range machines {
+			if !util.IsControlPlaneMachine(m) {
+				continue
+			}
+
+			if !m.Status.InfrastructureReady {
+				continue
+			}
+
+			// find a ready clientconfig
+			for _, address := range hcloudMachines[pos].Status.Addresses {
+				if address.Type != corev1.NodeExternalIP && address.Type != corev1.NodeExternalDNS {
+					continue
+				}
+
+				c, err := clusterScope.ClientConfigWithAPIEndpoint(clusterv1.APIEndpoint{
+					Host: address.Address,
+					Port: clusterScope.ControlPlaneAPIEndpointPort(),
+				})
+				if err != nil {
+					return err
+				}
+
+				if err := scope.IsControlPlaneReady(clusterScope.Ctx, c); err != nil {
+					readyErrors = append(readyErrors, fmt.Errorf("APIserver '%s': %w", hcloudMachines[pos].Name, err))
+				}
+
+				// APIserver ready
+				clientConfig = c
+				break machines
+			}
+		}
+
+		if clientConfig == nil {
+			if err := errorutil.NewAggregate(readyErrors); err != nil {
+				record.Warnf(
+					hcloudCluster,
+					"APIServerNotReady",
+					"Health check for API servers failed: %s",
+					err,
+				)
+				return errNoReadyAPIServer
+			}
+			return errNoReadyAPIServer
+		}
+
+		if err := clusterScope.ApplyManifestsWithClientConfig(clusterScope.Ctx, clientConfig); err != nil {
+			return errors.Wrap(err, "error applying manifests to first API server")
+		}
+
+		if hcloudCluster.Status.Manifests == nil {
+			hcloudCluster.Status.Manifests = &infrav1.HcloudClusterManifestsStatus{}
+		}
+		var myTrue = true
+		hcloudCluster.Status.Manifests.Initialized = &myTrue
+		hcloudCluster.Status.Manifests.AppliedHash = &expectedHash
+		return nil
+	}
+
+	m := hcloudCluster.Status.Manifests
+	if m == nil ||
+		m.Initialized == nil ||
+		*m.Initialized == false ||
+		m.AppliedHash == nil {
+		if err := applyManifests(); err != nil {
+			return err
+		}
+		record.Eventf(
+			hcloudCluster,
+			"ManifestsApplied",
+			"Latest Manifests (hash=%s) have been successfully applied to initialize the cluster",
+			expectedHash,
+		)
+	} else if expectedHash != *m.AppliedHash {
+		if err := applyManifests(); err != nil {
+			return err
+		}
+		record.Eventf(
+			hcloudCluster,
+			"ManifestsApplied",
+			"Latest Manifests (hash=%s) have been successfully applied to update the exising (hash=%s)",
+			expectedHash,
+			*m.AppliedHash,
+		)
+	}
+
+	return nil
+}
+
 func (r *HcloudClusterReconciler) SetupWithManager(mgr ctrl.Manager, options controller.Options) error {
+	var (
+		controlledType     = &infrav1.HcloudCluster{}
+		controlledTypeName = reflect.TypeOf(controlledType).Elem().Name()
+		controlledTypeGVK  = infrav1.GroupVersion.WithKind(controlledTypeName)
+	)
+
 	return ctrl.NewControllerManagedBy(mgr).
 		WithOptions(options).
-		For(&infrav1.HcloudCluster{}).
+		For(controlledType).
+		// Watch the CAPI resource that owns this infrastructure resource.
+		Watches(
+			&source.Kind{Type: &clusterv1.Cluster{}},
+			&handler.EnqueueRequestsFromMapFunc{
+				ToRequests: util.ClusterToInfrastructureMapFunc(controlledTypeGVK),
+			},
+		).
 		Complete(r)
 }
