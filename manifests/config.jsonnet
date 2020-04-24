@@ -71,6 +71,52 @@ local newControlPlaneService(pos, ip) = {
 
   controlPlaneServices: std.mapWithIndex(newControlPlaneService, $._config.hcloudFloatingIPs),
 
+  workarounds: {
+    // This fixes a problem join v1.18 node to a v1.17 control plane
+    // https://github.com/kubernetes/kubeadm/issues/2079
+    'upgrade-hotfix-v1.18': {
+      clusterRole: {
+        apiVersion: 'rbac.authorization.k8s.io/v1',
+        kind: 'ClusterRole',
+        metadata: {
+          name: 'kubeadm:get-nodes',
+        },
+        rules: [
+          {
+            apiGroups: [
+              '',
+            ],
+            resources: [
+              'nodes',
+            ],
+            verbs: [
+              'get',
+            ],
+          },
+        ],
+      },
+      clusterRoleBinding: {
+        apiVersion: 'rbac.authorization.k8s.io/v1',
+        kind: 'ClusterRoleBinding',
+        metadata: {
+          name: 'kubeadm:get-nodes',
+        },
+        roleRef: {
+          apiGroup: 'rbac.authorization.k8s.io',
+          kind: 'ClusterRole',
+          name: 'kubeadm:get-nodes',
+        },
+        subjects: [
+          {
+            apiGroup: 'rbac.authorization.k8s.io',
+            kind: 'Group',
+            name: 'system:bootstrappers:kubeadm:default-node-token',
+          },
+        ],
+      },
+    },
+  },
+
   manifests:
     calico +
     hcloudCloudControllerManager +
