@@ -60,6 +60,12 @@ func (s *Service) labels() map[string]string {
 }
 
 func (s *Service) Reconcile(ctx context.Context) (_ *ctrl.Result, err error) {
+	// If the HcloudMachine is in an error state, return early.
+	if s.scope.HasFailed() {
+		s.scope.Info("Error state detected, skipping reconciliation")
+		return &ctrl.Result{}, nil
+	}
+
 	// copy location information fron machine
 	if s.scope.Machine.Spec.FailureDomain == nil {
 		return nil, fmt.Errorf("Machine doesn't set a FailureDomain")
@@ -331,7 +337,7 @@ func (s *Service) Reconcile(ctx context.Context) (_ *ctrl.Result, err error) {
 		}
 
 		s.scope.HcloudMachine.Spec.ProviderID = &providerID
-		s.scope.HcloudMachine.Status.Ready = true
+		s.scope.SetReady()
 		return nil, nil
 	}
 

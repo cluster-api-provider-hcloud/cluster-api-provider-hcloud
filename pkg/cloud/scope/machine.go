@@ -6,7 +6,9 @@ import (
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/utils/pointer"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha3"
+	capierrors "sigs.k8s.io/cluster-api/errors"
 	"sigs.k8s.io/cluster-api/util"
 	"sigs.k8s.io/cluster-api/util/patch"
 
@@ -86,6 +88,26 @@ func (m *MachineScope) PatchObject(ctx context.Context) error {
 	return m.patchHelper.Patch(ctx, m.HcloudMachine)
 }
 
+// SetReady sets the HcloudMachine Ready Status
+func (m *MachineScope) SetReady() {
+	m.HcloudMachine.Status.Ready = true
+}
+
+// SetNotReady sets the HcloudMachine Ready Status to false
+func (m *MachineScope) SetNotReady() {
+	m.HcloudMachine.Status.Ready = false
+}
+
+// SetFailureMessage sets the HcloudMachine status failure message.
+func (m *MachineScope) SetFailureMessage(v error) {
+	m.HcloudMachine.Status.FailureMessage = pointer.StringPtr(v.Error())
+}
+
+// SetFailureReason sets the HcloudMachine status failure reason.
+func (m *MachineScope) SetFailureReason(v capierrors.MachineStatusError) {
+	m.HcloudMachine.Status.FailureReason = &v
+}
+
 // GetRawBootstrapData returns the bootstrap data from the secret in the Machine's bootstrap.dataSecretName.
 func (m *MachineScope) GetRawBootstrapData(ctx context.Context) ([]byte, error) {
 	if m.Machine.Spec.Bootstrap.DataSecretName == nil {
@@ -104,4 +126,9 @@ func (m *MachineScope) GetRawBootstrapData(ctx context.Context) ([]byte, error) 
 	}
 
 	return value, nil
+}
+
+// HasFailed returns if a machine has failed permanently
+func (m *MachineScope) HasFailed() bool {
+	return m.HcloudMachine.Status.FailureReason != nil || m.HcloudMachine.Status.FailureMessage != nil
 }
