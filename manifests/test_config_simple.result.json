@@ -2,6 +2,7 @@
   "keys": [
     "controlPlaneServices",
     "hcloudSecret",
-    "manifests"
+    "manifests",
+    "workarounds"
   ]
 }
