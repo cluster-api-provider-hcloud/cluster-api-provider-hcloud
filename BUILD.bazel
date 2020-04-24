@@ -32,6 +32,7 @@ filegroup(
         "//pkg/cloud/resources/volume:all-srcs",
         "//pkg/cloud/scope:all-srcs",
         "//pkg/cloud/utils:all-srcs",
+        "//pkg/csr:all-srcs",
         "//pkg/manifests:all-srcs",
         "//pkg/packer:all-srcs",
         "//pkg/record:all-srcs",

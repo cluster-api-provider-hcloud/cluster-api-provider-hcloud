@@ -20,15 +20,22 @@ import (
 	"fmt"
 	"reflect"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
+	infrav1 "github.com/simonswine/cluster-api-provider-hcloud/api/v1alpha3"
+	certificatesv1 "k8s.io/api/certificates/v1beta1"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
 	errorutil "k8s.io/apimachinery/pkg/util/errors"
+	"k8s.io/client-go/kubernetes"
 	clientcmd "k8s.io/client-go/tools/clientcmd"
+	"k8s.io/client-go/tools/record"
+	recorder "k8s.io/client-go/tools/record"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha3"
 	"sigs.k8s.io/cluster-api/util"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -39,14 +46,12 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
-	infrav1 "github.com/simonswine/cluster-api-provider-hcloud/api/v1alpha3"
 	"github.com/simonswine/cluster-api-provider-hcloud/pkg/cloud/resources/floatingip"
 	"github.com/simonswine/cluster-api-provider-hcloud/pkg/cloud/resources/location"
 	"github.com/simonswine/cluster-api-provider-hcloud/pkg/cloud/resources/network"
 	"github.com/simonswine/cluster-api-provider-hcloud/pkg/cloud/scope"
 	"github.com/simonswine/cluster-api-provider-hcloud/pkg/manifests"
 	"github.com/simonswine/cluster-api-provider-hcloud/pkg/packer"
-	"github.com/simonswine/cluster-api-provider-hcloud/pkg/record"
 )
 
 var errNoReadyAPIServer = errors.New("No ready API server was found")
@@ -58,6 +63,10 @@ type HcloudClusterReconciler struct {
 	Scheme    *runtime.Scheme
 	Packer    *packer.Packer
 	Manifests *manifests.Manifests
+	recorder  record.EventRecorder
+
+	targetClusterManagersStopCh map[types.NamespacedName]chan struct{}
+	targetClusterManagersLock   sync.Mutex
 }
 
 // +kubebuilder:rbac:groups=cluster-api-provider-hcloud.swine.dev,resources=hcloudclusters,verbs=get;list;watch;create;update;patch;delete
@@ -131,14 +140,9 @@ func (r *HcloudClusterReconciler) reconcileDelete(clusterScope *scope.ClusterSco
 	hcloudCluster := clusterScope.HcloudCluster
 	ctx := context.TODO()
 
-	// delete controlplane floating IPs
-	if err := floatingip.NewService(clusterScope).Delete(ctx); err != nil {
-		return reconcile.Result{}, errors.Wrapf(err, "failed to delete floating IPs for HcloudCluster %s/%s", hcloudCluster.Namespace, hcloudCluster.Name)
-	}
-
-	// delete the network
-	if err := network.NewService(clusterScope).Delete(ctx); err != nil {
-		return reconcile.Result{}, errors.Wrapf(err, "failed to delete network for HcloudCluster %s/%s", hcloudCluster.Namespace, hcloudCluster.Name)
+	// stop targetClusterManager
+	if err := r.reconcileTargetClusterManager(clusterScope); err != nil {
+		return reconcile.Result{}, err
 	}
 
 	// wait for all hcloudMachines to be deleted
@@ -149,14 +153,25 @@ func (r *HcloudClusterReconciler) reconcileDelete(clusterScope *scope.ClusterSco
 		for _, m := range machines {
 			names = append(names, fmt.Sprintf("machine/%s", m.Name))
 		}
-		record.Eventf(
+		r.recorder.Eventf(
 			hcloudCluster,
+			corev1.EventTypeNormal,
 			"WaitingForMachineDeletion",
 			"Machines %s still running, waiting with deletion of HcloudCluster",
 			strings.Join(names, ", "),
 		)
 		// TODO: send delete for machines still running
 		return reconcile.Result{RequeueAfter: 10 * time.Second}, nil
+	}
+
+	// delete controlplane floating IPs
+	if err := floatingip.NewService(clusterScope).Delete(ctx); err != nil {
+		return reconcile.Result{}, errors.Wrapf(err, "failed to delete floating IPs for HcloudCluster %s/%s", hcloudCluster.Namespace, hcloudCluster.Name)
+	}
+
+	// delete the network
+	if err := network.NewService(clusterScope).Delete(ctx); err != nil {
+		return reconcile.Result{}, errors.Wrapf(err, "failed to delete network for HcloudCluster %s/%s", hcloudCluster.Namespace, hcloudCluster.Name)
 	}
 
 	// Cluster is deleted so remove the finalizer.
@@ -201,8 +216,9 @@ func (r *HcloudClusterReconciler) reconcileNormal(clusterScope *scope.ClusterSco
 
 	// reconcile cluster manifests
 	if err := r.reconcileManifests(clusterScope); err == errNoReadyAPIServer {
-		record.Eventf(
+		r.recorder.Eventf(
 			hcloudCluster,
+			corev1.EventTypeNormal,
 			"APIServerNotReady",
 			"No ready API server available yet to reconcile: %s",
 			err,
@@ -212,7 +228,119 @@ func (r *HcloudClusterReconciler) reconcileNormal(clusterScope *scope.ClusterSco
 		return reconcile.Result{}, errors.Wrapf(err, "failed to reconcile manifests for HcloudCluster %s/%s", hcloudCluster.Namespace, hcloudCluster.Name)
 	}
 
+	// start targetClusterManager
+	if err := r.reconcileTargetClusterManager(clusterScope); err != nil {
+		return reconcile.Result{}, err
+	}
+
 	return reconcile.Result{}, nil
+}
+
+func (r *HcloudClusterReconciler) reconcileTargetClusterManager(clusterScope *scope.ClusterScope) error {
+	hcloudCluster := clusterScope.HcloudCluster
+	deleted := !hcloudCluster.DeletionTimestamp.IsZero()
+
+	r.targetClusterManagersLock.Lock()
+	defer r.targetClusterManagersLock.Unlock()
+	key := types.NamespacedName{
+		Namespace: hcloudCluster.Namespace,
+		Name:      hcloudCluster.Name,
+	}
+	if stopCh, ok := r.targetClusterManagersStopCh[key]; !ok && !deleted {
+		// create a new cluster manager
+		m, err := r.newTargetClusterManager(clusterScope)
+		if err != nil {
+			return errors.Wrapf(err, "failed to create a clusterManager for HcloudCluster %s/%s", hcloudCluster.Namespace, hcloudCluster.Name)
+		}
+		r.targetClusterManagersStopCh[key] = make(chan struct{})
+
+		go func() {
+			if err := m.Start(r.targetClusterManagersStopCh[key]); err != nil {
+				clusterScope.Error(err, "failed to start a targetClusterManager")
+			} else {
+				clusterScope.Info("stoppend targetClusterManager")
+			}
+			r.targetClusterManagersLock.Lock()
+			defer r.targetClusterManagersLock.Unlock()
+			delete(r.targetClusterManagersStopCh, key)
+		}()
+	} else if ok && deleted {
+		close(stopCh)
+		delete(r.targetClusterManagersStopCh, key)
+	}
+
+	return nil
+}
+
+func (r *HcloudClusterReconciler) newTargetClusterManager(clusterScope *scope.ClusterScope) (ctrl.Manager, error) {
+	hcloudCluster := clusterScope.HcloudCluster
+
+	clientConfig, err := clusterScope.ClientConfig()
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get a clientConfig for the API of HcloudCluster %s/%s", hcloudCluster.Namespace, hcloudCluster.Name)
+	}
+
+	restConfig, err := clientConfig.ClientConfig()
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get a restConfig for the API of HcloudCluster %s/%s", hcloudCluster.Namespace, hcloudCluster.Name)
+	}
+
+	clientSet, err := kubernetes.NewForConfig(restConfig)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get a clientSet for the API of HcloudCluster %s/%s", hcloudCluster.Namespace, hcloudCluster.Name)
+	}
+
+	scheme := runtime.NewScheme()
+	_ = certificatesv1.AddToScheme(scheme)
+
+	clusterMgr, err := ctrl.NewManager(
+		restConfig,
+		ctrl.Options{
+			Scheme:             scheme,
+			MetricsBindAddress: "0",
+			LeaderElection:     false,
+		},
+	)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to setup guest cluster manager")
+	}
+
+	gr := &GuestCSRReconciler{
+		Client: clusterMgr.GetClient(),
+		Log:    r.Log,
+		mCluster: &managementCluster{
+			Client:        r.Client,
+			hcloudCluster: hcloudCluster,
+			recorder:      r.recorder,
+		},
+		clientSet: clientSet,
+	}
+
+	if err := gr.SetupWithManager(clusterMgr, controller.Options{}); err != nil {
+		errors.Wrapf(err, "failed to setup CSR controller")
+	}
+
+	return clusterMgr, nil
+}
+
+var _ ManagementCluster = &managementCluster{}
+
+type managementCluster struct {
+	controllerclient.Client
+	hcloudCluster *infrav1.HcloudCluster
+	recorder      recorder.EventRecorder
+}
+
+func (c *managementCluster) Namespace() string {
+	return c.hcloudCluster.Namespace
+}
+
+func (c *managementCluster) Event(eventtype, reason, message string) {
+	c.recorder.Event(c.hcloudCluster, eventtype, reason, message)
+}
+
+func (c *managementCluster) Eventf(eventtype, reason, message string, args ...interface{}) {
+	c.recorder.Eventf(c.hcloudCluster, eventtype, reason, message, args...)
 }
 
 func (r *HcloudClusterReconciler) reconcileManifests(clusterScope *scope.ClusterScope) error {
@@ -268,8 +396,9 @@ func (r *HcloudClusterReconciler) reconcileManifests(clusterScope *scope.Cluster
 
 		if clientConfig == nil {
 			if err := errorutil.NewAggregate(readyErrors); err != nil {
-				record.Warnf(
+				r.recorder.Eventf(
 					hcloudCluster,
+					corev1.EventTypeWarning,
 					"APIServerNotReady",
 					"Health check for API servers failed: %s",
 					err,
@@ -300,8 +429,9 @@ func (r *HcloudClusterReconciler) reconcileManifests(clusterScope *scope.Cluster
 		if err := applyManifests(); err != nil {
 			return err
 		}
-		record.Eventf(
+		r.recorder.Eventf(
 			hcloudCluster,
+			corev1.EventTypeNormal,
 			"ManifestsApplied",
 			"Latest Manifests (hash=%s) have been successfully applied to initialize the cluster",
 			expectedHash,
@@ -310,9 +440,10 @@ func (r *HcloudClusterReconciler) reconcileManifests(clusterScope *scope.Cluster
 		if err := applyManifests(); err != nil {
 			return err
 		}
-		record.Eventf(
+		r.recorder.Eventf(
 			hcloudCluster,
 			"ManifestsApplied",
+			corev1.EventTypeNormal,
 			"Latest Manifests (hash=%s) have been successfully applied to update the exising (hash=%s)",
 			expectedHash,
 			*m.AppliedHash,
@@ -323,12 +454,19 @@ func (r *HcloudClusterReconciler) reconcileManifests(clusterScope *scope.Cluster
 }
 
 func (r *HcloudClusterReconciler) SetupWithManager(mgr ctrl.Manager, options controller.Options) error {
+	r.targetClusterManagersLock.Lock()
+	defer r.targetClusterManagersLock.Unlock()
+	if r.targetClusterManagersStopCh == nil {
+		r.targetClusterManagersStopCh = make(map[types.NamespacedName]chan struct{})
+	}
+	if r.recorder == nil {
+		r.recorder = mgr.GetEventRecorderFor("hcloud-cluster-reconciler")
+	}
 	var (
 		controlledType     = &infrav1.HcloudCluster{}
 		controlledTypeName = reflect.TypeOf(controlledType).Elem().Name()
 		controlledTypeGVK  = infrav1.GroupVersion.WithKind(controlledTypeName)
 	)
-
 	return ctrl.NewControllerManagedBy(mgr).
 		WithOptions(options).
 		For(controlledType).
