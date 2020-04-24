@@ -1,0 +1,11 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: controller-manager
+  namespace: system
+spec:
+  template:
+    spec:
+      containers:
+      - image: docker.io/simonswine/cluster-api-provider-hcloud:v0.1.0-rc.1
+        name: manager

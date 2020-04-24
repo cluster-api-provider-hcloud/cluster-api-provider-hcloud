@@ -2,9 +2,12 @@ package scope
 
 import (
 	"context"
+
 	"github.com/pkg/errors"
-	bootstrapv1 "sigs.k8s.io/cluster-api-bootstrap-provider-kubeadm/api/v1alpha2"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha2"
+	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/types"
+	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha3"
+	"sigs.k8s.io/cluster-api/util"
 	"sigs.k8s.io/cluster-api/util/patch"
 
 	infrav1 "github.com/simonswine/cluster-api-provider-hcloud/api/v1alpha3"
@@ -14,10 +17,11 @@ import (
 // ClusterScopeParams defines the input parameters used to create a new Scope.
 type MachineScopeParams struct {
 	ClusterScopeParams
-	KubeadmConfig *bootstrapv1.KubeadmConfig
 	Machine       *clusterv1.Machine
 	HcloudMachine *infrav1.HcloudMachine
 }
+
+var ErrBootstrapDataNotReady = errors.New("error retrieving bootstrap data: linked Machine's bootstrap.dataSecretName is nil")
 
 // NewClusterScope creates a new Scope from the supplied parameters.
 // This is meant to be called for each reconcile iteration.
@@ -41,7 +45,6 @@ func NewMachineScope(params MachineScopeParams) (*MachineScope, error) {
 
 	return &MachineScope{
 		ClusterScope:  *cs,
-		KubeadmConfig: params.KubeadmConfig,
 		Machine:       params.Machine,
 		HcloudMachine: params.HcloudMachine,
 	}, nil
@@ -50,7 +53,6 @@ func NewMachineScope(params MachineScopeParams) (*MachineScope, error) {
 // ClusterScope defines the basic context for an actuator to operate upon.
 type MachineScope struct {
 	ClusterScope
-	KubeadmConfig *bootstrapv1.KubeadmConfig
 	Machine       *clusterv1.Machine
 	HcloudMachine *infrav1.HcloudMachine
 }
@@ -60,20 +62,46 @@ func (s *MachineScope) Close() error {
 	return s.patchHelper.Patch(s.Ctx, s.HcloudMachine)
 }
 
-func (s *MachineScope) GetSpecLocation() infrav1.HcloudLocation {
-	return s.HcloudMachine.Spec.Location
-}
-
-func (s *MachineScope) SetStatusLocation(location infrav1.HcloudLocation, networkZone infrav1.HcloudNetworkZone) {
-	s.HcloudMachine.Status.Location = location
-	s.HcloudMachine.Status.NetworkZone = networkZone
-}
-
 func (s *MachineScope) EnsureImage(ctx context.Context, parameters *packerapi.PackerParameters) (*infrav1.HcloudImageID, error) {
 	return s.packer.EnsureImage(ctx, s, s.hcloudClient, parameters)
 }
 
-func (s *MachineScope) IsControlPlane() bool {
-	_, ok := s.Machine.Labels[clusterv1.MachineControlPlaneLabelName]
-	return ok
+// IsControlPlane returns true if the machine is a control plane.
+func (m *MachineScope) IsControlPlane() bool {
+	return util.IsControlPlaneMachine(m.Machine)
+}
+
+// Name returns the HcloudMachine name.
+func (m *MachineScope) Name() string {
+	return m.HcloudMachine.Name
+}
+
+// Namespace returns the namespace name.
+func (m *MachineScope) Namespace() string {
+	return m.HcloudMachine.Namespace
+}
+
+// PatchObject persists the machine spec and status.
+func (m *MachineScope) PatchObject(ctx context.Context) error {
+	return m.patchHelper.Patch(ctx, m.HcloudMachine)
+}
+
+// GetRawBootstrapData returns the bootstrap data from the secret in the Machine's bootstrap.dataSecretName.
+func (m *MachineScope) GetRawBootstrapData(ctx context.Context) ([]byte, error) {
+	if m.Machine.Spec.Bootstrap.DataSecretName == nil {
+		return nil, ErrBootstrapDataNotReady
+	}
+
+	secret := &corev1.Secret{}
+	key := types.NamespacedName{Namespace: m.Namespace(), Name: *m.Machine.Spec.Bootstrap.DataSecretName}
+	if err := m.Client.Get(ctx, key, secret); err != nil {
+		return nil, errors.Wrapf(err, "failed to retrieve bootstrap data secret for HcloudMachine %s/%s", m.Namespace(), m.Name())
+	}
+
+	value, ok := secret.Data["value"]
+	if !ok {
+		return nil, errors.New("error retrieving bootstrap data: secret value key is missing")
+	}
+
+	return value, nil
 }

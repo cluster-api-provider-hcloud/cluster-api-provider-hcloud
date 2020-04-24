@@ -30,6 +30,12 @@ std.prune(upstream {
         template+: {
           spec+: {
             containers: [this.container],
+            tolerations: [
+              {
+                effect: 'NoSchedule',
+                key: 'node-role.kubernetes.io/master',
+              },
+            ],
           },
         },
       },

@@ -12,7 +12,7 @@ import (
 	. "github.com/onsi/gomega"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/klog"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha2"
+	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha3"
 
 	infrav1 "github.com/simonswine/cluster-api-provider-hcloud/api/v1alpha3"
 	"github.com/simonswine/cluster-api-provider-hcloud/pkg/cloud/resources/floatingip"
@@ -141,7 +141,7 @@ var _ = Describe("FloatingIPs", func() {
 				{Type: infrav1.HcloudFloatingIPTypeIPv6},
 			}
 			scp.HcloudCluster.Status = infrav1.HcloudClusterStatus{
-				Location: "myhome",
+				Locations: []infrav1.HcloudLocation{infrav1.HcloudLocation("myhome")},
 			}
 			clusterTagKey := infrav1.ClusterTagKey(scp.HcloudCluster.Name)
 			_, deadBeefNetwork, err := net.ParseCIDR("2001:dead:beef::/64")
@@ -175,14 +175,14 @@ var _ = Describe("FloatingIPs", func() {
 
 			gomock.InOrder(
 				mockClient.EXPECT().CreateFloatingIP(gomock.Any(), gomock.Any()).DoAndReturn(func(ctx context.Context, opts hcloud.FloatingIPCreateOpts) (hcloud.FloatingIPCreateResult, *hcloud.Response, error) {
-					Expect(opts.HomeLocation.Name).To(Equal(string(scp.HcloudCluster.Status.Location)))
+					Expect(opts.HomeLocation.Name).To(Equal(string(scp.HcloudCluster.Status.Locations[0])))
 					Expect(opts.Type).To(Equal(hcloud.FloatingIPTypeIPv4))
 					return hcloud.FloatingIPCreateResult{
 						FloatingIP: fipIPV4,
 					}, nil, nil
 				}),
 				mockClient.EXPECT().CreateFloatingIP(gomock.Any(), gomock.Any()).DoAndReturn(func(ctx context.Context, opts hcloud.FloatingIPCreateOpts) (hcloud.FloatingIPCreateResult, *hcloud.Response, error) {
-					Expect(opts.HomeLocation.Name).To(Equal(string(scp.HcloudCluster.Status.Location)))
+					Expect(opts.HomeLocation.Name).To(Equal(string(scp.HcloudCluster.Status.Locations[0])))
 					Expect(opts.Type).To(Equal(hcloud.FloatingIPTypeIPv6))
 					return hcloud.FloatingIPCreateResult{
 						FloatingIP: fipIPV6,

@@ -86,7 +86,7 @@ rm -rf vendor
 unset GOROOT
 "$gazelle" update-repos \
   --from_file=go.mod --to_macro=hack/build/repos.bzl%go_repositories \
-  --build_file_generation=on --build_file_proto_mode=disable_global
+  --build_file_generation=on --build_file_proto_mode=disable_global --prune
 "${update_bazel[@]}" # TODO(fejta): do we still need to do this?
 
 echo "SUCCESS: updated modules"

@@ -27,6 +27,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	controllerclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	infrav1 "github.com/simonswine/cluster-api-provider-hcloud/api/v1alpha3"
@@ -128,7 +129,7 @@ func (r *HcloudVolumeReconciler) reconcileDelete(volumeScope *scope.VolumeScope)
 
 	// delete controlplane floating IPs
 	// Volume is deleted so remove the finalizer.
-	volumeScope.HcloudVolume.Finalizers = util.Filter(volumeScope.HcloudVolume.Finalizers, infrav1.VolumeFinalizer)
+	controllerutil.RemoveFinalizer(volumeScope.HcloudVolume, infrav1.VolumeFinalizer)
 
 	return reconcile.Result{}, nil
 }
@@ -138,9 +139,7 @@ func (r *HcloudVolumeReconciler) reconcileNormal(volumeScope *scope.VolumeScope)
 	hcloudVolume := volumeScope.HcloudVolume
 
 	// If the HcloudVolume doesn't have our finalizer, add it.
-	if !util.Contains(hcloudVolume.Finalizers, infrav1.VolumeFinalizer) {
-		hcloudVolume.Finalizers = append(hcloudVolume.Finalizers, infrav1.VolumeFinalizer)
-	}
+	controllerutil.AddFinalizer(hcloudVolume, infrav1.VolumeFinalizer)
 
 	// ensure a valid location is set
 	if err := location.NewService(volumeScope).Reconcile(volumeScope.Ctx); err != nil {

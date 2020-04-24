@@ -1,0 +1,46 @@
+load("@bazel_tools//tools/build_defs/pkg:pkg.bzl", "pkg_tar")
+
+filegroup(
+    name = "package-srcs",
+    srcs = glob(["**"]),
+    tags = ["automanaged"],
+    visibility = ["//visibility:private"],
+)
+
+pkg_tar(
+    name = "kustomize",
+    srcs = [
+        ":all-srcs",
+    ],
+    mode = "0o644",
+    package_dir = "config/",
+    strip_prefix = ".",
+    visibility = ["//visibility:public"],
+)
+
+genrule(
+    name = "config",
+    srcs = [
+        "//hack:kubectl_host_bin",
+        "//config:kustomize.tar",
+    ],
+    outs = ["infrastructure-components.yaml"],
+    cmd = "./$(location infrastructure-components.sh) \"$(location //hack:kubectl_host_bin)\" \"$(location //config:kustomize.tar)\" > \"$@\"",
+    stamp = True,
+    tools = [
+        "infrastructure-components.sh",
+    ],
+)
+
+filegroup(
+    name = "all-srcs",
+    srcs = [
+        ":package-srcs",
+        "//config/crd:all-srcs",
+        "//config/default:all-srcs",
+        "//config/manager:all-srcs",
+        "//config/rbac:all-srcs",
+    ],
+    tags = ["automanaged"],
+    visibility = ["//visibility:public"],
+)

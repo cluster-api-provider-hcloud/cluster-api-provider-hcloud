@@ -4,6 +4,9 @@ HCLOUD_IP_FLOATER_VERSION := 0.1.4
 hcloud-ip-floater/manifests.json:
 	kubectl convert -k hcloud-ip-floater/upstream -o json | jq .items > $@
 
+hcloud-metallb-floater/manifests.json:
+	kubectl convert -k hcloud-metallb-floater/upstream -o json | jq .items > $@
+
 HCLOUD_CLOUD_CONTROLLER_MANAGER_VERSION := 1.5.0
 hcloud-cloud-controller-manager/manifests.json:
 	mkdir -p $(shell dirname "$@")
@@ -22,6 +25,13 @@ CALICO_VERSION := 3.13
 calico/manifests.json:
 	mkdir -p $(shell dirname "$@")
 	curl -sL https://docs.projectcalico.org/v$(CALICO_VERSION)/manifests/calico.yaml | \
+		go run ../hack/yaml2json.go | \
+		jq -s  > $@
+
+METALLB_VERSION := 0.9.3
+metallb/manifests.json:
+	mkdir -p $(shell dirname "$@")
+	curl -sL https://github.com/metallb/metallb/raw/v0.9.3/manifests/metallb.yaml | \
 		go run ../hack/yaml2json.go | \
 		jq -s  > $@
 

@@ -1,5 +1,7 @@
 # the following config is for teaching kustomize where to look at when substituting vars.
 # It requires kustomize v2.1.0 or newer to work properly.
+namespace: capi-webhook-system
+
 nameReference:
 - kind: Service
   version: v1
@@ -23,3 +25,5 @@ namespace:
 
 varReference:
 - path: metadata/annotations
+- kind: Deployment
+  path: spec/template/spec/volumes/secret/secretName

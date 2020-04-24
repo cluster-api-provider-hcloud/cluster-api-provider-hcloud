@@ -1,6 +1,7 @@
 {
-   "keys": [
-      "hcloudSecret",
-      "manifests"
-   ]
+  "keys": [
+    "controlPlaneServices",
+    "hcloudSecret",
+    "manifests"
+  ]
 }

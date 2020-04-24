@@ -17,6 +17,9 @@ run: ## Run controller's binary
 install: manifests ## Install CRDs into a cluster
 	kubectl apply -k config/crd
 
+.PHONY: install_all
+install_all: manifests ## Install CRDs into a cluster
+
 .PHONY: manifests
 manifests: ## Update generated manifests
 	bazel run //hack:update-crds

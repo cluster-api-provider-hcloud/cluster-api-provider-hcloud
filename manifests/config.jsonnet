@@ -1,33 +1,35 @@
 local calico = import 'calico/calico.libsonnet';
 local hcloudCloudControllerManager = import 'hcloud-cloud-controller-manager/hcloud-cloud-controller-manager.libsonnet';
 local hcloudCSI = import 'hcloud-csi/hcloud-csi.libsonnet';
+local hcloudMetalLBFloater = import 'hcloud-metallb-floater/hcloud-metallb-floater.libsonnet';
+local metalLB = import 'metallb/metallb.libsonnet';
 local metricsServer = import 'metrics-server/metrics-server.libsonnet';
-local apiServerKeepalived = (import 'kube-keepalived-vip/kube-keepalived-vip.libsonnet') {
-  _config+:: {
-    name: 'kube-apiserver-keepalived-vip',
-    backendService: 'default/kubernetes',
+
+local newControlPlaneService(pos, ip) = {
+  apiVersion: 'v1',
+  kind: 'Service',
+  metadata: {
+    name: 'kube-apiserver-%d' % pos,
+    namespace: 'kube-system',
   },
-  daemonSet+: {
-    spec+: {
-      template+: {
-        spec+: {
-          nodeSelector+: {
-            'node-role.kubernetes.io/master': '',
-          },
-          tolerations+: [
-            {
-              key: 'CriticalAddonsOnly',
-              operator: 'Exists',
-            },
-            {
-              operator: 'Exists',
-            },
-          ],
-        },
-      },
+  spec: {
+    selector: {
+      component: 'kube-apiserver',
+      tier: 'control-plane',
     },
+    ports: [
+      {
+        protocol: 'TCP',
+        port: 6443,
+        targetPort: 6443,
+      },
+    ],
+    type: 'LoadBalancer',
+    loadBalancerIP: ip,
+    externalTrafficPolicy: 'Local',
   },
 };
+
 
 {
   _config:: {
@@ -50,7 +52,7 @@ local apiServerKeepalived = (import 'kube-keepalived-vip/kube-keepalived-vip.lib
     podsCIDRBlock: '192.168.0.0/16',
     hcloudToken: 'xx',
     hcloudNetwork: 'yy',
-    hcloudFloatingIPs: ['1.1.1.1'],
+    hcloudFloatingIPs: ['1.1.1.1', '2.2.2.2'],
   },
 
   hcloudSecret: {
@@ -67,12 +69,15 @@ local apiServerKeepalived = (import 'kube-keepalived-vip/kube-keepalived-vip.lib
     },
   },
 
+  controlPlaneServices: std.mapWithIndex(newControlPlaneService, $._config.hcloudFloatingIPs),
+
   manifests:
     calico +
     hcloudCloudControllerManager +
     hcloudCSI +
     metricsServer +
-    apiServerKeepalived +
+    hcloudMetalLBFloater +
+    metalLB +
     {
       _config+:: $._config,
     },
