@@ -24,10 +24,9 @@ install_all: manifests ## Install CRDs into a cluster
 manifests: ## Update generated manifests
 	bazel run //hack:update-crds
 
-# TODO: Deploy controller in the configured Kubernetes cluster in ~/.kube/config
-#deploy: manifests
-#	cd config/manager && kustomize edit set image controller=${IMG}
-#	kustomize build config/default | kubectl apply -f -
+.PHONY: deploy_kind
+deploy_kind: ## Deploy latest image and manifests to a kind cluster
+	bazel run //cmd/cluster-api-provider-hcloud:deploy
 
 # Run go fmt against code
 fmt:

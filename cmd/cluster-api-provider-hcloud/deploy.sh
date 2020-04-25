@@ -8,6 +8,7 @@ KUSTOMIZE=$1
 shift
 IMAGE_TAR=$1
 shift
+IMAGE_DIGEST=sha256:$(cat "${IMAGE_TAR/.tar/}.0.config.sha256")
 
 WORK_DIR=`mktemp -d -p "$(pwd)"`
 function cleanup {

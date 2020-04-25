@@ -9,3 +9,7 @@ resources:
 - auth_proxy_service.yaml
 - auth_proxy_role.yaml
 - auth_proxy_role_binding.yaml
+# This is used by the standard capi controllers
+- aggregate_hcloudclusters_clusterrole.yaml
+- aggregate_hcloudmachines_clusterrole.yaml
+- aggregate_hcloudmachinetemplates_clusterrole.yaml

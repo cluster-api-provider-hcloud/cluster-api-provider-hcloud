@@ -19,7 +19,7 @@ tar xf "${KUSTOMIZE}" -C "${WORK_DIR}"
 
 cat > "${WORK_DIR}/image_bazel.json" <<EOF
 [
-  {"op": "replace", "path": "/spec/template/spec/containers/1/image", "value": "${STABLE_DOCKER_REGISTRY}/cluster-api-provider-hcloud:${STABLE_DOCKER_TAG}"}
+  {"op": "replace", "path": "/spec/template/spec/containers/1/image", "value": "${STABLE_DOCKER_REGISTRY}:${STABLE_DOCKER_TAG}"}
 ]
 EOF
 

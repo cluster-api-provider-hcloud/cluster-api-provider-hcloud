@@ -18,6 +18,18 @@ pkg_tar(
     visibility = ["//visibility:public"],
 )
 
+pkg_tar(
+    name = "release",
+    srcs = [
+        ":cluster-template.yaml",
+        ":config",
+        ":metadata.yaml",
+    ],
+    mode = "0o644",
+    strip_prefix = ".",
+    visibility = ["//visibility:public"],
+)
+
 genrule(
     name = "config",
     srcs = [

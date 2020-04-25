@@ -13,11 +13,3 @@ filegroup(
     tags = ["automanaged"],
     visibility = ["//visibility:public"],
 )
-
-go_library(
-    name = "go_default_library",
-    srcs = ["fake.go"],
-    importpath = "github.com/simonswine/cluster-api-provider-hcloud/hack/build",
-    visibility = ["//visibility:public"],
-    deps = ["@io_k8s_sigs_controller_tools//pkg/version:go_default_library"],
-)

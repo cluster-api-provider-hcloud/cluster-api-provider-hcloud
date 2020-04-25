@@ -1,0 +1,113 @@
+---
+apiVersion: cluster.x-k8s.io/v1alpha3
+kind: Cluster
+metadata:
+  name: "${CLUSTER_NAME}"
+spec:
+  clusterNetwork:
+    pods:
+      cidrBlocks: ["192.168.0.0/16"]
+  infrastructureRef:
+    apiVersion: cluster-api-provider-hcloud.swine.dev/v1alpha3
+    kind: HcloudCluster
+    name: "${CLUSTER_NAME}"
+  controlPlaneRef:
+    kind: KubeadmControlPlane
+    apiVersion: controlplane.cluster.x-k8s.io/v1alpha3
+    name: "${CLUSTER_NAME}-control-plane"
+---
+apiVersion: cluster-api-provider-hcloud.swine.dev/v1alpha3
+kind: HcloudCluster
+metadata:
+  name: "${CLUSTER_NAME}"
+spec:
+  locations:
+    - "${HCLOUD_LOCATION}"
+  tokenRef:
+    name: hcloud-token
+    key: token
+  sshKeys:
+    - name: "${HCLOUD_SSH_KEY_NAME}"
+  controlPlaneFloatingIPs:
+    - type: IPv4
+---
+kind: KubeadmControlPlane
+apiVersion: controlplane.cluster.x-k8s.io/v1alpha3
+metadata:
+  name: "${CLUSTER_NAME}-control-plane"
+spec:
+  replicas: ${CONTROL_PLANE_MACHINE_COUNT}
+  version: "${KUBERNETES_VERSION}"
+  infrastructureTemplate:
+    kind: HcloudMachineTemplate
+    apiVersion: cluster-api-provider-hcloud.swine.dev/v1alpha3
+    name: "${CLUSTER_NAME}-control-plane"
+  kubeadmConfigSpec:
+    initConfiguration:
+      nodeRegistration:
+        kubeletExtraArgs:
+          cloud-provider: external
+    clusterConfiguration:
+      apiServer:
+        extraArgs:
+          cloud-provider: external
+      controllerManager:
+        extraArgs:
+          cloud-provider: external
+    joinConfiguration:
+      nodeRegistration:
+        kubeletExtraArgs:
+          cloud-provider: external
+---
+apiVersion: cluster-api-provider-hcloud.swine.dev/v1alpha3
+kind: HcloudMachineTemplate
+metadata:
+  name: "${CLUSTER_NAME}-control-plane"
+spec:
+  template:
+    spec:
+      type: "${HCLOUD_CONTROL_PLANE_MACHINE_TYPE}"
+---
+apiVersion: cluster.x-k8s.io/v1alpha3
+kind: MachineDeployment
+metadata:
+  name: "${CLUSTER_NAME}-worker"
+spec:
+  clusterName: "${CLUSTER_NAME}"
+  replicas: ${WORKER_MACHINE_COUNT}
+  selector:
+    matchLabels:
+  template:
+    spec:
+      clusterName: "${CLUSTER_NAME}"
+      version: "${KUBERNETES_VERSION}"
+      bootstrap:
+        configRef:
+          name: "${CLUSTER_NAME}-worker"
+          apiVersion: bootstrap.cluster.x-k8s.io/v1alpha3
+          kind: KubeadmConfigTemplate
+      infrastructureRef:
+        name: "${CLUSTER_NAME}-worker"
+        apiVersion: cluster-api-provider-hcloud.swine.dev/v1alpha3
+        kind: HcloudMachineTemplate
+---
+apiVersion: cluster-api-provider-hcloud.swine.dev/v1alpha3
+kind: HcloudMachineTemplate
+metadata:
+  name: "${CLUSTER_NAME}-worker"
+spec:
+  template:
+    spec:
+      type: "${HCLOUD_NODE_MACHINE_TYPE}"
+---
+apiVersion: bootstrap.cluster.x-k8s.io/v1alpha3
+kind: KubeadmConfigTemplate
+metadata:
+  name: "${CLUSTER_NAME}-worker"
+spec:
+  template:
+    spec:
+      joinConfiguration:
+        nodeRegistration:
+          kubeletExtraArgs:
+            cloud-provider: external

@@ -40,7 +40,7 @@ fi
 
 set -o xtrace
 "$kazel" --cfg-path=./hack/build/.kazelcfg.json
-"$gazelle" fix --external=external
+"$gazelle" fix --external=external --exclude hack/build
 set +o xtrace
 
 util::after_job $CMD
