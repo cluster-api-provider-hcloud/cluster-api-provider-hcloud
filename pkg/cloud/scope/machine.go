@@ -2,6 +2,8 @@ package scope
 
 import (
 	"context"
+	"hash/crc32"
+	"sort"
 
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
@@ -22,6 +24,7 @@ type MachineScopeParams struct {
 }
 
 var ErrBootstrapDataNotReady = errors.New("error retrieving bootstrap data: linked Machine's bootstrap.dataSecretName is nil")
+var ErrFailureDomainNotFound = errors.New("error no failure domain available")
 
 // NewClusterScope creates a new Scope from the supplied parameters.
 // This is meant to be called for each reconcile iteration.
@@ -50,7 +53,7 @@ func NewMachineScope(params MachineScopeParams) (*MachineScope, error) {
 	}, nil
 }
 
-// ClusterScope defines the basic context for an actuator to operate upon.
+// MachineScope defines the basic context for an actuator to operate upon.
 type MachineScope struct {
 	ClusterScope
 	Machine       *clusterv1.Machine
@@ -84,6 +87,36 @@ func (m *MachineScope) Namespace() string {
 // PatchObject persists the machine spec and status.
 func (m *MachineScope) PatchObject(ctx context.Context) error {
 	return m.patchHelper.Patch(ctx, m.HcloudMachine)
+}
+
+func (m *MachineScope) GetFailureDomain() (string, error) {
+	if m.Machine.Spec.FailureDomain != nil {
+		return *m.Machine.Spec.FailureDomain, nil
+	}
+
+	var failureDomainNames []string
+	for fdName, fd := range m.Cluster.Status.FailureDomains {
+		// filter out zones if we are a control plane and the cluster object
+		// wants to avoid contorl planes in that zone
+		if m.IsControlPlane() && !fd.ControlPlane {
+			continue
+		}
+		failureDomainNames = append(failureDomainNames, fdName)
+	}
+
+	if len(failureDomainNames) == 0 {
+		return "", ErrFailureDomainNotFound
+	}
+	if len(failureDomainNames) == 1 {
+		return failureDomainNames[0], nil
+	}
+
+	sort.Strings(failureDomainNames)
+
+	// assign the node a zone based on a hash
+	pos := int(crc32.ChecksumIEEE([]byte(m.HcloudMachine.Name))) % len(failureDomainNames)
+
+	return failureDomainNames[pos], nil
 }
 
 // GetRawBootstrapData returns the bootstrap data from the secret in the Machine's bootstrap.dataSecretName.
