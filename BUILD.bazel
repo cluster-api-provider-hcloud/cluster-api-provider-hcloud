@@ -9,8 +9,16 @@ load("@io_bazel_rules_docker//container:container.bzl", "container_bundle")
 container_bundle(
     name = "images",
     images = {
-        "{STABLE_DOCKER_REGISTRY}/cluster-api-provider-hcloud:{STABLE_DOCKER_TAG}": "//cmd/cluster-api-provider-hcloud:image",
+        "{STABLE_DOCKER_REGISTRY}:{STABLE_DOCKER_TAG}": "//cmd/cluster-api-provider-hcloud:image",
     },
+)
+
+load("@io_bazel_rules_docker//contrib:push-all.bzl", "docker_push")
+
+docker_push(
+    name = "images.push",
+    bundle = ":images",
+    tags = ["manual"],
 )
 
 filegroup(

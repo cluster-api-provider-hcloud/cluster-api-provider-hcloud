@@ -144,6 +144,40 @@ sh_binary(
     ],
 )
 
+GHR = "@com_github_tcnksm_ghr//:ghr"
+
+RELEASE_TAR = "//config:release.tar"
+
+sh_binary(
+    name = "release",
+    srcs = ["release.sh"],
+    args = [
+        "$(location %s)" % GHR,
+        "$(location :release-metadata)",
+        "$(location %s)" % RELEASE_TAR,
+    ],
+    data = [
+        GHR,
+        ":release-metadata",
+        RELEASE_TAR,
+    ],
+)
+
+IMAGE_DIGEST = "//cmd/cluster-api-provider-hcloud:image.digest"
+
+genrule(
+    name = "release-metadata",
+    srcs = [
+        IMAGE_DIGEST,
+    ],
+    outs = ["release-metadata.env"],
+    cmd = "./$(location release-metadata.sh) \"$(location %s)\" > \"$@\"" % IMAGE_DIGEST,
+    stamp = True,
+    tools = [
+        "release-metadata.sh",
+    ],
+)
+
 sh_test(
     name = "verify-crds",
     srcs = ["crds.sh"],
