@@ -60,11 +60,12 @@ func (s *Service) labels() map[string]string {
 }
 
 func (s *Service) Reconcile(ctx context.Context) (_ *ctrl.Result, err error) {
-	// copy location information fron machine
-	if s.scope.Machine.Spec.FailureDomain == nil {
-		return nil, fmt.Errorf("Machine doesn't set a FailureDomain")
+	// detect failure domain
+	failureDomain, err := s.scope.GetFailureDomain()
+	if err != nil {
+		return nil, err
 	}
-	s.scope.HcloudMachine.Status.Location = infrav1.HcloudLocation(*s.scope.Machine.Spec.FailureDomain)
+	s.scope.HcloudMachine.Status.Location = infrav1.HcloudLocation(failureDomain)
 
 	// gather image ID
 	imageID, err := s.findImageIDBySpec(s.scope.Ctx, s.scope.HcloudMachine.Spec.Image)
@@ -232,7 +233,7 @@ func (s *Service) Reconcile(ctx context.Context) (_ *ctrl.Result, err error) {
 			ID: int(*s.scope.HcloudMachine.Status.ImageID),
 		},
 		Location: &hcloud.Location{
-			Name: string(s.scope.HcloudMachine.Status.Location),
+			Name: failureDomain,
 		},
 		ServerType: &hcloud.ServerType{
 			Name: string(s.scope.HcloudMachine.Spec.Type),
