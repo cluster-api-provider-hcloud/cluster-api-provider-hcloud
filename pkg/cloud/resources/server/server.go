@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"net/url"
 	"time"
 
 	"github.com/hetznercloud/hcloud-go/hcloud"
@@ -161,18 +162,38 @@ func (s *Service) Reconcile(ctx context.Context) (_ *ctrl.Result, err error) {
 			}
 
 			if c := kubeadmConfig.ClusterConfiguration; c != nil {
-				// set cloud provider external if nothing is set
 				if c.APIServer.ExtraArgs == nil {
 					c.APIServer.ExtraArgs = make(map[string]string)
-				}
-				if _, ok := c.APIServer.ExtraArgs[cloudProviderKey]; !ok {
-					c.APIServer.ExtraArgs[cloudProviderKey] = cloudProviderValue
 				}
 				if c.ControllerManager.ExtraArgs == nil {
 					c.ControllerManager.ExtraArgs = make(map[string]string)
 				}
+
+				// set cloud provider external if nothing is set
+				if _, ok := c.APIServer.ExtraArgs[cloudProviderKey]; !ok {
+					c.APIServer.ExtraArgs[cloudProviderKey] = cloudProviderValue
+				}
 				if _, ok := c.ControllerManager.ExtraArgs[cloudProviderKey]; !ok {
 					c.ControllerManager.ExtraArgs[cloudProviderKey] = cloudProviderValue
+				}
+
+				// ensure projected token endpoints are enabled by configuring
+				// issuer and signing key
+				serviceAccountIssuerKey := "service-account-issuer"
+				if _, ok := c.APIServer.ExtraArgs[serviceAccountIssuerKey]; !ok {
+					apiServerURL := url.URL{
+						Scheme: "https",
+						Host: fmt.Sprintf(
+							"%s:%d",
+							s.scope.Cluster.Spec.ControlPlaneEndpoint.Host,
+							s.scope.Cluster.Spec.ControlPlaneEndpoint.Port,
+						),
+					}
+					c.APIServer.ExtraArgs[serviceAccountIssuerKey] = apiServerURL.String()
+				}
+				serviceAccountSigningKeyFileKey := "service-account-signing-key-file"
+				if _, ok := c.APIServer.ExtraArgs[serviceAccountSigningKeyFileKey]; !ok {
+					c.APIServer.ExtraArgs[serviceAccountSigningKeyFileKey] = "/etc/kubernetes/pki/sa.key"
 				}
 
 				// configure APIserver serving certificate
