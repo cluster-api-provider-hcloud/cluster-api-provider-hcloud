@@ -16,13 +16,13 @@ require (
 	github.com/tcnksm/ghr v0.13.0
 	gopkg.in/yaml.v3 v3.0.0-20200121175148-a6ecf24a6d71
 	gotest.tools v2.2.0+incompatible
-	k8s.io/api v0.17.2
-	k8s.io/apimachinery v0.17.2
-	k8s.io/apiserver v0.17.2
-	k8s.io/client-go v0.17.2
+	k8s.io/api v0.18.2
+	k8s.io/apimachinery v0.18.2
+	k8s.io/apiserver v0.18.2
+	k8s.io/client-go v0.18.2
 	k8s.io/klog v1.0.0
-	sigs.k8s.io/cluster-api v0.3.3
-	sigs.k8s.io/controller-runtime v0.5.2
-	sigs.k8s.io/controller-tools v0.2.9
+	sigs.k8s.io/cluster-api v0.3.5
+	sigs.k8s.io/controller-runtime v0.6.0
+	sigs.k8s.io/controller-tools v0.3.0
 	sigs.k8s.io/yaml v1.2.0
 )

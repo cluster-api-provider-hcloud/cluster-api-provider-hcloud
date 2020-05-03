@@ -118,7 +118,7 @@ func (r *GuestCSRReconciler) Reconcile(req ctrl.Request) (_ ctrl.Result, reterr 
 		condition,
 	)
 
-	if _, err := r.clientSet.CertificatesV1beta1().CertificateSigningRequests().UpdateApproval(certificateSigningRequest); err != nil {
+	if _, err := r.clientSet.CertificatesV1beta1().CertificateSigningRequests().UpdateApproval(ctx, certificateSigningRequest, metav1.UpdateOptions{}); err != nil {
 		log.Error(err, "updating approval of csr failed", "username", certificateSigningRequest.Spec.Username, "csr")
 	}
 
