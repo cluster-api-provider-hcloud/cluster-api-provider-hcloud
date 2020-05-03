@@ -7,6 +7,6 @@ roleRef:
   kind: ClusterRole
   name: kubeadm-control-plane-manager
 subjects:
-- kind: ServiceAccount
-  name: default
-  namespace: capi-kubeadm-control-plane-system
+- kind: Group
+  name: system:serviceaccounts:capi-kubeadm-control-plane-system
+  apiGroup: rbac.authorization.k8s.io
