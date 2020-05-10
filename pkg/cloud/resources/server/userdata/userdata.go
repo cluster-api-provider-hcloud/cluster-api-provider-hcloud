@@ -2,6 +2,7 @@ package userdata
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -321,4 +322,29 @@ func (u *UserData) SetOrUpdateFile(file bootstrapv1.File) error {
 	}
 
 	return fmt.Errorf("existing file did not have %v keys", strings.Join(keys, ", "))
+}
+
+func (u *UserData) SkipKubeProxy() error {
+	var n *yaml.Node
+	for _, l1 := range u.document.Content {
+		for pos, l2 := range l1.Content {
+			if next := nextNode(l1.Content, pos); l2.Value == "runcmd" && next != nil {
+				n = next
+			}
+		}
+	}
+	if n == nil {
+		return errors.New("runcmd variable not found")
+	}
+	for _, l1 := range n.Content {
+		if strings.HasPrefix(l1.Value, "kubeadm init") {
+			flag := "--skip-phases=addon/kube-proxy"
+			if strings.Contains(l1.Value, flag) {
+				return nil
+			}
+			l1.Value = fmt.Sprintf("%s %s", strings.TrimRight(l1.Value, " "), flag)
+			return nil
+		}
+	}
+	return errors.New("kubeadm init command not found")
 }

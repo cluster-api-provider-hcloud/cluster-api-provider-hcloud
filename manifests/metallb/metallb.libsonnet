@@ -22,33 +22,34 @@ upstream {
     },
   },
 
-  '10-namespace': {
-    apiVersion: 'v1',
-    kind: 'Namespace',
-    metadata: {
-      name: $.controller.deployment.metadata.namespace,
-      labels: {
-        name: $.controller.deployment.metadata.namespace,
-      },
-    },
+  'metallb-metallb-system'+: {
+    namespace+:: {},
   },
 
   configMap: {
     apiVersion: 'v1',
     kind: 'ConfigMap',
-    metadata: $.controller.deployment.metadata {
-      name: 'config',
+    metadata: $['metallb-controller'].deployment.metadata {
+      name: 'metallb-config',
     },
     data: {
       config: std.manifestYamlDoc($._config.config),
     },
   },
 
-  controller+: {
+  'metallb-controller'+: {
     local this = self,
     container:: super.deployment.spec.template.spec.containers[0] {
       image: $._config.images['metallb-controller'],
       imagePullPolicy: 'IfNotPresent',
+      args: [
+        '--port=7472',
+        '--config=%s' % $.configMap.metadata.name,
+      ],
+    },
+
+    podSecurityPolicy+: {
+      apiVersion: 'policy/v1beta1',
     },
 
     deployment+: {
@@ -69,7 +70,7 @@ upstream {
   },
 
 
-  speaker+: {
+  'metallb-speaker'+: {
     local this = self,
     container:: super.daemonSet.spec.template.spec.containers[0] {
       image: $._config.images['metallb-speaker'],
@@ -79,6 +80,14 @@ upstream {
         { name: 'METALLB_ML_BIND_ADDR', value: '' },
         { name: 'METALLB_ML_SECRET_KEY', value: '' },
       ]),
+      args: [
+        '--port=7472',
+        '--config=%s' % $.configMap.metadata.name,
+      ],
+    },
+
+    podSecurityPolicy+: {
+      apiVersion: 'policy/v1beta1',
     },
 
     daemonSet+: {
@@ -98,7 +107,7 @@ upstream {
     },
   },
 
-  'metallb-system:speaker'+: {
+  'metallb-metallb-system:speaker'+: {
     clusterRole+: {
       rules+: [
         {

@@ -1,0 +1,4 @@
+namespace: kube-system
+namePrefix: metallb-
+bases:
+  - github.com/danderson/metallb//manifests?ref=v0.9.3

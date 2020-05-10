@@ -16,7 +16,8 @@
       name: this.name,
     },
 
-    hcloudTokenRef: null,
+    hcloudTokenRef+: {
+    },
     podsCIDRBlock: '192.168.0.0/16',
     hcloudFloatingIPs: [],
     backendService: null,

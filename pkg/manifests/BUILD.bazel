@@ -10,6 +10,7 @@ go_library(
     importpath = "github.com/simonswine/cluster-api-provider-hcloud/pkg/manifests",
     visibility = ["//visibility:public"],
     deps = [
+        "//api/v1alpha3:go_default_library",
         "//pkg/manifests/parameters:go_default_library",
         "@com_github_fatih_color//:go_default_library",
         "@com_github_go_logr_logr//:go_default_library",

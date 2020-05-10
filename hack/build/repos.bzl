@@ -1,4 +1,5 @@
 load("@bazel_gazelle//:deps.bzl", "go_repository")
+load("@bazel_tools//tools/build_defs/repo:git.bzl", "git_repository")
 
 def go_repositories():
     go_repository(
@@ -678,8 +679,15 @@ def go_repositories():
         build_file_generation = "on",
         build_file_proto_mode = "disable_global",
         importpath = "github.com/google/go-jsonnet",
-        sum = "h1:Ul0FtJiQl705JIyGKaBZug/W2LBY5p0xwY08Q69eOAg=",
-        version = "v0.13.0",
+        sum = "h1:lEUXTDnVsHu+CLLzMeWAdWV4JpCgkJeDqdVNS8RtyuY=",
+        version = "v0.15.0",
+    )
+    git_repository(
+        name = "com_github_google_go_jsonnet",
+        remote = "https://github.com/google/go-jsonnet",
+        commit = "70a6b3d419d9ee16a144345c35e0305052c6f2d9",
+        init_submodules = True,
+        shallow_since = "1581289066 +0100",
     )
     go_repository(
         name = "com_github_google_go_querystring",

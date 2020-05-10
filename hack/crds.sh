@@ -41,6 +41,10 @@ util::before_job $CMD
 set -o xtrace
 "$controllergen" \
     paths=./api/... \
+    object:headerFile=./hack/boilerplate.go.txt
+
+"$controllergen" \
+    paths=./api/... \
     crd:crdVersions=v1 \
     output:crd:dir=config/crd/bases \
     output:webhook:dir=config/webhook \

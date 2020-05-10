@@ -58,6 +58,9 @@ type HcloudClusterSpec struct {
 	Network *HcloudNetworkSpec `json:"network,omitempty"`
 
 	TokenRef *corev1.SecretKeySelector `json:"tokenRef,omitempty"`
+
+	// Manifests represents the config for manifests to apply
+	Manifests *HcloudClusterSpecManifests `json:"manifests,omitempty"`
 }
 
 type HcloudNetwork struct {
@@ -68,6 +71,16 @@ type HcloudNetworkSpec struct {
 	HcloudNetwork `json:",inline"`
 
 	Subnets []HcloudNetworkSubnetSpec `json:"subnets,omitempty"`
+}
+
+func (s *HcloudNetworkSpec) IsZero() bool {
+	if len(s.CIDRBlock) > 0 {
+		return false
+	}
+	if len(s.Subnets) > 0 {
+		return false
+	}
+	return true
 }
 
 type HcloudNetworkSubnetSpec struct {
@@ -98,7 +111,29 @@ type HcloudFloatingIPStatus struct {
 	Labels  map[string]string    `json:"-"`
 }
 
-type HcloudClusterManifestsStatus struct {
+type HcloudClusterSpecManifests struct {
+	Disabled *bool                              `json:"disabled,omitempty"`
+	Network  *HcloudClusterSpecManifestsNetwork `json:"network,omitempty"`
+}
+
+type HcloudClusterSpecManifestsNetwork struct {
+	Calico  *HcloudClusterSpecManifestsNetworkCalico  `json:"calico,omitempty"`
+	Cilium  *HcloudClusterSpecManifestsNetworkCilium  `json:"cilium,omitempty"`
+	Flannel *HcloudClusterSpecManifestsNetworkFlannel `json:"flannel,omitempty"`
+}
+
+type HcloudClusterSpecManifestsNetworkCalico struct {
+}
+
+type HcloudClusterSpecManifestsNetworkCilium struct {
+	IPSecKeysRef *corev1.SecretKeySelector `json:"ipSecKeysRef,omitempty"`
+}
+
+type HcloudClusterSpecManifestsNetworkFlannel struct {
+	Backend string `json:"backend,omitempty"`
+}
+
+type HcloudClusterStatusManifests struct {
 	Initialized *bool   `json:"initialized,omitempty"`
 	AppliedHash *string `json:"appliedHash,omitempty"`
 }
@@ -115,7 +150,7 @@ type HcloudClusterStatus struct {
 	// Manifests stores the if the cluster has already applied the minimal
 	// manifests
 	// +optional
-	Manifests *HcloudClusterManifestsStatus `json:"manifests,omitempty"`
+	Manifests *HcloudClusterStatusManifests `json:"manifests,omitempty"`
 
 	// Ready is true when the provider resource is ready.
 	// +optional

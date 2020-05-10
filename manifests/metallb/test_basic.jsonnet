@@ -11,6 +11,6 @@ local metallb = import 'metallb.libsonnet';
     std.filter(
       function(x)
         if x.name == 'METALLB_ML_BIND_ADDR' || x.name == 'METALLB_ML_SECRET_KEY' then true else false,
-      $.tree.speaker.daemonSet.spec.template.spec.containers[0].env,
+      $.tree['metallb-speaker'].daemonSet.spec.template.spec.containers[0].env,
     ),
 }
