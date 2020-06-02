@@ -4,13 +4,18 @@ set -o errexit
 set -o nounset
 set -o pipefail
 
-cat > /etc/yum.repos.d/CentOS-AltArch-Kernel.repo <<"EOF"
-[altarch-kernel]
-name=CentOS-$releasever AltArch - Kernel
-baseurl=http://vault.centos.org/altarch/7.7.1908/kernel/$basearch/
+cat > /etc/yum.repos.d/simonswine-kernel-lts.repo <<EOF
+[copr:copr.fedorainfracloud.org:simonswine:kernel-lts-5.4]
+name=Copr repo for kernel-lts-5.4 owned by simonswine
+baseurl=https://download.copr.fedorainfracloud.org/results/simonswine/kernel-lts-5.4/epel-\$releasever-\$basearch/
+type=rpm-md
+skip_if_unavailable=True
 gpgcheck=1
-gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-7
+gpgkey=https://download.copr.fedorainfracloud.org/results/simonswine/kernel-lts-5.4/pubkey.gpg
+repo_gpgcheck=0
+enabled=1
+enabled_metadata=1
 EOF
 
 # update kernel
-yum -y install kernel-core
+yum -y install kernel-5.4.43-300.el7
