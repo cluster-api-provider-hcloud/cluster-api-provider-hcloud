@@ -27,6 +27,7 @@
     {
       "type": "shell",
       "environment_vars": [
+        "PACKER_CENTOS_RELEASE=7.8.2003",
         "PACKER_OS_IMAGE={{user `os`}}",
         "PACKER_KUBERNETES_VERSION={{user `kubernetes_version`}}"
       ],
