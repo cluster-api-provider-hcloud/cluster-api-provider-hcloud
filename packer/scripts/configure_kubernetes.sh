@@ -129,7 +129,7 @@ net.ipv4.ip_forward = 1
 EOF
 
 systemctl start crio
-kubeadm config images pull
+kubeadm config images pull --kubernetes-version $KUBERNETES_VERSION
 
 semanage fcontext -a -t container_file_t /var/lib/etcd
 mkdir -p /var/lib/etcd
