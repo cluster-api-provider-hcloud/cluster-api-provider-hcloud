@@ -9,7 +9,7 @@ Cluster API infrastructure provider for Hetzner Cloud https://hetzner.cloud
 - Make sure you have a Kubernetes management cluster available and your
   KUBECONFIG and context set correctly
 
-- Ensure you have a recent [clusterctl] release (tested with v0.3.5)
+- Ensure you have a recent [clusterctl] release (tested with v0.3.6)
 
 - Ensure your Hcloud API token is created as secret in the kubernetes API:
 

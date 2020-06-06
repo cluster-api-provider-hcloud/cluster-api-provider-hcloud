@@ -15,7 +15,7 @@ kubectl wait -n cert-manager deployment cert-manager-webhook --for=condition=Ava
 
 # Install cluster api components
 kubectl apply \
-  -f https://github.com/kubernetes-sigs/cluster-api/releases/download/v0.3.5/core-components.yaml \
-  -f https://github.com/kubernetes-sigs/cluster-api/releases/download/v0.3.5/cluster-api-components.yaml \
-  -f https://github.com/kubernetes-sigs/cluster-api/releases/download/v0.3.5/control-plane-components.yaml \
-  -f https://github.com/kubernetes-sigs/cluster-api/releases/download/v0.3.5/bootstrap-components.yaml
+  -f https://github.com/kubernetes-sigs/cluster-api/releases/download/v0.3.6/core-components.yaml \
+  -f https://github.com/kubernetes-sigs/cluster-api/releases/download/v0.3.6/cluster-api-components.yaml \
+  -f https://github.com/kubernetes-sigs/cluster-api/releases/download/v0.3.6/control-plane-components.yaml \
+  -f https://github.com/kubernetes-sigs/cluster-api/releases/download/v0.3.6/bootstrap-components.yaml
