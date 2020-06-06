@@ -1,3 +1,5 @@
 # Include git version info
 build --stamp
 build --workspace_status_command hack/print-workspace-status.sh
+build --define jsonnet_port=go
+test --define jsonnet_port=go
