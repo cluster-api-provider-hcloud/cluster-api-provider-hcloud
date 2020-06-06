@@ -14,6 +14,7 @@ import (
 	"gopkg.in/yaml.v3"
 	"k8s.io/apimachinery/pkg/util/intstr"
 
+	infrav1 "github.com/simonswine/cluster-api-provider-hcloud/api/v1alpha3"
 	"github.com/simonswine/cluster-api-provider-hcloud/pkg/manifests/parameters"
 )
 
@@ -30,6 +31,9 @@ func sampleParameters() *parameters.ManifestParameters {
 		HcloudToken:   &hcloudToken,
 		HcloudNetwork: &hcloudNetwork,
 		PodCIDRBlock:  podCIDRBlock,
+		Network: &parameters.ManifestNetwork{
+			Calico: &infrav1.HcloudClusterSpecManifestsNetworkCalico{},
+		},
 	}
 }
 

@@ -428,6 +428,28 @@ func TestUserData_Basic_Init(t *testing.T) {
 	assert.Equal(t, userdataControlPlaneInit, b.String(), "they should be equal")
 }
 
+// This tests a rewrite if the command to skip kube-proxy
+func TestUserData_Basic_SkipKubeProxy(t *testing.T) {
+	r := strings.NewReader(userdataControlPlaneInit)
+	u, err := NewFromReader(r)
+	if err != nil {
+		t.Errorf("unexpected error: %w", err)
+	}
+
+	if err := u.SkipKubeProxy(); err != nil {
+		t.Errorf("unexpected error: %w", err)
+	}
+
+	b := bytes.NewBuffer(nil)
+	if err := u.WriteYAML(b); err != nil {
+		t.Errorf("unexpected error: %w", err)
+	}
+	data := strings.Split(userdataControlPlaneInit, "\n")
+	data = data[:len(data)-2]
+	data = append(data, "  - 'kubeadm init --config /tmp/kubeadm.yaml --skip-phases=addon/kube-proxy'")
+	assert.Equal(t, strings.Join(data, "\n")+"\n", b.String(), "they should be equal")
+}
+
 // This tests roughly what is necessary for updating the control plane kubeadm
 // init config
 func TestUserData_UpdateKubeadmConfig_Init(t *testing.T) {

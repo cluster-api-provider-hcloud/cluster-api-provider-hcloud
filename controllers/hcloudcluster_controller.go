@@ -72,7 +72,7 @@ type HcloudClusterReconciler struct {
 // +kubebuilder:rbac:groups=cluster-api-provider-hcloud.swine.dev,resources=hcloudclusters,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=cluster-api-provider-hcloud.swine.dev,resources=hcloudclusters/status,verbs=get;update;patch
 // +kubebuilder:rbac:groups=cluster.x-k8s.io,resources=clusters;clusters/status,verbs=get;list;watch
-// +kubebuilder:rbac:groups="",resources=secrets,verbs=get;list;watch
+// +kubebuilder:rbac:groups="",resources=secrets,verbs=get;list;watch;create
 
 func (r *HcloudClusterReconciler) Reconcile(req ctrl.Request) (_ ctrl.Result, reterr error) {
 	ctx := context.TODO()
@@ -183,7 +183,7 @@ func (r *HcloudClusterReconciler) reconcileDelete(clusterScope *scope.ClusterSco
 func (r *HcloudClusterReconciler) reconcileNormal(clusterScope *scope.ClusterScope) (reconcile.Result, error) {
 	clusterScope.Info("Reconciling HcloudCluster")
 	hcloudCluster := clusterScope.HcloudCluster
-	ctx := context.TODO()
+	ctx := clusterScope.Ctx
 
 	// If the HcloudCluster doesn't have our finalizer, add it.
 	controllerutil.AddFinalizer(hcloudCluster, infrav1.ClusterFinalizer)
@@ -343,8 +343,44 @@ func (c *managementCluster) Eventf(eventtype, reason, message string, args ...in
 	c.recorder.Eventf(c.hcloudCluster, eventtype, reason, message, args...)
 }
 
+func (r *HcloudClusterReconciler) reconcileManifestsNetwork(clusterScope *scope.ClusterScope) error {
+	hcloudCluster := clusterScope.HcloudCluster
+	manifests := hcloudCluster.Spec.Manifests
+
+	// if nothing is set default to calico
+	if manifests == nil {
+		hcloudCluster.Spec.Manifests = &infrav1.HcloudClusterSpecManifests{
+			Network: &infrav1.HcloudClusterSpecManifestsNetwork{
+				Calico: &infrav1.HcloudClusterSpecManifestsNetworkCalico{},
+			},
+		}
+		manifests = hcloudCluster.Spec.Manifests
+	}
+
+	// if Cilium with IPSec is enabled ensure we have an existing PSK
+	if manifests != nil && manifests.Network != nil && manifests.Network.Cilium != nil {
+
+		// if IPSec is enabled ensure key ref is set
+		cilium := manifests.Network.Cilium
+		if cilium.IPSecKeysRef != nil {
+			if cilium.IPSecKeysRef.Name == "" {
+				cilium.IPSecKeysRef.Name = fmt.Sprintf("%s-cilium-ipsec-keys", hcloudCluster.Name)
+			}
+			if cilium.IPSecKeysRef.Key == "" {
+				cilium.IPSecKeysRef.Key = "keys"
+			}
+		}
+	}
+
+	return nil
+}
+
 func (r *HcloudClusterReconciler) reconcileManifests(clusterScope *scope.ClusterScope) error {
 	hcloudCluster := clusterScope.HcloudCluster
+
+	if err := r.reconcileManifestsNetwork(clusterScope); err != nil {
+		return err
+	}
 
 	// Check if manifests need to be applied or reapplied
 	expectedHash, err := clusterScope.ManifestsHash()
@@ -413,7 +449,7 @@ func (r *HcloudClusterReconciler) reconcileManifests(clusterScope *scope.Cluster
 		}
 
 		if hcloudCluster.Status.Manifests == nil {
-			hcloudCluster.Status.Manifests = &infrav1.HcloudClusterManifestsStatus{}
+			hcloudCluster.Status.Manifests = &infrav1.HcloudClusterStatusManifests{}
 		}
 		var myTrue = true
 		hcloudCluster.Status.Manifests.Initialized = &myTrue
@@ -442,8 +478,8 @@ func (r *HcloudClusterReconciler) reconcileManifests(clusterScope *scope.Cluster
 		}
 		r.recorder.Eventf(
 			hcloudCluster,
-			"ManifestsApplied",
 			corev1.EventTypeNormal,
+			"ManifestsApplied",
 			"Latest Manifests (hash=%s) have been successfully applied to update the exising (hash=%s)",
 			expectedHash,
 			*m.AppliedHash,

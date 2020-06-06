@@ -1,9 +1,36 @@
 local calico = import 'calico/calico.libsonnet';
+local cilium = import 'cilium/cilium.libsonnet';
+local flannel = import 'flannel/flannel.libsonnet';
 local hcloudCloudControllerManager = import 'hcloud-cloud-controller-manager/hcloud-cloud-controller-manager.libsonnet';
 local hcloudCSI = import 'hcloud-csi/hcloud-csi.libsonnet';
 local hcloudMetalLBFloater = import 'hcloud-metallb-floater/hcloud-metallb-floater.libsonnet';
 local metalLB = import 'metallb/metallb.libsonnet';
 local metricsServer = import 'metrics-server/metrics-server.libsonnet';
+
+local defaultConfig = {
+  hcloudNetworkRef: {
+    valueFrom: {
+      secretKeyRef: {
+        key: 'network',
+        name: 'hcloud',
+      },
+    },
+  },
+  hcloudTokenRef: {
+    valueFrom: {
+      secretKeyRef: {
+        key: 'token',
+        name: 'hcloud',
+      },
+    },
+  },
+  podsCIDRBlock: '192.168.0.0/16',
+  hcloudToken: 'xx',
+  hcloudNetwork: 'yy',
+  hcloudFloatingIPs: ['1.1.1.1', '2.2.2.2'],
+  network: {
+  },
+};
 
 local newControlPlaneService(pos, ip) = {
   apiVersion: 'v1',
@@ -30,31 +57,7 @@ local newControlPlaneService(pos, ip) = {
   },
 };
 
-
-{
-  _config:: {
-    hcloudNetworkRef: {
-      valueFrom: {
-        secretKeyRef: {
-          key: 'network',
-          name: 'hcloud',
-        },
-      },
-    },
-    hcloudTokenRef: {
-      valueFrom: {
-        secretKeyRef: {
-          key: 'token',
-          name: 'hcloud',
-        },
-      },
-    },
-    podsCIDRBlock: '192.168.0.0/16',
-    hcloudToken: 'xx',
-    hcloudNetwork: 'yy',
-    hcloudFloatingIPs: ['1.1.1.1', '2.2.2.2'],
-  },
-
+local addons = {
   hcloudSecret: {
     apiVersion: 'v1',
     kind: 'Secret',
@@ -116,15 +119,34 @@ local newControlPlaneService(pos, ip) = {
       },
     },
   },
+};
 
-  manifests:
-    calico +
-    hcloudCloudControllerManager +
-    hcloudCSI +
-    metricsServer +
-    hcloudMetalLBFloater +
-    metalLB +
-    {
-      _config+:: $._config,
-    },
+local hasNetwork(config, network) =
+  if std.objectHas(config, 'network')
+  then std.objectHas(config.network, network)
+  else false;
+
+local new(c) = (
+  {
+    _config+:: defaultConfig,
+  } +
+  (if hasNetwork(c, 'calico') then calico else {}) +
+  (if hasNetwork(c, 'cilium') then cilium else {}) +
+  (if hasNetwork(c, 'flannel') then flannel else {}) +
+  hcloudCloudControllerManager +
+  hcloudCSI +
+  metricsServer +
+  hcloudMetalLBFloater +
+  metalLB +
+  {
+    _config+:: c,
+  } +
+  addons
+);
+
+{
+  new(config)::
+    new(config),
+
+  example: new({ network+: { calico: {} } }),
 }

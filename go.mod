@@ -7,7 +7,7 @@ require (
 	github.com/fatih/color v1.7.0
 	github.com/go-logr/logr v0.1.0
 	github.com/golang/mock v1.4.1
-	github.com/google/go-jsonnet v0.13.0
+	github.com/google/go-jsonnet v0.15.0
 	github.com/hetznercloud/hcloud-go v1.17.0
 	github.com/onsi/ginkgo v1.12.0
 	github.com/onsi/gomega v1.9.0

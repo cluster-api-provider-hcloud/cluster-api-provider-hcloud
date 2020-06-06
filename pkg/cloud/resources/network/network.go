@@ -61,6 +61,16 @@ func (s *Service) labels() map[string]string {
 }
 
 func (s *Service) Reconcile(ctx context.Context) (err error) {
+	// set defaults if nothing is set
+	if s.scope.HcloudCluster.Spec.Network == nil {
+		s.scope.HcloudCluster.Spec.Network = s.defaults()
+	}
+
+	// No network requested, end here
+	if s.scope.HcloudCluster.Spec.Network.IsZero() {
+		return nil
+	}
+
 	// update current status
 	networkStatus, err := s.actualStatus(ctx)
 	if err != nil {

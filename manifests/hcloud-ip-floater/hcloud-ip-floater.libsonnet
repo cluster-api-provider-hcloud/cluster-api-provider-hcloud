@@ -7,7 +7,7 @@ std.prune(upstream {
 }) {
   _config+:: {
     // token secret reference
-    hcloudTokenRef:: null,
+    hcloudTokenRef+: {},
   },
 
 

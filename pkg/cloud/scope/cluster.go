@@ -215,11 +215,10 @@ func (s *ClusterScope) manifestParameters() (*parameters.ManifestParameters, err
 
 	p.HcloudToken = &s.hcloudToken
 
-	if s.HcloudCluster.Status.Network == nil {
-		return nil, errors.New("No network found")
+	if s.HcloudCluster.Status.Network != nil {
+		hcloudNetwork := intstr.FromInt(s.HcloudCluster.Status.Network.ID)
+		p.HcloudNetwork = &hcloudNetwork
 	}
-	hcloudNetwork := intstr.FromInt(s.HcloudCluster.Status.Network.ID)
-	p.HcloudNetwork = &hcloudNetwork
 
 	if s.Cluster.Spec.ClusterNetwork == nil || s.Cluster.Spec.ClusterNetwork.Pods == nil || len(s.Cluster.Spec.ClusterNetwork.Pods.CIDRBlocks) == 0 {
 		return nil, errors.New("No pod cidr network set")
@@ -232,6 +231,32 @@ func (s *ClusterScope) manifestParameters() (*parameters.ManifestParameters, err
 		return nil, errors.Wrap(err, "Invalid pod cidr network set")
 	}
 	p.PodCIDRBlock = podCidrBlock
+
+	if s.HcloudCluster.Spec.Manifests == nil || s.HcloudCluster.Spec.Manifests.Network == nil {
+		return nil, errors.Wrap(err, "No overlay network configured in spec.manifests.network")
+	}
+
+	// convert config to the format expected by JSONNET
+	p.Network = &parameters.ManifestNetwork{}
+	clusterNetwork := s.HcloudCluster.Spec.Manifests.Network
+	if n := clusterNetwork.Calico; n != nil {
+		p.Network.Calico = n
+	}
+	if n := clusterNetwork.Cilium; n != nil {
+		p.Network.Cilium = &parameters.ManifestNetworkCilium{}
+
+		// if ipsec is enabled copy key
+		if clusterNetwork.Cilium.IPSecKeysRef != nil {
+			keys, err := s.EnsureCiliumIPSecKeysExists(s.Ctx)
+			if err != nil {
+				return nil, err
+			}
+			p.Network.Cilium.IPSecKeys = keys
+		}
+	}
+	if n := clusterNetwork.Flannel; n != nil {
+		p.Network.Flannel = n
+	}
 
 	return &p, nil
 }
@@ -304,4 +329,17 @@ func (s *ClusterScope) ApplyManifestsWithClientConfig(ctx context.Context, c cli
 		return err
 	}
 	return s.manifests.Apply(ctx, c, manifestParameters.ExtVar())
+}
+
+func (s *ClusterScope) IsUsingCilium() bool {
+	if s.HcloudCluster.Spec.Manifests == nil {
+		return false
+	}
+	if s.HcloudCluster.Spec.Manifests.Network == nil {
+		return false
+	}
+	if s.HcloudCluster.Spec.Manifests.Network.Cilium == nil {
+		return false
+	}
+	return true
 }

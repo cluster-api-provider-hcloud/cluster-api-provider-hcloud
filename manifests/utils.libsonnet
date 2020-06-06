@@ -66,4 +66,19 @@ local recursiveEnvReplaceFound(obj, value) = std.map(
       std.map(function(x) $.recursiveEnvReplace(x, value), obj)
     else
       obj,
+
+
+  // iterates per resource
+  mapPerRessource(obj, f)::
+    if std.type(obj) == 'object' then
+      if std.objectHas(obj, 'apiVersion') && std.objectHas(obj, 'kind') && std.objectHas(obj, 'metadata') then f(obj) else
+        std.mapWithKey(
+          function(name, field)
+            $.mapPerRessource(field, f),
+          obj,
+        )
+    else if std.type(obj) == 'array' then
+      std.map(function(x) $.mapPerRessource(x, f), obj)
+    else
+      obj,
 }
