@@ -18,8 +18,8 @@ jobs:
     - name: Install bazelisk
       run: |
         mkdir -p "${GITHUB_WORKSPACE}/bin"
-        curl -Lo "${GITHUB_WORKSPACE}/bin/bazel" "https://github.com/bazelbuild/bazelisk/releases/download/v1.3.0/bazelisk-linux-amd64"
-        echo "98af93c6781156ff3dd36fa06ba6b6c0a529595abb02c569c99763203f3964cc  ${GITHUB_WORKSPACE}/bin/bazel" | sha256sum -c
+        curl -Lo "${GITHUB_WORKSPACE}/bin/bazel" "https://github.com/bazelbuild/bazelisk/releases/download/v1.5.0/bazelisk-linux-amd64"
+        echo "605c4b417654a09febc7e15c6b802195fdd1c4fe8d876145fb15f10d4fa27b5b  ${GITHUB_WORKSPACE}/bin/bazel" | sha256sum -c
         chmod +x "${GITHUB_WORKSPACE}/bin/bazel"
     - name: Test
       run: |
