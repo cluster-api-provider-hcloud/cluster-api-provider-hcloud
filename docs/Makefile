@@ -31,5 +31,14 @@ $(MDBOOK_MERMAID):
 	rm $@.tar.gz
 	ln -fs $(shell basename $@) bin/mdbook-mermaid
 
-generate: $(MDBOOK) $(MDBOOK_MERMAID)
+.PHONY: generate
+generate: $(MDBOOK) $(MDBOOK_MERMAID) ## Build the static website
 	$(MDBOOK) build
+
+.PHONY: serve
+serve: ## Serve the docs on localhost
+	$(MDBOOK) serve
+
+.PHONY: clean
+clean: ## Remove build artificats
+	rm -rf book
