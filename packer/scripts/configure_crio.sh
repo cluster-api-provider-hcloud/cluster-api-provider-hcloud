@@ -21,6 +21,12 @@ EOF
 yum -y install cri-o-1.16.6-2.el7 cri-tools yum-plugin-versionlock
 yum versionlock add cri-o
 
+# for some reason containers-common requires subscription manager, which we need to disable
+cat > /etc/yum/pluginconf.d/subscription-manager.conf <<EOF
+[main]
+enabled=0
+EOF
+
 # remove default CNIs
 rm -f /etc/cni/net.d/100-crio-bridge.conf /etc/cni/net.d/200-loopback.conf
 
