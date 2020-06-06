@@ -16,7 +16,7 @@ spec:
         nodepool: worker
     spec:
       clusterName: cluster-dev
-      version: "v1.17.5"
+      version: "v1.17.6"
       bootstrap:
         configRef:
           apiVersion: bootstrap.cluster.x-k8s.io/v1alpha3
