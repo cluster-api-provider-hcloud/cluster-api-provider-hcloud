@@ -29,7 +29,7 @@ providers:
 - Deploy the cluster API components to the management cluster
 
 ```sh
-clusterctl init --infrastructure hcloud:v0.1.0-rc.2
+clusterctl init --infrastructure hcloud:v0.1.0-rc.3
 ```
 
 - Create your first cluster `cluster-dev`
@@ -44,7 +44,7 @@ export HCLOUD_NODE_MACHINE_TYPE=cx21
 export HCLOUD_CONTROL_PLANE_MACHINE_TYPE=cx21
 
 # Create cluster yamls
-clusterctl config cluster cluster-dev --kubernetes-version v1.17.5 --control-plane-machine-count=1 --worker-machine-count=3 > cluster-dev.yaml
+clusterctl config cluster cluster-dev --kubernetes-version v1.17.6 --control-plane-machine-count=1 --worker-machine-count=3 > cluster-dev.yaml
 
 # Apply the resources
 kubectl apply -f cluster-dev.yaml
@@ -61,5 +61,5 @@ KUBECONFIG_GUEST=$(pwd)/.kubeconfig-cluster-dev
 kubectl get secrets cluster-dev-kubeconfig -o json | jq -r .data.value | base64 -d > $KUBECONFIG_GUEST
 KUBECONFIG=$KUBECONFIG_GUEST kubectl get nodes,pods -A
 ```
-[clusterctl]: https://github.com/kubernetes-sigs/cluster-api/releases/tag/v0.3.5
+[clusterctl]: https://github.com/kubernetes-sigs/cluster-api/releases/tag/v0.3.6
 [Cluster API - Quick Start guide]: https://cluster-api.sigs.k8s.io/user/quick-start.html
