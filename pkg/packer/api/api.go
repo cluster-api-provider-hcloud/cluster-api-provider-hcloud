@@ -10,7 +10,7 @@ import (
 
 // this variable needs to raised, to rebuild images (e.g. after packer config
 // changes)
-const imageVersion = 1
+const imageVersion = 2
 
 type HcloudClient interface {
 	Token() string
