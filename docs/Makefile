@@ -36,7 +36,7 @@ generate: $(MDBOOK) $(MDBOOK_MERMAID) ## Build the static website
 	$(MDBOOK) build
 
 .PHONY: serve
-serve: ## Serve the docs on localhost
+serve: $(MDBOOK) $(MDBOOK_MERMAID) ## Serve the docs on localhost
 	$(MDBOOK) serve
 
 .PHONY: clean
