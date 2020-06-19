@@ -1,0 +1,19 @@
+[book]
+authors = ["Christian Simon"]
+language = "en"
+multilingual = false
+src = "src"
+title = "cluster-api-provider-hcloud"
+description = "Cluster API infrastructure provider for Hetzner Cloud https://hetzner.cloud"
+
+[preprocessor.links]
+
+[preprocessor.index]
+
+[preprocessor.mermaid]
+command = "mdbook-mermaid"
+
+[output.html]
+default-theme = "rust"
+additional-css =["mermaid.css"]
+additional-js =["mermaid.min.js", "mermaid-init.js"]
