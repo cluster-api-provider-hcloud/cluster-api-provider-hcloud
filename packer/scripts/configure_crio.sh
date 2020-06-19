@@ -8,7 +8,7 @@ set -o pipefail
 cat << 'EOF' > /etc/yum.repos.d/crio.repo
 [copr:copr.fedorainfracloud.org:simonswine:cri-o]
 name=CRI-O Packages for EL 7
-baseurl=https://copr-be.cloud.fedoraproject.org/results/simonswine/cri-o/epel-7-$basearch/
+baseurl=https://raw.githubusercontent.com/simonswine/centos-cri-o-yum/master/epel-7
 type=rpm-md
 skip_if_unavailable=True
 gpgcheck=1
@@ -19,6 +19,7 @@ enabled_metadata=1
 EOF
 
 yum -y install cri-o-1.16.6-2.el7 cri-tools yum-plugin-versionlock
+rpm -q cri-o
 yum versionlock add cri-o
 
 # for some reason containers-common requires subscription manager, which we need to disable
