@@ -102,7 +102,7 @@ repo_gpgcheck=1
 gpgkey=https://packages.cloud.google.com/yum/doc/yum-key.gpg https://packages.cloud.google.com/yum/doc/rpm-package-key.gpg
 EOF
 
-yum install -y kubelet-${KUBERNETES_VERSION_RPM} kubeadm-${KUBERNETES_VERSION_RPM} kubectl-${KUBERNETES_VERSION_RPM} yum-plugin-versionlock bash-completion --disableexcludes=kubernetes
+yum install --setopt=obsoletes=0 -y kubelet-${KUBERNETES_VERSION_RPM} kubeadm-${KUBERNETES_VERSION_RPM} kubectl-${KUBERNETES_VERSION_RPM} yum-plugin-versionlock bash-completion --disableexcludes=kubernetes
 yum versionlock kubelet kubectl kubeadm
 systemctl enable kubelet
 
