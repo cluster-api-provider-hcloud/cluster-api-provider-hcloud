@@ -22,7 +22,7 @@ kubectl create secret generic hcloud-token --from-literal=token=$TOKEN
 ```yaml
 providers:
   - name: "hcloud"
-    url: "https://github.com/simonswine/cluster-api-provider-hcloud/releases/latest/infrastructure-components.yaml"
+    url: "https://github.com/cluster-api-provider-hcloud/cluster-api-provider-hcloud/releases/latest/infrastructure-components.yaml"
     type: "InfrastructureProvider"
 ```
 
