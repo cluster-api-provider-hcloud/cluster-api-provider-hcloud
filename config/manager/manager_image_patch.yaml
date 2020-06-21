@@ -7,5 +7,5 @@ spec:
   template:
     spec:
       containers:
-      - image: docker.io/simonswine/cluster-api-provider-hcloud:v0.1.0-rc.1
+      - image: docker.io/simonswine/cluster-api-provider-hcloud:v0.1.0-rc.4
         name: manager
