@@ -1,0 +1,148 @@
+apiVersion: cluster.x-k8s.io/v1alpha3
+kind: Cluster
+metadata:
+  name: cluster-dev
+  namespace: default
+spec:
+  clusterNetwork:
+    pods:
+      cidrBlocks:
+      - 192.168.0.0/16
+  controlPlaneRef:
+    apiVersion: controlplane.cluster.x-k8s.io/v1alpha3
+    kind: KubeadmControlPlane
+    name: cluster-dev-control-plane
+  infrastructureRef:
+    apiVersion: cluster-api-provider-hcloud.swine.dev/v1alpha3
+    kind: HcloudCluster
+    name: cluster-dev
+---
+apiVersion: cluster-api-provider-hcloud.swine.dev/v1alpha3
+kind: HcloudCluster
+metadata:
+  name: cluster-dev
+  namespace: default
+spec:
+  controlPlaneFloatingIPs:
+  - name: KubeApiEndpointIPv4
+    type: IPv4
+  - name: KubeAPIEndpointIPv6
+    type: IPv6
+  locations:
+  - fsn1
+  - nbg1
+  - hel1
+  sshKeys:
+  - name: cluster
+  tokenRef:
+    key: token
+    name: hcloud-token
+---
+apiVersion: controlplane.cluster.x-k8s.io/v1alpha3
+kind: KubeadmControlPlane
+metadata:
+  name: cluster-dev-control-plane
+  namespace: default
+spec:
+  infrastructureTemplate:
+    apiVersion: cluster-api-provider-hcloud.swine.dev/v1alpha3
+    kind: HcloudMachineTemplate
+    name: cluster-dev-control-plane
+  kubeadmConfigSpec:
+    clusterConfiguration:
+      apiServer:
+        extraArgs:
+          cloud-provider: external
+      controllerManager:
+        extraArgs:
+          cloud-provider: external
+    initConfiguration:
+      nodeRegistration:
+        kubeletExtraArgs:
+          cloud-provider: external
+    joinConfiguration:
+      nodeRegistration:
+        kubeletExtraArgs:
+          cloud-provider: external
+  replicas: 3
+  version: v1.18.4
+---
+apiVersion: cluster-api-provider-hcloud.swine.dev/v1alpha3
+kind: HcloudMachineTemplate
+metadata:
+  name: cluster-dev-control-plane
+  namespace: default
+spec:
+  template:
+    spec:
+      type: cx21
+      sshKeys:
+      - name: control-plane
+---
+apiVersion: cluster.x-k8s.io/v1alpha3
+kind: MachineDeployment
+metadata:
+  name: cluster-dev-worker-0
+  namespace: default
+spec:
+  clusterName: cluster-dev
+  replicas: 3
+  selector:
+    matchLabels: null
+  template:
+    spec:
+      bootstrap:
+        configRef:
+          apiVersion: bootstrap.cluster.x-k8s.io/v1alpha3
+          kind: KubeadmConfigTemplate
+          name: cluster-dev-worker
+      clusterName: cluster-dev
+      infrastructureRef:
+        apiVersion: cluster-api-provider-hcloud.swine.dev/v1alpha3
+        kind: HcloudMachineTemplate
+        name: cluster-dev-worker
+      version: v1.18.4
+---
+apiVersion: cluster-api-provider-hcloud.swine.dev/v1alpha3
+kind: HcloudMachineTemplate
+metadata:
+  name: cluster-dev-worker
+  namespace: default
+spec:
+  template:
+    spec:
+      type: cx11
+      sshKeys:
+      - name: worker
+---
+apiVersion: bootstrap.cluster.x-k8s.io/v1alpha3
+kind: KubeadmConfigTemplate
+metadata:
+  name: cluster-dev-worker
+  namespace: default
+spec:
+  template:
+    spec:
+      joinConfiguration:
+        nodeRegistration:
+          kubeletExtraArgs:
+            cloud-provider: external
+---
+apiVersion: cluster.x-k8s.io/v1alpha3
+kind: MachineHealthCheck
+metadata:
+  name: cluster-dev-worker-unhealthy-1m
+spec:
+  clusterName: cluster-dev
+  maxUnhealthy: 10%
+  nodeStartupTimeout: 5m
+  selector:
+    matchLabels:
+      nodepool: cluster-dev-worker-0
+  unhealthyConditions:
+  - type: Ready
+    status: Unknown
+    timeout: 60s
+  - type: Ready
+    status: "False"
+    timeout: 60s

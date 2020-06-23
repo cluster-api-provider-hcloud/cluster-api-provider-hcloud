@@ -2,6 +2,10 @@
 
 Cluster API infrastructure provider for Hetzner Cloud https://hetzner.cloud
 
+## Docs
+https://cluster-api-provider-hcloud.swine.dev/
+or under ./docs/src
+
 ## Quick start
 
 *More information available in the [Cluster API - Quick Start guide]*
@@ -37,21 +41,33 @@ clusterctl init --infrastructure hcloud:v0.1.0-rc.4
 ```sh
 # The location of the cluster (fsn1|hel1|nbg1)
 export HCLOUD_LOCATION=fsn1
-# Name of SSH keys that have access to the cluster
+# Name of SSH keys that have access to the cluster, you need to upload them before
 export HCLOUD_SSH_KEY_NAME=id_rsa
 # Instance types used (cf. https://www.hetzner.com/cloud)
 export HCLOUD_NODE_MACHINE_TYPE=cx21
 export HCLOUD_CONTROL_PLANE_MACHINE_TYPE=cx21
 
 # Create cluster yamls
-clusterctl config cluster cluster-dev --kubernetes-version v1.17.6 --control-plane-machine-count=1 --worker-machine-count=3 > cluster-dev.yaml
+clusterctl config cluster cluster-dev --kubernetes-version v1.18.3 --control-plane-machine-count=1 --worker-machine-count=3 > cluster-dev.yaml
 
 # Apply the resources
 kubectl apply -f cluster-dev.yaml
 
-# Watch resoruces being created
-watch kubectl get hcloudclusters,cluster,hcloudmachines,machines,kubeadmcontrolplane
+# Watch resources being created
+watch -n 1 kubectl get hcloudclusters,cluster,hcloudmachines,machines,kubeadmcontrolplane
 ```
+The cluster need some time until it is ready:
+| Task | Time |
+| ---- | ---- |
+| Full cluster | ~20-25min
+| For the packer | ~10-15min
+| Snapshot | ~2-3min 
+| Cluster creation without packer and snapshot 3 control planes, 3 worker | ~10min
+| Worker upscale | ~1-2min
+| Worker downscale |  ~20s
+| Control plane upscale per node | ~2.5min
+| Control plane downscale per node | ~1min
+| Control-plane Failover with Metallb | ~20s 
 
 - Once the Control Plane has a ready replica, create a kubeconfig for the
   hcloud cluster and test connectivity:
@@ -63,3 +79,36 @@ KUBECONFIG=$KUBECONFIG_GUEST kubectl get nodes,pods -A
 ```
 [clusterctl]: https://github.com/kubernetes-sigs/cluster-api/releases/tag/v0.3.6
 [Cluster API - Quick Start guide]: https://cluster-api.sigs.k8s.io/user/quick-start.html
+
+
+## For Developers or demo purpose
+See ./docs/src/developers or https://cluster-api-provider-hcloud.swine.dev/developer/developer.html
+
+- Running development version
+
+```sh
+# Deploy kind cluster with cluster-api core componets
+./demo/setup.sh
+
+# Build project and deploy to local cluster
+bazel run //cmd/cluster-api-provider-hcloud:deploy
+```
+
+- Applying the target cluster with demo-cluster
+
+```sh
+# Create the 3 SSH Keys and name the keys control-plane, worker and cluster
+ssh-keygen -t rsa -b 4096 -C "your_email@example.com"
+
+# Create a Project on Hetzner Cloud and upload them
+
+# Create a token on Hetzner Cloud and apply it as secret
+kubectl create secret generic hcloud-token --from-literal=token=$TOKEN
+
+# Apply the manifest to your management cluster; cluster name is cluster-dev; use quickstart guide for getting access to the target cluster
+kubectl apply -f ./demo/demo-cluster.yaml
+
+# Deleting the cluster
+kubectl delete -f ./demo/demo-cluster.yaml
+```
+
