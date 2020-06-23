@@ -1,0 +1,11 @@
+# See the OWNERS docs: https://git.k8s.io/community/contributors/guide/owners.md
+
+approvers:
+  - cluster-api-hcloud-maintainers
+
+reviewers:
+  - cluster-api-hcloud-maintainers
+  - cluster-api-hcloud-reviewers
+
+emeritus_approvers:
+
