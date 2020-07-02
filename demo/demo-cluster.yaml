@@ -6,8 +6,10 @@ metadata:
 spec:
   clusterNetwork:
     pods:
-      cidrBlocks:
-      - 192.168.0.0/16
+      cidrBlocks: ["172.16.0.0/12"]
+    services:
+      cidrBlocks: ["192.168.0.0/16"]
+    serviceDomain: "cluster.local"
   controlPlaneRef:
     apiVersion: controlplane.cluster.x-k8s.io/v1alpha3
     kind: KubeadmControlPlane
@@ -60,10 +62,12 @@ spec:
       nodeRegistration:
         kubeletExtraArgs:
           cloud-provider: external
+          eviction-hard: nodefs.available<10%,nodefs.inodesFree<5%,imagefs.available<15%,imagefs.inodesFree<20%,memory.available<500Mi
     joinConfiguration:
       nodeRegistration:
         kubeletExtraArgs:
           cloud-provider: external
+          eviction-hard: nodefs.available<10%,nodefs.inodesFree<5%,imagefs.available<15%,imagefs.inodesFree<20%,memory.available<500Mi
   replicas: 3
   version: v1.18.4
 ---
@@ -75,38 +79,131 @@ metadata:
 spec:
   template:
     spec:
-      type: cx21
+      type: cx21-ceph
       sshKeys:
       - name: control-plane
 ---
 apiVersion: cluster.x-k8s.io/v1alpha3
 kind: MachineDeployment
 metadata:
-  name: cluster-dev-worker-0
+  name: cluster-dev-worker-fsn1
   namespace: default
+  labels:
+    nodepool: worker
 spec:
+  replicas: 1
   clusterName: cluster-dev
-  replicas: 3
   selector:
-    matchLabels: null
+    matchLabels:
+      nodepool: worker
   template:
+    metadata:
+      labels:
+        nodepool: worker
     spec:
+      clusterName: cluster-dev
+      version: v1.18.4
       bootstrap:
         configRef:
           apiVersion: bootstrap.cluster.x-k8s.io/v1alpha3
           kind: KubeadmConfigTemplate
           name: cluster-dev-worker
-      clusterName: cluster-dev
       infrastructureRef:
         apiVersion: cluster-api-provider-hcloud.swine.dev/v1alpha3
         kind: HcloudMachineTemplate
-        name: cluster-dev-worker
+        name: cluster-dev-worker-fsn1
+      failureDomain: fsn1
+---
+apiVersion: cluster.x-k8s.io/v1alpha3
+kind: MachineDeployment
+metadata:
+  name: cluster-dev-worker-ngb1
+  namespace: default
+  labels:
+    nodepool: worker
+spec:
+  replicas: 1
+  clusterName: cluster-dev
+  selector:
+    matchLabels:
+      nodepool: worker
+  template:
+    metadata:
+      labels:
+        nodepool: worker
+    spec:
+      clusterName: cluster-dev
       version: v1.18.4
+      bootstrap:
+        configRef:
+          apiVersion: bootstrap.cluster.x-k8s.io/v1alpha3
+          kind: KubeadmConfigTemplate
+          name: cluster-dev-worker
+      infrastructureRef:
+        apiVersion: cluster-api-provider-hcloud.swine.dev/v1alpha3
+        kind: HcloudMachineTemplate
+        name: cluster-dev-worker-nbg1
+      failureDomain: nbg1
+---
+apiVersion: cluster.x-k8s.io/v1alpha3
+kind: MachineDeployment
+metadata:
+  name: cluster-dev-worker-hel1
+  namespace: default
+  labels:
+    nodepool: worker
+spec:
+  replicas: 1
+  clusterName: cluster-dev
+  selector:
+    matchLabels:
+      nodepool: worker
+  template:
+    metadata:
+      labels:
+        nodepool: worker
+    spec:
+      clusterName: cluster-dev
+      version: v1.18.4
+      bootstrap:
+        configRef:
+          apiVersion: bootstrap.cluster.x-k8s.io/v1alpha3
+          kind: KubeadmConfigTemplate
+          name: cluster-dev-worker
+      infrastructureRef:
+        apiVersion: cluster-api-provider-hcloud.swine.dev/v1alpha3
+        kind: HcloudMachineTemplate
+        name: cluster-dev-worker-hel1
+      failureDomain: hel1
 ---
 apiVersion: cluster-api-provider-hcloud.swine.dev/v1alpha3
 kind: HcloudMachineTemplate
 metadata:
-  name: cluster-dev-worker
+  name: cluster-dev-worker-fsn1
+  namespace: default
+spec:
+  template:
+    spec:
+      type: cx11
+      sshKeys:
+      - name: worker
+---
+apiVersion: cluster-api-provider-hcloud.swine.dev/v1alpha3
+kind: HcloudMachineTemplate
+metadata:
+  name: cluster-dev-worker-nbg1
+  namespace: default
+spec:
+  template:
+    spec:
+      type: cx11
+      sshKeys:
+      - name: worker
+---
+apiVersion: cluster-api-provider-hcloud.swine.dev/v1alpha3
+kind: HcloudMachineTemplate
+metadata:
+  name: cluster-dev-worker-hel1
   namespace: default
 spec:
   template:
@@ -127,22 +224,23 @@ spec:
         nodeRegistration:
           kubeletExtraArgs:
             cloud-provider: external
+            eviction-hard: nodefs.available<10%,nodefs.inodesFree<5%,imagefs.available<15%,imagefs.inodesFree<20%,memory.available<500Mi
 ---
 apiVersion: cluster.x-k8s.io/v1alpha3
 kind: MachineHealthCheck
 metadata:
-  name: cluster-dev-worker-unhealthy-1m
+  name: cluster-dev-worker-unhealthy-5m
 spec:
   clusterName: cluster-dev
   maxUnhealthy: 10%
-  nodeStartupTimeout: 5m
+  nodeStartupTimeout: 10m
   selector:
     matchLabels:
-      nodepool: cluster-dev-worker-0
+      nodepool: worker
   unhealthyConditions:
   - type: Ready
     status: Unknown
-    timeout: 60s
+    timeout: 300s
   - type: Ready
     status: "False"
-    timeout: 60s
+    timeout: 300s

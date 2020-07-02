@@ -7,7 +7,7 @@ set -x
 kind create cluster --name capi-hcloud || true
 
 # Install cert-manager
-kubectl create namespace cert-manager --dry-run -o yaml | kubectl apply -f -
+kubectl create namespace cert-manager --dry-run=client -o yaml | kubectl apply -f -
 kubectl apply -f https://github.com/jetstack/cert-manager/releases/download/v0.14.2/cert-manager.yaml
 
 # Wait for cert-manager

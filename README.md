@@ -84,6 +84,20 @@ KUBECONFIG=$KUBECONFIG_GUEST kubectl get nodes,pods -A
 ## For Developers or demo purpose
 See ./docs/src/developers or https://cluster-api-provider-hcloud.swine.dev/developer/developer.html
 
+### Prerequisites
+
+- clusterctl
+- docker
+- kind
+- kubectl
+- kustomize
+- kubebuilder
+- packer
+- BAZEL
+- Go 1.13
+- watch (On MAC: `brew install watch`)
+- JQ (On MAC: `brew install jq`)
+
 - Running development version
 
 ```sh
