@@ -11,8 +11,8 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/hetznercloud/hcloud-go/hcloud"
 
-	infrav1 "github.com/simonswine/cluster-api-provider-hcloud/api/v1alpha3"
-	"github.com/simonswine/cluster-api-provider-hcloud/pkg/packer/api"
+	infrav1 "github.com/cluster-api-provider-hcloud/cluster-api-provider-hcloud/api/v1alpha3"
+	"github.com/cluster-api-provider-hcloud/cluster-api-provider-hcloud/pkg/packer/api"
 )
 
 const envHcloudToken = "HCLOUD_TOKEN"

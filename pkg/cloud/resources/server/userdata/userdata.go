@@ -17,7 +17,7 @@ import (
 	kubeadmv1beta1 "sigs.k8s.io/cluster-api/bootstrap/kubeadm/types/v1beta1"
 	kubeyaml "sigs.k8s.io/yaml"
 
-	kubeletv1beta1 "github.com/simonswine/cluster-api-provider-hcloud/api/kubelet/v1beta1"
+	kubeletv1beta1 "github.com/cluster-api-provider-hcloud/cluster-api-provider-hcloud/api/kubelet/v1beta1"
 )
 
 const kubeadmConfigurationPathInit = "/tmp/kubeadm.yaml"

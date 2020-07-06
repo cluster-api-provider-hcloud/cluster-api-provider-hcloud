@@ -8,8 +8,8 @@ import (
 
 	corev1 "k8s.io/api/core/v1"
 
-	infrav1 "github.com/simonswine/cluster-api-provider-hcloud/api/v1alpha3"
-	p "github.com/simonswine/cluster-api-provider-hcloud/pkg/csr"
+	infrav1 "github.com/cluster-api-provider-hcloud/cluster-api-provider-hcloud/api/v1alpha3"
+	p "github.com/cluster-api-provider-hcloud/cluster-api-provider-hcloud/pkg/csr"
 )
 
 func newCSR() *x509.CertificateRequest {

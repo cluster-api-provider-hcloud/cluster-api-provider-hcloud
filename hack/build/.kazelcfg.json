@@ -1,5 +1,5 @@
 {
-  "GoPrefix": "github.com/simonswine/cluster-api-provider-hcloud",
+  "GoPrefix": "github.com/cluster-api-provider-hcloud/cluster-api-provider-hcloud",
   "AddSourcesRules": true
 }
 

@@ -8,7 +8,7 @@ go_library(
         "kubelet_configuration.go",
         "zz_generated.deepcopy.go",
     ],
-    importpath = "github.com/simonswine/cluster-api-provider-hcloud/api/kubelet/v1beta1",
+    importpath = "github.com/cluster-api-provider-hcloud/cluster-api-provider-hcloud/api/kubelet/v1beta1",
     visibility = ["//visibility:public"],
     deps = [
         "@io_k8s_api//core/v1:go_default_library",

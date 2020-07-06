@@ -17,12 +17,12 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
-	kubeletv1beta1 "github.com/simonswine/cluster-api-provider-hcloud/api/kubelet/v1beta1"
-	infrav1 "github.com/simonswine/cluster-api-provider-hcloud/api/v1alpha3"
-	"github.com/simonswine/cluster-api-provider-hcloud/pkg/cloud/resources/server/userdata"
-	"github.com/simonswine/cluster-api-provider-hcloud/pkg/cloud/scope"
-	"github.com/simonswine/cluster-api-provider-hcloud/pkg/cloud/utils"
-	"github.com/simonswine/cluster-api-provider-hcloud/pkg/record"
+	kubeletv1beta1 "github.com/cluster-api-provider-hcloud/cluster-api-provider-hcloud/api/kubelet/v1beta1"
+	infrav1 "github.com/cluster-api-provider-hcloud/cluster-api-provider-hcloud/api/v1alpha3"
+	"github.com/cluster-api-provider-hcloud/cluster-api-provider-hcloud/pkg/cloud/resources/server/userdata"
+	"github.com/cluster-api-provider-hcloud/cluster-api-provider-hcloud/pkg/cloud/scope"
+	"github.com/cluster-api-provider-hcloud/cluster-api-provider-hcloud/pkg/cloud/utils"
+	"github.com/cluster-api-provider-hcloud/cluster-api-provider-hcloud/pkg/record"
 )
 
 type Service struct {

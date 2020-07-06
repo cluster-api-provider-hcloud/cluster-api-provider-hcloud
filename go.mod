@@ -1,4 +1,4 @@
-module github.com/simonswine/cluster-api-provider-hcloud
+module github.com/cluster-api-provider-hcloud/cluster-api-provider-hcloud
 
 go 1.13
 

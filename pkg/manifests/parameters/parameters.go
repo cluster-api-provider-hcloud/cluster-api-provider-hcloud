@@ -6,7 +6,7 @@ import (
 	"net"
 	"strings"
 
-	infrav1 "github.com/simonswine/cluster-api-provider-hcloud/api/v1alpha3"
+	infrav1 "github.com/cluster-api-provider-hcloud/cluster-api-provider-hcloud/api/v1alpha3"
 	"k8s.io/apimachinery/pkg/util/intstr"
 )
 

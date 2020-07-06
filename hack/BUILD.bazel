@@ -29,7 +29,7 @@ alias(
 go_library(
     name = "go_default_library",
     srcs = ["yaml2json.go"],
-    importpath = "github.com/simonswine/cluster-api-provider-hcloud/hack",
+    importpath = "github.com/cluster-api-provider-hcloud/cluster-api-provider-hcloud/hack",
     visibility = ["//visibility:private"],
     deps = ["@com_github_bronze1man_yaml2json//y2jLib:go_default_library"],
 )

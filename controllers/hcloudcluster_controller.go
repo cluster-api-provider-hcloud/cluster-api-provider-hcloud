@@ -23,9 +23,9 @@ import (
 	"sync"
 	"time"
 
+	infrav1 "github.com/cluster-api-provider-hcloud/cluster-api-provider-hcloud/api/v1alpha3"
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
-	infrav1 "github.com/simonswine/cluster-api-provider-hcloud/api/v1alpha3"
 	certificatesv1 "k8s.io/api/certificates/v1beta1"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -46,12 +46,12 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
-	"github.com/simonswine/cluster-api-provider-hcloud/pkg/cloud/resources/floatingip"
-	"github.com/simonswine/cluster-api-provider-hcloud/pkg/cloud/resources/location"
-	"github.com/simonswine/cluster-api-provider-hcloud/pkg/cloud/resources/network"
-	"github.com/simonswine/cluster-api-provider-hcloud/pkg/cloud/scope"
-	"github.com/simonswine/cluster-api-provider-hcloud/pkg/manifests"
-	"github.com/simonswine/cluster-api-provider-hcloud/pkg/packer"
+	"github.com/cluster-api-provider-hcloud/cluster-api-provider-hcloud/pkg/cloud/resources/floatingip"
+	"github.com/cluster-api-provider-hcloud/cluster-api-provider-hcloud/pkg/cloud/resources/location"
+	"github.com/cluster-api-provider-hcloud/cluster-api-provider-hcloud/pkg/cloud/resources/network"
+	"github.com/cluster-api-provider-hcloud/cluster-api-provider-hcloud/pkg/cloud/scope"
+	"github.com/cluster-api-provider-hcloud/cluster-api-provider-hcloud/pkg/manifests"
+	"github.com/cluster-api-provider-hcloud/cluster-api-provider-hcloud/pkg/packer"
 )
 
 var errNoReadyAPIServer = errors.New("No ready API server was found")
