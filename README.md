@@ -3,7 +3,8 @@
 Cluster API infrastructure provider for Hetzner Cloud https://hetzner.cloud
 
 ## Docs
-https://cluster-api-provider-hcloud.swine.dev/
+
+https://docs.capihc.com/
 or under ./docs/src
 
 ## Quick start
