@@ -33,11 +33,11 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
-	infrav1 "github.com/simonswine/cluster-api-provider-hcloud/api/v1alpha3"
-	"github.com/simonswine/cluster-api-provider-hcloud/pkg/cloud/resources/server"
-	"github.com/simonswine/cluster-api-provider-hcloud/pkg/cloud/scope"
-	"github.com/simonswine/cluster-api-provider-hcloud/pkg/manifests"
-	"github.com/simonswine/cluster-api-provider-hcloud/pkg/packer"
+	infrav1 "github.com/cluster-api-provider-hcloud/cluster-api-provider-hcloud/api/v1alpha3"
+	"github.com/cluster-api-provider-hcloud/cluster-api-provider-hcloud/pkg/cloud/resources/server"
+	"github.com/cluster-api-provider-hcloud/cluster-api-provider-hcloud/pkg/cloud/scope"
+	"github.com/cluster-api-provider-hcloud/cluster-api-provider-hcloud/pkg/manifests"
+	"github.com/cluster-api-provider-hcloud/cluster-api-provider-hcloud/pkg/packer"
 )
 
 // HcloudMachineReconciler reconciles a HcloudMachine object

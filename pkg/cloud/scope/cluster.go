@@ -19,9 +19,9 @@ import (
 	"sigs.k8s.io/cluster-api/util/patch"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	infrav1 "github.com/simonswine/cluster-api-provider-hcloud/api/v1alpha3"
-	"github.com/simonswine/cluster-api-provider-hcloud/pkg/manifests/parameters"
-	packerapi "github.com/simonswine/cluster-api-provider-hcloud/pkg/packer/api"
+	infrav1 "github.com/cluster-api-provider-hcloud/cluster-api-provider-hcloud/api/v1alpha3"
+	"github.com/cluster-api-provider-hcloud/cluster-api-provider-hcloud/pkg/manifests/parameters"
+	packerapi "github.com/cluster-api-provider-hcloud/cluster-api-provider-hcloud/pkg/packer/api"
 )
 
 const defaultControlPlaneAPIEndpointPort = 6443

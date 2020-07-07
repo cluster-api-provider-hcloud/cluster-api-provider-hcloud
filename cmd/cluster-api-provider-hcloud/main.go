@@ -14,11 +14,11 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 
-	infrav1alpha3 "github.com/simonswine/cluster-api-provider-hcloud/api/v1alpha3"
-	"github.com/simonswine/cluster-api-provider-hcloud/controllers"
-	"github.com/simonswine/cluster-api-provider-hcloud/pkg/manifests"
-	"github.com/simonswine/cluster-api-provider-hcloud/pkg/packer"
-	"github.com/simonswine/cluster-api-provider-hcloud/pkg/record"
+	infrav1alpha3 "github.com/cluster-api-provider-hcloud/cluster-api-provider-hcloud/api/v1alpha3"
+	"github.com/cluster-api-provider-hcloud/cluster-api-provider-hcloud/controllers"
+	"github.com/cluster-api-provider-hcloud/cluster-api-provider-hcloud/pkg/manifests"
+	"github.com/cluster-api-provider-hcloud/cluster-api-provider-hcloud/pkg/packer"
+	"github.com/cluster-api-provider-hcloud/cluster-api-provider-hcloud/pkg/record"
 	// +kubebuilder:scaffold:imports
 )
 

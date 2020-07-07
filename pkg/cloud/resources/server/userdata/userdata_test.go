@@ -8,7 +8,7 @@ import (
 	"gotest.tools/assert"
 	bootstrapv1 "sigs.k8s.io/cluster-api/bootstrap/kubeadm/api/v1alpha3"
 
-	kubeletv1beta1 "github.com/simonswine/cluster-api-provider-hcloud/api/kubelet/v1beta1"
+	kubeletv1beta1 "github.com/cluster-api-provider-hcloud/cluster-api-provider-hcloud/api/kubelet/v1beta1"
 )
 
 var userdataControlPlaneInit = `## template: jinja

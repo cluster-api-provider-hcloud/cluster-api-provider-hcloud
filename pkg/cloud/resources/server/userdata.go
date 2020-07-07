@@ -7,7 +7,7 @@ import (
 
 	bootstrapv1 "sigs.k8s.io/cluster-api/bootstrap/kubeadm/api/v1alpha3"
 
-	infrav1 "github.com/simonswine/cluster-api-provider-hcloud/api/v1alpha3"
+	infrav1 "github.com/cluster-api-provider-hcloud/cluster-api-provider-hcloud/api/v1alpha3"
 )
 
 var ipTablesProxyTemplate = template.Must(template.New("").Parse(`ExecStartPre=/bin/sh -c "iptables -t nat -C OUTPUT -d {{.destination}} -p tcp -m tcp --dport {{.destinationPort}} -j DNAT --to-destination 127.0.0.1:{{.localPort}} || iptables -t nat -I OUTPUT -d {{.destination}} -p tcp -m tcp --dport {{.destinationPort}} -j DNAT --to-destination 127.0.0.1:{{.localPort}}"

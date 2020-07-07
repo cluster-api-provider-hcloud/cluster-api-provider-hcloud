@@ -3,7 +3,7 @@ load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library")
 go_library(
     name = "go_default_library",
     srcs = ["main.go"],
-    importpath = "github.com/simonswine/cluster-api-provider-hcloud/cmd/cluster-api-provider-hcloud",
+    importpath = "github.com/cluster-api-provider-hcloud/cluster-api-provider-hcloud/cmd/cluster-api-provider-hcloud",
     visibility = ["//visibility:private"],
     deps = [
         "//api/v1alpha3:go_default_library",

@@ -30,12 +30,12 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
-	infrav1 "github.com/simonswine/cluster-api-provider-hcloud/api/v1alpha3"
-	"github.com/simonswine/cluster-api-provider-hcloud/pkg/cloud/resources/location"
-	"github.com/simonswine/cluster-api-provider-hcloud/pkg/cloud/resources/volume"
-	"github.com/simonswine/cluster-api-provider-hcloud/pkg/cloud/scope"
-	"github.com/simonswine/cluster-api-provider-hcloud/pkg/manifests"
-	"github.com/simonswine/cluster-api-provider-hcloud/pkg/packer"
+	infrav1 "github.com/cluster-api-provider-hcloud/cluster-api-provider-hcloud/api/v1alpha3"
+	"github.com/cluster-api-provider-hcloud/cluster-api-provider-hcloud/pkg/cloud/resources/location"
+	"github.com/cluster-api-provider-hcloud/cluster-api-provider-hcloud/pkg/cloud/resources/volume"
+	"github.com/cluster-api-provider-hcloud/cluster-api-provider-hcloud/pkg/cloud/scope"
+	"github.com/cluster-api-provider-hcloud/cluster-api-provider-hcloud/pkg/manifests"
+	"github.com/cluster-api-provider-hcloud/cluster-api-provider-hcloud/pkg/packer"
 )
 
 // HcloudVolumeReconciler reconciles a HcloudVolume object

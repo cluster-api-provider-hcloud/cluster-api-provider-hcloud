@@ -9,7 +9,7 @@ go_library(
         "machine.go",
         "volume.go",
     ],
-    importpath = "github.com/simonswine/cluster-api-provider-hcloud/pkg/cloud/scope",
+    importpath = "github.com/cluster-api-provider-hcloud/cluster-api-provider-hcloud/pkg/cloud/scope",
     visibility = ["//visibility:public"],
     deps = [
         "//api/v1alpha3:go_default_library",

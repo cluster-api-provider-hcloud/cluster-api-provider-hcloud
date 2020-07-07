@@ -9,7 +9,7 @@ go_library(
         "hcloudmachine_controller.go",
         "hcloudvolume_controller.go",
     ],
-    importpath = "github.com/simonswine/cluster-api-provider-hcloud/controllers",
+    importpath = "github.com/cluster-api-provider-hcloud/cluster-api-provider-hcloud/controllers",
     visibility = ["//visibility:public"],
     deps = [
         "//api/v1alpha3:go_default_library",

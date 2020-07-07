@@ -8,8 +8,8 @@ import (
 	"github.com/hetznercloud/hcloud-go/hcloud"
 	"github.com/pkg/errors"
 
-	infrav1 "github.com/simonswine/cluster-api-provider-hcloud/api/v1alpha3"
-	packerapi "github.com/simonswine/cluster-api-provider-hcloud/pkg/packer/api"
+	infrav1 "github.com/cluster-api-provider-hcloud/cluster-api-provider-hcloud/api/v1alpha3"
+	packerapi "github.com/cluster-api-provider-hcloud/cluster-api-provider-hcloud/pkg/packer/api"
 )
 
 func (s *Service) findImageIDBySpec(ctx context.Context, spec *infrav1.HcloudImageSpec) (*infrav1.HcloudImageID, error) {
