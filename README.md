@@ -44,7 +44,8 @@ clusterctl init --infrastructure hcloud:v0.1.0-rc.4
 export HCLOUD_LOCATION=fsn1
 # Name of SSH keys that have access to the cluster, you need to upload them before
 export HCLOUD_SSH_KEY_NAME=id_rsa
-# Instance types used (cf. https://www.hetzner.com/cloud)
+# Instance types used (cf. https://www.hetzner.com/cloud) 
+# Caution! Do not use a cx11 for control-plane! Kubadm requires more than 1 vCPU
 export HCLOUD_NODE_MACHINE_TYPE=cx21
 export HCLOUD_CONTROL_PLANE_MACHINE_TYPE=cx21
 
