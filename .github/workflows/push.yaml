@@ -25,6 +25,12 @@ jobs:
       run: |
         "${GITHUB_WORKSPACE}/bin/bazel" build //...
 
+    - name: Add docker push secret
+      run: 'umask 0077 && mkdir -p ~/.docker/ && echo "$DOCKER_AUTH_CONFIG" > ~/.docker/config.json'
+      shell: bash
+      env:
+        DOCKER_AUTH_CONFIG: ${{secrets.DOCKER_AUTH_CONFIG}}
+
     - name: Push image
       run: |
         "${GITHUB_WORKSPACE}/bin/bazel" run //:images.push
