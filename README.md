@@ -114,7 +114,7 @@ bazel run //cmd/cluster-api-provider-hcloud:deploy
 
 ```sh
 # Create the 3 SSH Keys and name the keys control-plane, worker and cluster
-ssh-keygen -t rsa -b 4096 -C "your_email@example.com"
+ssh-keygen -t ed25519 -C "your_email@example.com" -f ~/.ssh/<control-plane | worker | cluster>
 
 # Create a Project on Hetzner Cloud and upload them
 
@@ -126,5 +126,8 @@ kubectl apply -f ./demo/demo-cluster.yaml
 
 # Deleting the cluster
 kubectl delete -f ./demo/demo-cluster.yaml
+
+# Deleting the management cluster
+kind delete cluster --name capi-hcloud
 ```
 
