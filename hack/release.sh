@@ -32,7 +32,7 @@ END
 set -x
 
 $GHR \
-  -username simonswine \
+  -username cluster-api-provider-hcloud \
   -repository cluster-api-provider-hcloud \
   -commitish "${GIT_COMMIT}" \
   -body "${BODY}" \

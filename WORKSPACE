@@ -56,6 +56,7 @@ load(
     "@io_bazel_rules_docker//repositories:repositories.bzl",
     container_repositories = "repositories",
 )
+
 container_repositories()
 
 load("@io_bazel_rules_docker//repositories:deps.bzl", container_deps = "deps")
@@ -70,7 +71,6 @@ load(
     "@io_bazel_rules_docker//container:container.bzl",
     "container_pull",
 )
-
 
 ## Use 'static' distroless image for all builds
 container_pull(
