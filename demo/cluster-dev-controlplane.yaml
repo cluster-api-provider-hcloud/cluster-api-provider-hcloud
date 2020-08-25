@@ -8,7 +8,7 @@ spec:
     kind: HcloudMachineTemplate
     name: cluster-dev-control-plane
   replicas: 1
-  version: v1.17.6
+  version: v1.17.9
   kubeadmConfigSpec:
     initConfiguration:
       nodeRegistration:
