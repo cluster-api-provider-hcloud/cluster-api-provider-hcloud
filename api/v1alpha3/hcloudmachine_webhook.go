@@ -22,7 +22,7 @@ func (r *HcloudMachineList) SetupWebhookWithManager(mgr ctrl.Manager) error {
 		Complete()
 }
 
-// +kubebuilder:webhook:verbs=create;update,path=/validate-cluster-api-provider-hcloud-swine-dev-v1alpha3-hcloudmachine,mutating=false,failurePolicy=fail,matchPolicy=Equivalent,groups=cluster-api-provider-hcloud.swine.dev,resources=hcloudmachines,versions=v1alpha3,name=validation.hcloudmachine.cluster-api-provider-hcloud.swine.dev
+// +kubebuilder:webhook:verbs=create;update,path=/validate-cluster-api-provider-hcloud-capihc-com-v1alpha3-hcloudmachine,mutating=false,failurePolicy=fail,matchPolicy=Equivalent,groups=cluster-api-provider-hcloud.capihc.com,resources=hcloudmachines,versions=v1alpha3,name=validation.hcloudmachine.cluster-api-provider-hcloud.capihc.com
 
 var _ webhook.Validator = &HcloudMachine{}
 

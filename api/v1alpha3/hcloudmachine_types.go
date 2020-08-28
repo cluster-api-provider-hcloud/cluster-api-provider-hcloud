@@ -25,7 +25,7 @@ const (
 	// ClusterFinalizer allows ReconcileHcloudMachine to clean up Hcloud
 	// resources associated with HcloudMachine before removing it from the
 	// apiserver.
-	MachineFinalizer = "hcloudmachine.cluster-api-provider-hcloud.swine.dev"
+	MachineFinalizer = "hcloudmachine.cluster-api-provider-hcloud.capihc.com"
 )
 
 // HcloudMachineSpec defines the desired state of HcloudMachine

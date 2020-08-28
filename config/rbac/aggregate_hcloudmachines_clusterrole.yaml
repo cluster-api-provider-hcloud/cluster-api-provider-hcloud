@@ -6,7 +6,7 @@ metadata:
     cluster.x-k8s.io/aggregate-to-manager: "true"
 rules:
 - apiGroups:
-  - cluster-api-provider-hcloud.swine.dev
+  - cluster-api-provider-hcloud.capihc.com
   resources:
   - hcloudmachines
   verbs:

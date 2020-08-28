@@ -47,8 +47,8 @@ type HcloudVolumeReconciler struct {
 	Manifests *manifests.Manifests
 }
 
-// +kubebuilder:rbac:groups=cluster-api-provider-hcloud.swine.dev,resources=hcloudvolumes,verbs=get;list;watch;create;update;patch;delete
-// +kubebuilder:rbac:groups=cluster-api-provider-hcloud.swine.dev,resources=hcloudvolumes/status,verbs=get;update;patch
+// +kubebuilder:rbac:groups=cluster-api-provider-hcloud.capihc.com,resources=hcloudvolumes,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=cluster-api-provider-hcloud.capihc.com,resources=hcloudvolumes/status,verbs=get;update;patch
 
 func (r *HcloudVolumeReconciler) Reconcile(req ctrl.Request) (_ ctrl.Result, reterr error) {
 	ctx := context.TODO()

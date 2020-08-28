@@ -24,7 +24,7 @@ const (
 	// VolumeFinalizer allows ReconcileHcloudVolume to clean up Hcloud
 	// resources associated with HcloudVolume before removing it from the
 	// apiserver.
-	VolumeFinalizer = "hcloudvolume.cluster-api-provider-hcloud.swine.dev"
+	VolumeFinalizer = "hcloudvolume.cluster-api-provider-hcloud.capihc.com"
 )
 
 type HcloudVolumeID int

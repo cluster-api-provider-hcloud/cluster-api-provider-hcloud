@@ -23,7 +23,7 @@ func (r *HcloudClusterList) SetupWebhookWithManager(mgr ctrl.Manager) error {
 		Complete()
 }
 
-// +kubebuilder:webhook:verbs=create;update,path=/validate-cluster-api-provider-hcloud-swine-dev-v1alpha3-hcloudcluster,mutating=false,failurePolicy=fail,matchPolicy=Equivalent,groups=cluster-api-provider-hcloud.swine.dev,resources=hcloudclusters,versions=v1alpha3,name=validation.hcloudcluster.cluster-api-provider-hcloud.swine.dev
+// +kubebuilder:webhook:verbs=create;update,path=/validate-cluster-api-provider-hcloud-capihc-com-v1alpha3-hcloudcluster,mutating=false,failurePolicy=fail,matchPolicy=Equivalent,groups=cluster-api-provider-hcloud.capihc.com,resources=hcloudclusters,versions=v1alpha3,name=validation.hcloudcluster.cluster-api-provider-hcloud.capihc.com
 
 var _ webhook.Validator = &HcloudCluster{}
 

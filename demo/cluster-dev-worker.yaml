@@ -23,12 +23,12 @@ spec:
           kind: KubeadmConfigTemplate
           name: cluster-dev-worker
       infrastructureRef:
-        apiVersion: cluster-api-provider-hcloud.swine.dev/v1alpha3
+        apiVersion: cluster-api-provider-hcloud.capihc.com/v1alpha3
         kind: HcloudMachineTemplate
         name: cluster-dev-worker
       failureDomain: nbg1
 ---
-apiVersion: cluster-api-provider-hcloud.swine.dev/v1alpha3
+apiVersion: cluster-api-provider-hcloud.capihc.com/v1alpha3
 kind: HcloudMachineTemplate
 metadata:
   name: cluster-dev-worker

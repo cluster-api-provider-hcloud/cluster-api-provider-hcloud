@@ -4,7 +4,7 @@ metadata:
   name: kubeadm-control-plane-manager
 rules:
 - apiGroups:
-  - cluster-api-provider-hcloud.swine.dev
+  - cluster-api-provider-hcloud.capihc.com
   resources:
   - hcloudmachinetemplates
   - hcloudmachines
