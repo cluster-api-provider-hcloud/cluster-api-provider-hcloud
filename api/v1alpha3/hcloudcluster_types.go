@@ -32,12 +32,18 @@ const (
 type HcloudLocation string
 type HcloudNetworkZone string
 
-// +kubebuilder:validation:Enum=IPv4;IPv6
-type HcloudFloatingIPType string
+// +kubebuilder:validation:Enum=LB11;LB21;LB31
+type HcloudLoadBalancerType string
+
+// +kubebuilder:validation:Enum=round_robin;least_connections
+type HcloudLoadBalancerAlgorithm string
 
 const (
-	HcloudFloatingIPTypeIPv4 = HcloudFloatingIPType("IPv4")
-	HcloudFloatingIPTypeIPv6 = HcloudFloatingIPType("IPv6")
+	HcloudLoadBalancerTypelb11                  = HcloudLoadBalancerType("LB11")
+	HcloudLoadBalancerTypelb21                  = HcloudLoadBalancerType("LB21")
+	HcloudLoadBalancerTypelb31                  = HcloudLoadBalancerType("LB31")
+	HcloudLoadBalancerAlgorithmRoundRobin       = HcloudLoadBalancerAlgorithm("round_robin")
+	HcloudLoadBalancerAlgorithmLeastConnections = HcloudLoadBalancerAlgorithm("least_connections")
 )
 
 // HcloudClusterSpec defines the desired state of HcloudCluster
@@ -49,7 +55,7 @@ type HcloudClusterSpec struct {
 
 	// +kubebuilder:validation:MinItems=1
 	// +kubebuilder:validation:MaxItems=10
-	ControlPlaneFloatingIPs []HcloudFloatingIPSpec `json:"controlPlaneFloatingIPs,omitempty"`
+	ControlPlaneLoadbalancers []HcloudLoadBalancerSpec `json:"controlPlaneLoadbalancer,omitempty"`
 
 	// ControlPlaneEndpoint represents the endpoint used to communicate with the control plane.
 	// +optional
@@ -96,19 +102,25 @@ type HcloudNetworkStatus struct {
 	Labels map[string]string `json:"-"`
 }
 
-type HcloudFloatingIPSpec struct {
-	Name *string              `json:"name,omitempty"`
-	ID   *int                 `json:"id,omitempty"`
-	Type HcloudFloatingIPType `json:"type"`
+type HcloudLoadBalancerSpec struct {
+	Name      *string                     `json:"name,omitempty"`
+	ID        *int                        `json:"id,omitempty"`
+	Type      HcloudLoadBalancerType      `json:"type"`
+	Algorithm HcloudLoadBalancerAlgorithm `json:"algorithm"`
 }
 
-type HcloudFloatingIPStatus struct {
-	ID      int                  `json:"id,omitempty"`
-	Name    string               `json:"name,omitempty"`
-	Network string               `json:"network,omitempty"`
-	IP      string               `json:"ip,omitempty"`
-	Type    HcloudFloatingIPType `json:"type"`
-	Labels  map[string]string    `json:"-"`
+type HcloudLoadBalancerPublicNet struct {
+	Enabled bool
+	IPv4    string
+	IPv6    string
+}
+type HcloudLoadBalancerStatus struct {
+	ID      int                    `json:"id,omitempty"`
+	Name    string                 `json:"name,omitempty"`
+	IPRange string                 `json:"iprange,omitempty"`
+	IP      string                 `json:"ip,omitempty"`
+	Type    HcloudLoadBalancerType `json:"type"`
+	Labels  map[string]string      `json:"-"`
 }
 
 type HcloudClusterSpecManifests struct {
