@@ -84,7 +84,7 @@ KUBECONFIG=$KUBECONFIG_GUEST kubectl get nodes,pods -A
 
 
 ## For Developers or demo purpose
-See ./docs/src/developers or https://cluster-api-provider-hcloud.capihc.com/developer/developer.html
+See ./docs/src/developers or https://docs.capihc.com/developer/developer.html
 
 ### Prerequisites
 
