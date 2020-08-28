@@ -69,8 +69,8 @@ type HcloudClusterReconciler struct {
 	targetClusterManagersLock   sync.Mutex
 }
 
-// +kubebuilder:rbac:groups=cluster-api-provider-hcloud.swine.dev,resources=hcloudclusters,verbs=get;list;watch;create;update;patch;delete
-// +kubebuilder:rbac:groups=cluster-api-provider-hcloud.swine.dev,resources=hcloudclusters/status,verbs=get;update;patch
+// +kubebuilder:rbac:groups=cluster-api-provider-hcloud.capihc.com,resources=hcloudclusters,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=cluster-api-provider-hcloud.capihc.com,resources=hcloudclusters/status,verbs=get;update;patch
 // +kubebuilder:rbac:groups=cluster.x-k8s.io,resources=clusters;clusters/status,verbs=get;list;watch
 // +kubebuilder:rbac:groups="",resources=secrets,verbs=get;list;watch;create
 

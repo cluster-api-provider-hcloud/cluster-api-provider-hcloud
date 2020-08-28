@@ -26,7 +26,7 @@ const (
 	// ClusterFinalizer allows ReconcileHcloudCluster to clean up Hcloud
 	// resources associated with HcloudCluster before removing it from the
 	// apiserver.
-	ClusterFinalizer = "hcloudcluster.cluster-api-provider-hcloud.swine.dev"
+	ClusterFinalizer = "hcloudcluster.cluster-api-provider-hcloud.capihc.com"
 )
 
 type HcloudLocation string

@@ -17,9 +17,9 @@
           "ssh_username": "root",
           "snapshot_name": "capi-hcloud-{{user `os`}}-{{isotime \"2006-01-02-030405\"}}",
           "snapshot_labels": {
-              "cluster-api-provider-hcloud.swine.dev/os": "{{user `os`}}",
-              "cluster-api-provider-hcloud.swine.dev/kubernetes-version": "{{user `kubernetes_version`}}",
-              "cluster-api-provider-hcloud.swine.dev/template-hash": "{{user `template_hash`}}"
+              "cluster-api-provider-hcloud.capihc.com/os": "{{user `os`}}",
+              "cluster-api-provider-hcloud.capihc.com/kubernetes-version": "{{user `kubernetes_version`}}",
+              "cluster-api-provider-hcloud.capihc.com/template-hash": "{{user `template_hash`}}"
           }
       }
   ],

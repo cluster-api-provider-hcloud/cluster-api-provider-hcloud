@@ -17,23 +17,23 @@ patchesJson6902:
     group: apiextensions.k8s.io
     version: v1
     kind: CustomResourceDefinition
-    name: hcloudclusters.cluster-api-provider-hcloud.swine.dev
+    name: hcloudclusters.cluster-api-provider-hcloud.capihc.com
   path: patch_crd_webhook_namespace.yaml
 - target:
     group: apiextensions.k8s.io
     version: v1
     kind: CustomResourceDefinition
-    name: hcloudmachines.cluster-api-provider-hcloud.swine.dev
+    name: hcloudmachines.cluster-api-provider-hcloud.capihc.com
   path: patch_crd_webhook_namespace.yaml
 - target:
     group: apiextensions.k8s.io
     version: v1
     kind: CustomResourceDefinition
-    name: hcloudmachinetemplates.cluster-api-provider-hcloud.swine.dev
+    name: hcloudmachinetemplates.cluster-api-provider-hcloud.capihc.com
   path: patch_crd_webhook_namespace.yaml
 - target:
     group: apiextensions.k8s.io
     version: v1
     kind: CustomResourceDefinition
-    name: hcloudvolumes.cluster-api-provider-hcloud.swine.dev
+    name: hcloudvolumes.cluster-api-provider-hcloud.capihc.com
   path: patch_crd_webhook_namespace.yaml

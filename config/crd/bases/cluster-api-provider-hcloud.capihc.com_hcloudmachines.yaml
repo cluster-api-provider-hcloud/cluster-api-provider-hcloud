@@ -6,9 +6,9 @@ metadata:
   annotations:
     controller-gen.kubebuilder.io/version: (unknown)
   creationTimestamp: null
-  name: hcloudmachines.cluster-api-provider-hcloud.swine.dev
+  name: hcloudmachines.cluster-api-provider-hcloud.capihc.com
 spec:
-  group: cluster-api-provider-hcloud.swine.dev
+  group: cluster-api-provider-hcloud.capihc.com
   names:
     categories:
     - cluster-api

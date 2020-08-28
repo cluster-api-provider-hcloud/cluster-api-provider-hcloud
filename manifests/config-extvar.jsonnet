@@ -30,7 +30,7 @@ local addLabelIfNotExists(key, value) =
 utils.mapPerRessource(
   config.new(myConfig),
   addLabelIfNotExists(
-    'cluster-api-provider-hcloud.swine.dev/manifests',
+    'cluster-api-provider-hcloud.capihc.com/manifests',
     'Reconcile',
   ),
 )

@@ -23,7 +23,7 @@ rules:
   - list
   - watch
 - apiGroups:
-  - cluster-api-provider-hcloud.swine.dev
+  - cluster-api-provider-hcloud.capihc.com
   resources:
   - hcloudclusters
   verbs:
@@ -35,7 +35,7 @@ rules:
   - update
   - watch
 - apiGroups:
-  - cluster-api-provider-hcloud.swine.dev
+  - cluster-api-provider-hcloud.capihc.com
   resources:
   - hcloudclusters/status
   verbs:
@@ -43,7 +43,7 @@ rules:
   - patch
   - update
 - apiGroups:
-  - cluster-api-provider-hcloud.swine.dev
+  - cluster-api-provider-hcloud.capihc.com
   resources:
   - hcloudmachines
   verbs:
@@ -55,7 +55,7 @@ rules:
   - update
   - watch
 - apiGroups:
-  - cluster-api-provider-hcloud.swine.dev
+  - cluster-api-provider-hcloud.capihc.com
   resources:
   - hcloudmachines/status
   verbs:
@@ -63,7 +63,7 @@ rules:
   - patch
   - update
 - apiGroups:
-  - cluster-api-provider-hcloud.swine.dev
+  - cluster-api-provider-hcloud.capihc.com
   resources:
   - hcloudvolumes
   verbs:
@@ -75,7 +75,7 @@ rules:
   - update
   - watch
 - apiGroups:
-  - cluster-api-provider-hcloud.swine.dev
+  - cluster-api-provider-hcloud.capihc.com
   resources:
   - hcloudvolumes/status
   verbs:

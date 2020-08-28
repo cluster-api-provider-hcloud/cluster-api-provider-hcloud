@@ -49,8 +49,8 @@ type HcloudMachineReconciler struct {
 	Manifests *manifests.Manifests
 }
 
-// +kubebuilder:rbac:groups=cluster-api-provider-hcloud.swine.dev,resources=hcloudmachines,verbs=get;list;watch;create;update;patch;delete
-// +kubebuilder:rbac:groups=cluster-api-provider-hcloud.swine.dev,resources=hcloudmachines/status,verbs=get;update;patch
+// +kubebuilder:rbac:groups=cluster-api-provider-hcloud.capihc.com,resources=hcloudmachines,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=cluster-api-provider-hcloud.capihc.com,resources=hcloudmachines/status,verbs=get;update;patch
 // +kubebuilder:rbac:groups=cluster.x-k8s.io,resources=machines;machines/status,verbs=get;list;watch
 
 func (r *HcloudMachineReconciler) Reconcile(req ctrl.Request) (_ ctrl.Result, reterr error) {

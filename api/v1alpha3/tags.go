@@ -43,7 +43,7 @@ const (
 	// NameHcloudProviderPrefix is the tag prefix we use to differentiate
 	// cluster-api-provider-hcloud owned components from other tooling that
 	// uses NameKubernetesClusterPrefix
-	NameHcloudProviderPrefix = "cluster-api-provider-hcloud.swine.dev/"
+	NameHcloudProviderPrefix = "cluster-api-provider-hcloud.capihc.com/"
 
 	// NameHcloudProviderOwned is the tag name we use to differentiate
 	// cluster-api-provider-hcloud owned components from other tooling that

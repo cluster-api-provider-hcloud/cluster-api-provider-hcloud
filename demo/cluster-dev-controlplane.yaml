@@ -4,7 +4,7 @@ metadata:
   name: cluster-dev
 spec:
   infrastructureTemplate:
-    apiVersion: cluster-api-provider-hcloud.swine.dev/v1alpha3
+    apiVersion: cluster-api-provider-hcloud.capihc.com/v1alpha3
     kind: HcloudMachineTemplate
     name: cluster-dev-control-plane
   replicas: 1
@@ -22,7 +22,7 @@ spec:
         extraArgs:
           cloud-provider: external
 ---
-apiVersion: cluster-api-provider-hcloud.swine.dev/v1alpha3
+apiVersion: cluster-api-provider-hcloud.capihc.com/v1alpha3
 kind: HcloudMachineTemplate
 metadata:
   name: cluster-dev-control-plane
