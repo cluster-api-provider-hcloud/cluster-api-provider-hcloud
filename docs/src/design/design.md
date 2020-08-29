@@ -13,7 +13,7 @@ sequenceDiagram
     Note over CAPI,Guest API: Creates cluster wide resources
     CAPI ->>+ Hcloud: Create network if requested
     Hcloud-->>-CAPI: ✓
-    CAPI ->>+ Hcloud: Create floating IPs if requested
+    CAPI ->>+ Hcloud: Create Loadbalancer if requested
     Hcloud-->>-CAPI: ✓
     Note over CAPI,Guest API: Create first control plane machine
     alt image is not existing
@@ -26,7 +26,7 @@ sequenceDiagram
         CAPI->>Guest API: GET /readyz
     end
     CAPI -->> Guest API: Apply manifests to API endpoint on instance
-    loop Wait for floating IP API to be ready
+    loop Wait for Loadbalancer API to be ready
         CAPI->>Guest API: GET /readyz
     end
     Note over CAPI,Guest API: Continue with creation of the remaining machines

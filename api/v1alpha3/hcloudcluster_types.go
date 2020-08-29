@@ -32,18 +32,12 @@ const (
 type HcloudLocation string
 type HcloudNetworkZone string
 
-// +kubebuilder:validation:Enum=LB11;LB21;LB31
-type HcloudLoadBalancerType string
-
 // +kubebuilder:validation:Enum=round_robin;least_connections
-type HcloudLoadBalancerAlgorithm string
+type HcloudLoadBalancerAlgorithmType string
 
 const (
-	HcloudLoadBalancerTypelb11                  = HcloudLoadBalancerType("LB11")
-	HcloudLoadBalancerTypelb21                  = HcloudLoadBalancerType("LB21")
-	HcloudLoadBalancerTypelb31                  = HcloudLoadBalancerType("LB31")
-	HcloudLoadBalancerAlgorithmRoundRobin       = HcloudLoadBalancerAlgorithm("round_robin")
-	HcloudLoadBalancerAlgorithmLeastConnections = HcloudLoadBalancerAlgorithm("least_connections")
+	HcloudLoadBalancerAlgorithmTypeRoundRobin       = HcloudLoadBalancerAlgorithmType("round_robin")
+	HcloudLoadBalancerAlgorithmTypeLeastConnections = HcloudLoadBalancerAlgorithmType("least_connections")
 )
 
 // HcloudClusterSpec defines the desired state of HcloudCluster
@@ -55,7 +49,7 @@ type HcloudClusterSpec struct {
 
 	// +kubebuilder:validation:MinItems=1
 	// +kubebuilder:validation:MaxItems=10
-	ControlPlaneLoadbalancers []HcloudLoadBalancerSpec `json:"controlPlaneLoadbalancer,omitempty"`
+	ControlPlaneLoadBalancers []HcloudLoadBalancerSpec `json:"controlPlaneLoadbalancer,omitempty"`
 
 	// ControlPlaneEndpoint represents the endpoint used to communicate with the control plane.
 	// +optional
@@ -103,24 +97,20 @@ type HcloudNetworkStatus struct {
 }
 
 type HcloudLoadBalancerSpec struct {
-	Name      *string                     `json:"name,omitempty"`
-	ID        *int                        `json:"id,omitempty"`
-	Type      HcloudLoadBalancerType      `json:"type"`
-	Algorithm HcloudLoadBalancerAlgorithm `json:"algorithm"`
-}
-
-type HcloudLoadBalancerPublicNet struct {
-	Enabled bool
-	IPv4    string
-	IPv6    string
+	Name      *string                         `json:"name,omitempty"`
+	ID        *int                            `json:"id,omitempty"`
+	Algorithm HcloudLoadBalancerAlgorithmType `json:"algorithm,omitempty"`
+	Type      string                          `json:"type,omitempty"`
 }
 type HcloudLoadBalancerStatus struct {
-	ID      int                    `json:"id,omitempty"`
-	Name    string                 `json:"name,omitempty"`
-	IPRange string                 `json:"iprange,omitempty"`
-	IP      string                 `json:"ip,omitempty"`
-	Type    HcloudLoadBalancerType `json:"type"`
-	Labels  map[string]string      `json:"-"`
+	ID        int                             `json:"id,omitempty"`
+	Name      string                          `json:"name,omitempty"`
+	Type      string                          `json:"type,omitempty"`
+	IPv4      string                          `json:"ipv4,omitempty"`
+	IPv6      string                          `json:"ipv6,omitempty"`
+	Network   string                          `json:"network,omitempty"`
+	Labels    map[string]string               `json:"-"`
+	Algorithm HcloudLoadBalancerAlgorithmType `json:"algorithm,omitempty"`
 }
 
 type HcloudClusterSpecManifests struct {
@@ -152,9 +142,9 @@ type HcloudClusterStatusManifests struct {
 
 // HcloudClusterStatus defines the observed state of HcloudCluster
 type HcloudClusterStatus struct {
-	Locations               []HcloudLocation         `json:"locations,omitempty"`
-	NetworkZone             HcloudNetworkZone        `json:"networkZone,omitempty"`
-	ControlPlaneFloatingIPs []HcloudFloatingIPStatus `json:"controlPlaneFloatingIPs,omitempty"`
+	Locations                 []HcloudLocation           `json:"locations,omitempty"`
+	NetworkZone               HcloudNetworkZone          `json:"networkZone,omitempty"`
+	ControlPlaneLoadBalancers []HcloudLoadBalancerStatus `json:"controlPlaneLoadBalancers,omitempty"`
 
 	// +optional
 	Network *HcloudNetworkStatus `json:"network,omitempty"`

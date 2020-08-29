@@ -198,8 +198,8 @@ func (s *Service) Reconcile(ctx context.Context) (_ *ctrl.Result, err error) {
 
 				// configure APIserver serving certificate
 				extraNames := []string{"127.0.0.1", "localhost"}
-				for _, name := range s.scope.HcloudCluster.Status.ControlPlaneFloatingIPs {
-					extraNames = append(extraNames, name.IP)
+				for _, lb := range s.scope.HcloudCluster.Status.ControlPlaneLoadBalancers {
+					extraNames = append(extraNames, lb.IPv4)
 				}
 				for _, name := range extraNames {
 					if !stringSliceContains(c.APIServer.CertSANs, name) {

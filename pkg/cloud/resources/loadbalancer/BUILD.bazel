@@ -2,8 +2,8 @@ load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
 
 go_library(
     name = "go_default_library",
-    srcs = ["floatingip.go"],
-    importpath = "github.com/cluster-api-provider-hcloud/cluster-api-provider-hcloud/pkg/cloud/resources/floatingip",
+    srcs = ["loadbalancer.go"],
+    importpath = "github.com/cluster-api-provider-hcloud/cluster-api-provider-hcloud/pkg/cloud/resources/loadbalancer",
     visibility = ["//visibility:public"],
     deps = [
         "//api/v1alpha3:go_default_library",
@@ -16,7 +16,7 @@ go_library(
 
 go_test(
     name = "go_default_test",
-    srcs = ["floatingip_test.go"],
+    srcs = ["loadbalancer_test.go"],
     embed = [":go_default_library"],
     deps = [
         "//api/v1alpha3:go_default_library",

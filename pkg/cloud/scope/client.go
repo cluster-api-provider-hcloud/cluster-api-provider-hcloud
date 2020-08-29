@@ -10,9 +10,6 @@ import (
 type HcloudClient interface {
 	Token() string
 	ListLocation(context.Context) ([]*hcloud.Location, error)
-	CreateFloatingIP(context.Context, hcloud.FloatingIPCreateOpts) (hcloud.FloatingIPCreateResult, *hcloud.Response, error)
-	DeleteFloatingIP(context.Context, *hcloud.FloatingIP) (*hcloud.Response, error)
-	ListFloatingIPs(context.Context, hcloud.FloatingIPListOpts) ([]*hcloud.FloatingIP, error)
 	CreateLoadBalancer(context.Context, hcloud.LoadBalancerCreateOpts) (hcloud.LoadBalancerCreateResult, *hcloud.Response, error)
 	DeleteLoadBalancer(context.Context, *hcloud.LoadBalancer) (*hcloud.Response, error)
 	ListLoadBalancers(context.Context, hcloud.LoadBalancerListOpts) ([]*hcloud.LoadBalancer, error)
@@ -57,18 +54,6 @@ func (c *realClient) DeleteLoadBalancer(ctx context.Context, loadBalancer *hclou
 
 func (c *realClient) ListLoadBalancers(ctx context.Context, opts hcloud.LoadBalancerListOpts) ([]*hcloud.LoadBalancer, error) {
 	return c.client.LoadBalancer.AllWithOpts(ctx, opts)
-}
-
-func (c *realClient) CreateFloatingIP(ctx context.Context, opts hcloud.FloatingIPCreateOpts) (hcloud.FloatingIPCreateResult, *hcloud.Response, error) {
-	return c.client.FloatingIP.Create(ctx, opts)
-}
-
-func (c *realClient) DeleteFloatingIP(ctx context.Context, ip *hcloud.FloatingIP) (*hcloud.Response, error) {
-	return c.client.FloatingIP.Delete(ctx, ip)
-}
-
-func (c *realClient) ListFloatingIPs(ctx context.Context, opts hcloud.FloatingIPListOpts) ([]*hcloud.FloatingIP, error) {
-	return c.client.FloatingIP.AllWithOpts(ctx, opts)
 }
 
 func (c *realClient) ListImages(ctx context.Context, opts hcloud.ImageListOpts) ([]*hcloud.Image, error) {

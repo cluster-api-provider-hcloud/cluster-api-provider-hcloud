@@ -33,7 +33,7 @@ filegroup(
         "//hack:all-srcs",
         "//manifests:all-srcs",
         "//packer:all-srcs",
-        "//pkg/cloud/resources/floatingip:all-srcs",
+        "//pkg/cloud/resources/loadbalancer:all-srcs",
         "//pkg/cloud/resources/location:all-srcs",
         "//pkg/cloud/resources/network:all-srcs",
         "//pkg/cloud/resources/server:all-srcs",

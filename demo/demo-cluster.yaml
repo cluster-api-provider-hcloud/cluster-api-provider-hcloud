@@ -31,7 +31,7 @@ spec:
   - name: KubeAPIEndpointIPv6
     type: IPv6
   locations:
-  - fsn1
+  - fsn1  # first location is used for location of Loadbalancer
   - nbg1
   - hel1
   sshKeys:
