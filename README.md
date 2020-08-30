@@ -69,7 +69,7 @@ The cluster need some time until it is ready:
 | Worker downscale |  ~20s
 | Control plane upscale per node | ~2.5min
 | Control plane downscale per node | ~1min
-| Control-plane Failover with Metallb | ~20s 
+
 
 - Once the Control Plane has a ready replica, create a kubeconfig for the
   hcloud cluster and test connectivity:

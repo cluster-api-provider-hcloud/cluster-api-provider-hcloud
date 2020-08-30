@@ -72,7 +72,7 @@ write_files:
           extraArgs:
             cloud-provider: external
         apiVersion: kubeadm.k8s.io/v1beta1
-        clusterName: christian-dev
+        clusterName: cluster-dev
         controlPlaneEndpoint: 1.2.3.4:6443
         controllerManager:
           extraArgs:
@@ -160,7 +160,7 @@ write_files:
           extraArgs:
             cloud-provider: external
         apiVersion: kubeadm.k8s.io/v1beta1
-        clusterName: christian-dev
+        clusterName: cluster-dev
         controllerManager:
           extraArgs:
             cloud-provider: external

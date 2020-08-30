@@ -72,6 +72,17 @@ func (s *Service) labels() map[string]string {
 	return m
 }
 
+type intSlice []int
+
+func (s intSlice) contains(e int) bool {
+	for _, i := range s {
+		if i == e {
+			return true
+		}
+	}
+	return false
+}
+
 func (s *Service) addServerToLoadBalancer(server *hcloud.Server) error {
 
 	if len(s.scope.HcloudCluster.Status.ControlPlaneLoadBalancers) == 0 {
@@ -79,29 +90,33 @@ func (s *Service) addServerToLoadBalancer(server *hcloud.Server) error {
 		return nil
 	}
 
-	//TODO: Check whether server ID is already in targets
+	var targetIDs intSlice
+	targetIDs = s.scope.HcloudCluster.Status.ControlPlaneLoadBalancers[0].Targets
+
+	if targetIDs.contains(server.ID) {
+		return nil
+	}
 
 	myBool := true
 
 	loadBalancerAddServerTargetOpts := hcloud.LoadBalancerAddServerTargetOpts{Server: server, UsePrivateIP: &myBool}
 
-	lbID := s.scope.HcloudCluster.Status.ControlPlaneLoadBalancers[0].ID
-	hcloudToken := s.scope.HcloudClient().Token()
-	hclient := hcloud.NewClient(hcloud.WithToken(hcloudToken))
-	lb, _, err := hclient.LoadBalancer.GetByID(context.Background(), lbID)
+	loadBalancers, err := s.scope.HcloudClient().ListLoadBalancers(context.Background(), hcloud.LoadBalancerListOpts{})
 	if err != nil {
 		return err
 	}
-	_, _, err = hclient.LoadBalancer.AddServerTarget(context.Background(), lb, loadBalancerAddServerTargetOpts)
+	// This only works if there is only one load balancer
+	lb := loadBalancers[0]
+	_, _, err = s.scope.HcloudClient().AddTargetServerToLoadBalancer(context.Background(), loadBalancerAddServerTargetOpts, lb)
 	if err != nil {
 		s.scope.V(2).Info("Could not add server as target to load balancer", "Server", server.ID, "Load Balancer", lb.ID)
 		return err
 	} else {
 		record.Eventf(
-			s.scope.HcloudMachine,
+			s.scope.HcloudCluster,
 			"AddedAsTargetToLoadBalancer",
 			"Added new server with id %d to the loadbalancer %v",
-			server.ID, lbID)
+			server.ID, lb.ID)
 	}
 	return nil
 }
@@ -384,7 +399,7 @@ func (s *Service) Reconcile(ctx context.Context) (_ *ctrl.Result, err error) {
 		return nil, errors.New("error adding server as target to load balancer")
 	}
 
-	// check if at lest one of the adresses is ready
+	// check if at least one of the adresses is ready
 	var errors []error
 	for _, address := range s.scope.HcloudMachine.Status.Addresses {
 		if address.Type != corev1.NodeExternalIP && address.Type != corev1.NodeExternalDNS {
