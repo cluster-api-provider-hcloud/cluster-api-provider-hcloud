@@ -1,6 +1,0 @@
-{
-  "namespace": "kube-system",
-  "bases": [
-    "github.com/costela/hcloud-ip-floater/deploy?ref=v0.1.4"
-  ],
-}

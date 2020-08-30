@@ -1,4 +1,6 @@
 # MetalLB
+> Not used anymore!
+
 [A MetalLB controller](https://github.com/simonswine/hcloud-metallb-floater) is automatically created.
 The controller assigns existing floating IPs to nodes.
 

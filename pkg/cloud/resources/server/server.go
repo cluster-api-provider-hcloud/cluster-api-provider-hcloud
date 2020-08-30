@@ -58,7 +58,7 @@ func (s *Service) createLabels() map[string]string {
 	m := s.genericLabels()
 	var machineType string
 	if s.scope.IsControlPlane() == true {
-		machineType = "controle_plane"
+		machineType = "control_plane"
 	} else {
 		machineType = "worker"
 	}
@@ -70,6 +70,40 @@ func (s *Service) labels() map[string]string {
 	m := s.genericLabels()
 	m[infrav1.MachineNameTagKey] = s.scope.Name()
 	return m
+}
+
+func (s *Service) addServerToLoadBalancer(server *hcloud.Server) error {
+
+	if len(s.scope.HcloudCluster.Status.ControlPlaneLoadBalancers) == 0 {
+		s.scope.V(2).Info("No load balancer found for adding server as target", "Server", server.ID)
+		return nil
+	}
+
+	//TODO: Check whether server ID is already in targets
+
+	myBool := true
+
+	loadBalancerAddServerTargetOpts := hcloud.LoadBalancerAddServerTargetOpts{Server: server, UsePrivateIP: &myBool}
+
+	lbID := s.scope.HcloudCluster.Status.ControlPlaneLoadBalancers[0].ID
+	hcloudToken := s.scope.HcloudClient().Token()
+	hclient := hcloud.NewClient(hcloud.WithToken(hcloudToken))
+	lb, _, err := hclient.LoadBalancer.GetByID(context.Background(), lbID)
+	if err != nil {
+		return err
+	}
+	_, _, err = hclient.LoadBalancer.AddServerTarget(context.Background(), lb, loadBalancerAddServerTargetOpts)
+	if err != nil {
+		s.scope.V(2).Info("Could not add server as target to load balancer", "Server", server.ID, "Load Balancer", lb.ID)
+		return err
+	} else {
+		record.Eventf(
+			s.scope.HcloudMachine,
+			"AddedAsTargetToLoadBalancer",
+			"Added new server with id %d to the loadbalancer %v",
+			server.ID, lbID)
+	}
+	return nil
 }
 
 func (s *Service) Reconcile(ctx context.Context) (_ *ctrl.Result, err error) {
@@ -343,6 +377,11 @@ func (s *Service) Reconcile(ctx context.Context) (_ *ctrl.Result, err error) {
 		s.scope.HcloudMachine.Spec.ProviderID = &providerID
 		s.scope.HcloudMachine.Status.Ready = true
 		return nil, nil
+	}
+
+	// add server as target to load balancer
+	if err := s.addServerToLoadBalancer(actualServer); err != nil {
+		return nil, errors.New("error adding server as target to load balancer")
 	}
 
 	// check if at lest one of the adresses is ready

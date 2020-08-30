@@ -106,7 +106,7 @@ func (s *Service) Reconcile(ctx context.Context) (err error) {
 func (s *Service) createLoadBalancer(ctx context.Context, spec infrav1.HcloudLoadBalancerSpec) (*infrav1.HcloudLoadBalancerStatus, error) {
 	s.scope.V(2).Info("Create a new loadbalancer", "algorithm type", spec.Algorithm)
 
-	// gather ip type
+	// gather algorithm type
 	var algType hcloud.LoadBalancerAlgorithmType
 	if spec.Algorithm == infrav1.HcloudLoadBalancerAlgorithmTypeRoundRobin {
 		algType = hcloud.LoadBalancerAlgorithmTypeRoundRobin
@@ -138,7 +138,17 @@ func (s *Service) createLoadBalancer(ctx context.Context, spec infrav1.HcloudLoa
 	networkID := s.scope.HcloudCluster.Status.Network.ID
 	network, _, err := hclient.Network.GetByID(context.Background(), networkID)
 	if err != nil {
-		return nil, fmt.Errorf("failed to find network with ID %s", networkID)
+		return nil, fmt.Errorf("failed to find network with ID %v", networkID)
+	}
+
+	myInt1 := 443
+	myInt2 := 6443
+	mybool := false
+	kubeapiservice := hcloud.LoadBalancerCreateOptsService{
+		Protocol:        "tcp",
+		ListenPort:      &myInt1,
+		DestinationPort: &myInt2,
+		Proxyprotocol:   &mybool,
 	}
 
 	opts := hcloud.LoadBalancerCreateOpts{
@@ -150,6 +160,7 @@ func (s *Service) createLoadBalancer(ctx context.Context, spec infrav1.HcloudLoa
 		Labels: map[string]string{
 			clusterTagKey: string(infrav1.ResourceLifecycleOwned),
 		},
+		Services: []hcloud.LoadBalancerCreateOptsService{kubeapiservice},
 	}
 
 	lb, _, err := s.scope.HcloudClient().CreateLoadBalancer(ctx, opts)
@@ -177,6 +188,7 @@ func (s *Service) deleteLoadBalancer(ctx context.Context, status infrav1.HcloudL
 	return err
 }
 
+// deleting loadbalancer
 func (s *Service) Delete(ctx context.Context) (err error) {
 	// update current status
 	loadBalancerStatus, err := s.actualStatus(ctx)
@@ -197,13 +209,13 @@ func (s *Service) compare(actualStatus []infrav1.HcloudLoadBalancerStatus) (need
 	var matchedSpecToStatusMap = make(map[int]*infrav1.HcloudLoadBalancerStatus)
 	var matchedStatusToSpecMap = make(map[int]*infrav1.HcloudLoadBalancerSpec)
 
-	for posSpec, ipSpec := range s.scope.HcloudCluster.Spec.ControlPlaneLoadBalancers {
-		for posStatus, ipStatus := range s.scope.HcloudCluster.Status.ControlPlaneLoadBalancers {
+	for posSpec, lbSpec := range s.scope.HcloudCluster.Spec.ControlPlaneLoadBalancers {
+		for posStatus, lbStatus := range s.scope.HcloudCluster.Status.ControlPlaneLoadBalancers {
 			if _, ok := matchedStatusToSpecMap[posStatus]; ok {
 				continue
 			}
-			matchedStatusToSpecMap[posStatus] = &ipSpec
-			matchedSpecToStatusMap[posSpec] = &ipStatus
+			matchedStatusToSpecMap[posStatus] = &lbSpec
+			matchedSpecToStatusMap[posSpec] = &lbStatus
 		}
 	}
 
@@ -230,39 +242,39 @@ func (s *Service) compare(actualStatus []infrav1.HcloudLoadBalancerStatus) (need
 func (s *Service) actualStatus(ctx context.Context) ([]infrav1.HcloudLoadBalancerStatus, error) {
 	// index existing status entries
 	var ids intSlice
-	ipStatusByID := make(map[int]*infrav1.HcloudLoadBalancerStatus)
+	lbStatusByID := make(map[int]*infrav1.HcloudLoadBalancerStatus)
 	for pos := range s.scope.HcloudCluster.Status.ControlPlaneLoadBalancers {
-		ipStatus := &s.scope.HcloudCluster.Status.ControlPlaneLoadBalancers[pos]
-		ipStatusByID[ipStatus.ID] = ipStatus
-		ids = append(ids, ipStatus.ID)
+		lbStatus := &s.scope.HcloudCluster.Status.ControlPlaneLoadBalancers[pos]
+		lbStatusByID[lbStatus.ID] = lbStatus
+		ids = append(ids, lbStatus.ID)
 	}
-	for _, ipSpec := range s.scope.HcloudCluster.Spec.ControlPlaneLoadBalancers {
-		if ipSpec.ID != nil {
-			ids = append(ids, *ipSpec.ID)
+	for _, lbSpec := range s.scope.HcloudCluster.Spec.ControlPlaneLoadBalancers {
+		if lbSpec.ID != nil {
+			ids = append(ids, *lbSpec.ID)
 		}
 	}
 
 	// refresh existing load balancers
 	clusterTagKey := infrav1.ClusterTagKey(s.scope.HcloudCluster.Name)
-	ipStatuses, err := s.scope.HcloudClient().ListLoadBalancers(ctx, hcloud.LoadBalancerListOpts{})
+	lbStatuses, err := s.scope.HcloudClient().ListLoadBalancers(ctx, hcloud.LoadBalancerListOpts{})
 	if err != nil {
 		return nil, fmt.Errorf("error listing load balancers: %w", err)
 	}
-	for _, ipStatus := range ipStatuses {
-		_, ok := ipStatus.Labels[clusterTagKey]
-		if !ok && !ids.contains(ipStatus.ID) {
+	for _, lbStatus := range lbStatuses {
+		_, ok := lbStatus.Labels[clusterTagKey]
+		if !ok && !ids.contains(lbStatus.ID) {
 			continue
 		}
 
-		apiStatus, err := apiToStatus(ipStatus)
+		apiStatus, err := apiToStatus(lbStatus)
 		if err != nil {
 			return nil, fmt.Errorf("error converting LoadBalancer API to status: %w", err)
 		}
-		ipStatusByID[apiStatus.ID] = apiStatus
+		lbStatusByID[apiStatus.ID] = apiStatus
 	}
 
 	ids = []int{}
-	for id := range ipStatusByID {
+	for id := range lbStatusByID {
 		ids = append(ids, id)
 	}
 	sort.Ints(ids)
@@ -270,7 +282,7 @@ func (s *Service) actualStatus(ctx context.Context) ([]infrav1.HcloudLoadBalance
 	var loadBalancers []infrav1.HcloudLoadBalancerStatus
 
 	for _, id := range ids {
-		status := ipStatusByID[id]
+		status := lbStatusByID[id]
 		loadBalancers = append(
 			loadBalancers,
 			*status,

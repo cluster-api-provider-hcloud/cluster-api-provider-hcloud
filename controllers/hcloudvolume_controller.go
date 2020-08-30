@@ -127,7 +127,7 @@ func (r *HcloudVolumeReconciler) reconcileDelete(volumeScope *scope.VolumeScope)
 		return reconcile.Result{}, errors.Wrapf(err, "failed to delete volume for HcloudVolume %s/%s", hcloudVolume.Namespace, hcloudVolume.Name)
 	}
 
-	// delete controlplane floating IPs
+	// delete controlplane loadbalancer
 	// Volume is deleted so remove the finalizer.
 	controllerutil.RemoveFinalizer(volumeScope.HcloudVolume, infrav1.VolumeFinalizer)
 

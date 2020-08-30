@@ -1,12 +1,7 @@
 HELM := helm3
 
-fetch: hcloud-ip-floater/manifests.json hcloud-cloud-controller-manager/manifests.json calico/manifests.json hcloud-csi/manifests.json
+fetch: hcloud-cloud-controller-manager/manifests.json calico/manifests.json hcloud-csi/manifests.json
 
-hcloud-ip-floater/manifests.json:
-	kubectl convert -k $(shell dirname "$@")/upstream -o json | jq .items > $@
-
-hcloud-metallb-floater/manifests.json:
-	kubectl convert -k $(shell dirname "$@")/upstream -o json | jq .items > $@
 
 HCLOUD_CLOUD_CONTROLLER_MANAGER_VERSION := 1.5.0
 hcloud-cloud-controller-manager/manifests.json:
@@ -29,8 +24,6 @@ calico/manifests.json:
 		go run ../hack/yaml2json.go | \
 		jq -s  > $@
 
-metallb/manifests.json:
-	kubectl convert -k $(shell dirname "$@")/upstream -o json | jq .items > $@
 
 METRICS_SERVER_VERSION := 0.3.6
 metrics-server/manifests.json:
