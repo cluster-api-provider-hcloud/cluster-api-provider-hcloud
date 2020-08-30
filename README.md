@@ -97,6 +97,7 @@ See ./docs/src/developers or https://docs.capihc.com/developer/developer.html
 - packer
 - BAZEL
 - Go 1.13
+- gomock
 - watch (On MAC: `brew install watch`)
 - JQ (On MAC: `brew install jq`)
 
