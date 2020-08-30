@@ -25,11 +25,9 @@ metadata:
   name: cluster-dev
   namespace: default
 spec:
-  controlPlaneFloatingIPs:
-  - name: KubeApiEndpointIPv4
-    type: IPv4
-  - name: KubeAPIEndpointIPv6
-    type: IPv6
+  controlPlaneLoadBalancers:
+  - type: lb11
+    algorithm: round_robin
   locations:
   - fsn1  # first location is used for location of Loadbalancer
   - nbg1
