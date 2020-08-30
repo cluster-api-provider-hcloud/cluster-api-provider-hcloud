@@ -54,6 +54,18 @@ func (s *Service) genericLabels() map[string]string {
 	}
 }
 
+func (s *Service) createLabels() map[string]string {
+	m := s.genericLabels()
+	var machineType string
+	if s.scope.IsControlPlane() == true {
+		machineType = "controle_plane"
+	} else {
+		machineType = "worker"
+	}
+	m["machine_type"] = machineType
+	return m
+}
+
 func (s *Service) labels() map[string]string {
 	m := s.genericLabels()
 	m[infrav1.MachineNameTagKey] = s.scope.Name()
@@ -249,7 +261,7 @@ func (s *Service) Reconcile(ctx context.Context) (_ *ctrl.Result, err error) {
 	var myFalse = false
 	opts := hcloud.ServerCreateOpts{
 		Name:   s.scope.Name(),
-		Labels: s.labels(),
+		Labels: s.createLabels(),
 		Image: &hcloud.Image{
 			ID: int(*s.scope.HcloudMachine.Status.ImageID),
 		},
