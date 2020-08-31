@@ -39,11 +39,16 @@ func (s intSlice) contains(e int) bool {
 }
 
 func apiToStatus(lb *hcloud.LoadBalancer) (*infrav1.HcloudLoadBalancerStatus, error) {
-
 	ipv4 := lb.PublicNet.IPv4.IP.String()
 	ipv6 := lb.PublicNet.IPv6.IP.String()
-	network := fmt.Sprintf("%s/%s", lb.PrivateNet[0].Network.IPRange.IP, lb.PrivateNet[0].Network.IPRange.Mask)
 
+	/*
+		var network string
+		if len(lb.PrivateNet) > 0 {
+			fmt.Printf(lb.PrivateNet[0].Network.IPRange.IP.String())
+			network = fmt.Sprintf("%s/%s", lb.PrivateNet[0].Network.IPRange.IP.String(), string(lb.PrivateNet[0].Network.IPRange.Mask))
+		}
+	*/
 	var algType infrav1.HcloudLoadBalancerAlgorithmType
 
 	if lb.Algorithm.Type == hcloud.LoadBalancerAlgorithmTypeRoundRobin {
@@ -55,6 +60,7 @@ func apiToStatus(lb *hcloud.LoadBalancer) (*infrav1.HcloudLoadBalancerStatus, er
 	}
 
 	var targetIDs []int
+
 	for _, server := range lb.Targets {
 		targetIDs = append(targetIDs, server.Server.Server.ID)
 	}
@@ -67,8 +73,8 @@ func apiToStatus(lb *hcloud.LoadBalancer) (*infrav1.HcloudLoadBalancerStatus, er
 		IPv6:      ipv6,
 		Labels:    lb.Labels,
 		Algorithm: algType,
-		Network:   network,
-		Targets:   targetIDs,
+		//Network:   network,
+		Targets: targetIDs,
 	}
 	return status, nil
 }
@@ -130,7 +136,7 @@ func (s *Service) Reconcile(ctx context.Context) (err error) {
 }
 
 func (s *Service) createLoadBalancer(ctx context.Context, spec infrav1.HcloudLoadBalancerSpec) (*infrav1.HcloudLoadBalancerStatus, error) {
-	//TODO: The first load balancer is the main one, the others are not important
+
 	s.scope.V(2).Info("Create a new loadbalancer", "algorithm type", spec.Algorithm)
 
 	// gather algorithm type
@@ -146,20 +152,20 @@ func (s *Service) createLoadBalancer(ctx context.Context, spec infrav1.HcloudLoa
 	loadBalancerAlgorithm := (&hcloud.LoadBalancerAlgorithm{Type: algType})
 
 	hc := s.scope.HcloudCluster
-	clusterTagKey := infrav1.ClusterTagKey(hc.Name)
 
-	if len(hc.Status.Locations) == 0 {
-		return nil, errors.New("no locations set on the cluster")
-	}
-	location := &hcloud.Location{Name: string(hc.Status.Locations[0])}
 	name := names.SimpleNameGenerator.GenerateName(hc.Name + "-loadbalancer-")
-
+	clusterTagKey := infrav1.ClusterTagKey(hc.Name)
 	// defaults to the smalles load balancer, 25 targets should be enough for the control-planes
 
 	loadBalancerType, _, err := s.scope.HcloudClient().GetLoadBalancerTypeByName(ctx, spec.Type)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to find load balancer type")
 	}
+
+	if len(hc.Status.Locations) == 0 {
+		return nil, errors.New("no locations set on the cluster")
+	}
+	location := &hcloud.Location{Name: string(hc.Status.Locations[0])}
 
 	var network *hcloud.Network
 	networkID := s.scope.HcloudCluster.Status.Network.ID
@@ -180,19 +186,23 @@ func (s *Service) createLoadBalancer(ctx context.Context, spec infrav1.HcloudLoa
 
 	var mybool = false
 	var myInt = int(s.scope.ControlPlaneAPIEndpointPort())
+
 	kubeapiservice := hcloud.LoadBalancerCreateOptsService{
-		Protocol:        "tcp",
+		Protocol:        hcloud.LoadBalancerServiceProtocolTCP,
 		ListenPort:      &myInt,
 		DestinationPort: &myInt,
 		Proxyprotocol:   &mybool,
 	}
 
-	var labels = map[string]string{clusterTagKey: string(infrav1.ResourceLifecycleOwned)}
+	labels := map[string]string{clusterTagKey: string(infrav1.ResourceLifecycleOwned)}
 	if len(s.scope.HcloudCluster.Status.ControlPlaneLoadBalancers) == 0 {
 		labels["type"] = "main"
 	} else {
 		labels["type"] = "other"
 	}
+
+	//loadBalancerCreateOptsTarget := hcloud.LoadBalancerCreateOptsTarget{Type: hcloud.LoadBalancerTargetTypeServer}
+
 	opts := hcloud.LoadBalancerCreateOpts{
 		LoadBalancerType: loadBalancerType,
 		Name:             name,
@@ -201,7 +211,7 @@ func (s *Service) createLoadBalancer(ctx context.Context, spec infrav1.HcloudLoa
 		Network:          network,
 		Labels:           labels,
 		Services:         []hcloud.LoadBalancerCreateOptsService{kubeapiservice},
-		Targets:          []hcloud.LoadBalancerCreateOptsTarget{{Type: hcloud.LoadBalancerTargetTypeServer}},
+		//Targets:          []hcloud.LoadBalancerCreateOptsTarget{loadBalancerCreateOptsTarget},
 	}
 
 	lb, _, err := s.scope.HcloudClient().CreateLoadBalancer(ctx, opts)

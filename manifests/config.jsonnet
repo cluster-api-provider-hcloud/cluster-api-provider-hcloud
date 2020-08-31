@@ -133,7 +133,10 @@ local new(c) = (
   (if hasNetwork(c, 'flannel') then flannel else {}) +
   hcloudCloudControllerManager +
   hcloudCSI +
-  metricsServer 
+  metricsServer +
+  {
+    _config+:: c,
+  } +
   addons
 );
 

@@ -125,10 +125,12 @@ kubectl create secret generic hcloud-token --from-literal=token=$TOKEN
 # Apply the manifest to your management cluster; cluster name is cluster-dev; use quickstart guide for getting access to the target cluster
 kubectl apply -f ./demo/demo-cluster.yaml
 
-# Deleting the cluster
+# Deleting the target cluster
 kubectl delete -f ./demo/demo-cluster.yaml
 
 # Deleting the management cluster
 kind delete cluster --name capi-hcloud
+
 ```
+
 
