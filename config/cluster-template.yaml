@@ -28,7 +28,7 @@ spec:
     key: token
   sshKeys:
     - name: "${HCLOUD_SSH_KEY_NAME}"
-  controlPlaneLoadBalancers:
+  controlPlaneLoadBalancer:
   - type: lb11
     algorithm: round_robin
 ---

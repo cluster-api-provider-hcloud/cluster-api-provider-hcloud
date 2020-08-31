@@ -177,3 +177,8 @@ http_file(
     downloaded_file_path = "kubectl",
     executable = True,
 )
+
+load("//:repositories.bzl", "go_repositories")
+
+# gazelle:repository_macro repositories.bzl%go_repositories
+go_repositories()

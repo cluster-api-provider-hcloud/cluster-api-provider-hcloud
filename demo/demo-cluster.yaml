@@ -25,7 +25,7 @@ metadata:
   name: cluster-dev
   namespace: default
 spec:
-  controlPlaneLoadBalancers:
+  controlPlaneLoadbalancer:
   - type: lb11
     algorithm: round_robin
   locations:
