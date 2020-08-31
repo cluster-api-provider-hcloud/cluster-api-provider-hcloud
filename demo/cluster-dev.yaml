@@ -10,7 +10,7 @@ spec:
     key: token
   sshKeys:
     - name: id_rsa
-  controlPlaneLoadBalancers:
+  controlPlaneLoadBalancer:
   - type: lb11
     algorithm: round_robin
 ---
