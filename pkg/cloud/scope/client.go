@@ -13,6 +13,7 @@ type HcloudClient interface {
 	CreateLoadBalancer(context.Context, hcloud.LoadBalancerCreateOpts) (hcloud.LoadBalancerCreateResult, *hcloud.Response, error)
 	DeleteLoadBalancer(context.Context, *hcloud.LoadBalancer) (*hcloud.Response, error)
 	ListLoadBalancers(context.Context, hcloud.LoadBalancerListOpts) ([]*hcloud.LoadBalancer, error)
+	GetLoadBalancerTypeByName(context.Context, string) (*hcloud.LoadBalancerType, *hcloud.Response, error)
 	AddTargetServerToLoadBalancer(context.Context, hcloud.LoadBalancerAddServerTargetOpts, *hcloud.LoadBalancer) (*hcloud.Action, *hcloud.Response, error)
 	DeleteTargetServerOfLoadBalancer(context.Context, *hcloud.LoadBalancer, *hcloud.Server) (*hcloud.Action, *hcloud.Response, error)
 	ListImages(context.Context, hcloud.ImageListOpts) ([]*hcloud.Image, error)
@@ -56,6 +57,10 @@ func (c *realClient) DeleteLoadBalancer(ctx context.Context, loadBalancer *hclou
 
 func (c *realClient) ListLoadBalancers(ctx context.Context, opts hcloud.LoadBalancerListOpts) ([]*hcloud.LoadBalancer, error) {
 	return c.client.LoadBalancer.AllWithOpts(ctx, opts)
+}
+
+func (c *realClient) GetLoadBalancerTypeByName(ctx context.Context, name string) (*hcloud.LoadBalancerType, *hcloud.Response, error) {
+	return c.client.LoadBalancerType.GetByName(ctx, name)
 }
 
 func (c *realClient) AddTargetServerToLoadBalancer(ctx context.Context, opts hcloud.LoadBalancerAddServerTargetOpts, lb *hcloud.LoadBalancer) (*hcloud.Action, *hcloud.Response, error) {
