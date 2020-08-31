@@ -308,6 +308,7 @@ func (s *Service) Reconcile(ctx context.Context) (_ *ctrl.Result, err error) {
 
 	var myTrue = true
 	var myFalse = false
+
 	opts := hcloud.ServerCreateOpts{
 		Name:   s.scope.Name(),
 		Labels: s.createLabels(),

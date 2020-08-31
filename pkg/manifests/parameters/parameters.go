@@ -32,7 +32,7 @@ type ManifestNetworkCilium struct {
 func (m *ManifestParameters) ExtVar() map[string]string {
 	extVar := make(map[string]string)
 
-	extVar["hcloud-load-balancer-ipv4s"] = strings.Join(m.HcloudLoadBalancerIPv4s, ",")
+	extVar["hcloud-loadbalancer"] = strings.Join(m.HcloudLoadBalancerIPv4s, ",")
 
 	if key, val := "hcloud-token", m.HcloudToken; val != nil {
 		extVar[key] = *val
