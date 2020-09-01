@@ -272,6 +272,7 @@ func (s *Service) Reconcile(ctx context.Context) (_ *ctrl.Result, err error) {
 						)
 					}
 				}
+				fmt.Println(c.APIServer.CertSANs)
 			} else {
 				record.Warnf(
 					s.scope.HcloudMachine,
