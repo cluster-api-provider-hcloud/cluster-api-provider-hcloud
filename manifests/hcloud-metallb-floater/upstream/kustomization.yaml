@@ -1,0 +1,5 @@
+{
+  "bases": [
+    "github.com/simonswine/hcloud-metallb-floater/config/default?ref=v0.1.0"
+  ],
+}
