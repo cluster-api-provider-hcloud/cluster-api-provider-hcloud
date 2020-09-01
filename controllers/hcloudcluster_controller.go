@@ -202,15 +202,15 @@ func (r *HcloudClusterReconciler) reconcileNormal(clusterScope *scope.ClusterSco
 	if err := loadbalancer.NewService(clusterScope).Reconcile(ctx); err != nil {
 		return reconcile.Result{}, errors.Wrapf(err, "failed to reconcile load balancers for HcloudCluster %s/%s", hcloudCluster.Namespace, hcloudCluster.Name)
 	}
-
-	// add the first control plane load balancer to the status
-	if len(hcloudCluster.Status.ControlPlaneLoadBalancers) > 0 {
-		hcloudCluster.Spec.ControlPlaneEndpoint = clusterv1.APIEndpoint{
-			Host: hcloudCluster.Status.ControlPlaneLoadBalancers[0].IPv4,
-			Port: clusterScope.ControlPlaneAPIEndpointPort(),
+	/*
+		// add the first control plane load balancer to the status
+		if len(hcloudCluster.Status.ControlPlaneLoadBalancers) > 0 {
+			hcloudCluster.Spec.ControlPlaneEndpoint = clusterv1.APIEndpoint{
+				Host: hcloudCluster.Status.ControlPlaneLoadBalancers[0].IPv4,
+				Port: clusterScope.ControlPlaneAPIEndpointPort(),
+			}
 		}
-	}
-
+	*/
 	// set cluster infrastructure as ready
 	hcloudCluster.Status.Ready = true
 

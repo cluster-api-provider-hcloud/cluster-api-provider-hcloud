@@ -87,7 +87,7 @@
                   }
                 }
               ],
-              "image": "hetznercloud/hcloud-cloud-controller-manager:v1.5.0",
+              "image": "hetznercloud/hcloud-cloud-controller-manager:v1.7.0",
               "name": "hcloud-cloud-controller-manager",
               "resources": {
                 "requests": {
