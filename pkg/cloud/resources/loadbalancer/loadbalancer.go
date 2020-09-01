@@ -115,13 +115,13 @@ func (s *Service) Reconcile(ctx context.Context) (err error) {
 
 	for _, server := range needCreationTargets {
 		if err := s.addServerToLoadBalancer(ctx, server); err != nil {
-			return errors.Wrap(err, "failed to add server to load balancer")
+			return errors.Wrap(err, "failed to add servers to load balancer")
 		}
 	}
 
 	for _, server := range needDeletionTargets {
 		if err := s.deleteServerOfLoadBalancer(ctx, server); err != nil {
-			return errors.Wrap(err, "failed to delete server of load balancer")
+			return errors.Wrap(err, "failed to delete servers of load balancer")
 		}
 	}
 

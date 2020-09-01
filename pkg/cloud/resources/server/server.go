@@ -397,11 +397,13 @@ func (s *Service) Reconcile(ctx context.Context) (_ *ctrl.Result, err error) {
 		s.scope.HcloudMachine.Status.Ready = true
 		return nil, nil
 	}
-
+	// TODO: Check if we need this here, or if it is redundant as the server cannot be added anyway
 	// add server as target to load balancer
-	if err := s.addServerToLoadBalancer(actualServer); err != nil {
-		return nil, errors.New("error adding server as target to load balancer")
-	}
+	/*
+		if err := s.addServerToLoadBalancer(actualServer); err != nil {
+			return nil, errors.New("error adding server as target to load balancer")
+		}
+	*/
 
 	// check if at least one of the adresses is ready
 	var errors []error
