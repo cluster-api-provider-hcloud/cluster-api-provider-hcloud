@@ -415,8 +415,10 @@ func (s *Service) Reconcile(ctx context.Context) (_ *ctrl.Result, err error) {
 		}
 
 		clientConfig, err := s.scope.ClientConfigWithAPIEndpoint(clusterv1.APIEndpoint{
-			Host: address.Address,
-			Port: s.scope.ControlPlaneAPIEndpointPort(),
+			/*
+				Host: address.Address,
+				Port: s.scope.ControlPlaneAPIEndpointPort(),
+			*/
 		})
 		if err != nil {
 			return nil, err
