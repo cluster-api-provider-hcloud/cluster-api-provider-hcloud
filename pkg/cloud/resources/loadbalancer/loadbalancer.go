@@ -266,6 +266,9 @@ func (s *Service) compareServerTargets() (needCreation []*hcloud.Server, needDel
 	hclient := hcloud.NewClient(hcloud.WithToken(hcloudToken))
 
 	var controlPlaneStatusIDs intSlice
+	if len(s.scope.HcloudCluster.Status.ControlPlaneLoadBalancers) == 0 {
+		return nil, nil, nil
+	}
 	controlPlaneStatusIDs = s.scope.HcloudCluster.Status.ControlPlaneLoadBalancers[0].Targets
 
 	var controlPlaneIDs intSlice
