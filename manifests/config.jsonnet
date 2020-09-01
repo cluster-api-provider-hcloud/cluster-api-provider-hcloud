@@ -3,8 +3,8 @@ local cilium = import 'cilium/cilium.libsonnet';
 local flannel = import 'flannel/flannel.libsonnet';
 local hcloudCloudControllerManager = import 'hcloud-cloud-controller-manager/hcloud-cloud-controller-manager.libsonnet';
 local hcloudCSI = import 'hcloud-csi/hcloud-csi.libsonnet';
-local hcloudMetalLBFloater = import 'hcloud-metallb-floater/hcloud-metallb-floater.libsonnet';
-local metalLB = import 'metallb/metallb.libsonnet';
+//local hcloudMetalLBFloater = import 'hcloud-metallb-floater/hcloud-metallb-floater.libsonnet';
+//local metalLB = import 'metallb/metallb.libsonnet';
 local metricsServer = import 'metrics-server/metrics-server.libsonnet';
 
 local defaultConfig = {
@@ -136,8 +136,8 @@ local new(c) = (
   hcloudCloudControllerManager +
   hcloudCSI +
   metricsServer +
-  hcloudMetalLBFloater +
-  metalLB +
+  //hcloudMetalLBFloater +
+  //metalLB +
   {
     _config+:: c,
   } +
