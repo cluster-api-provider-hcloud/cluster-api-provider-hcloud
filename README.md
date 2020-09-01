@@ -131,6 +131,9 @@ kubectl logs -f deployment/capi-hcloud-controller-manager -c manager --v=4 -n ca
 # Deleting the target cluster
 kubectl delete -f ./demo/demo-cluster.yaml
 
+# Deleting the controller
+make delete_capihc
+
 # Deleting the management cluster
 kind delete cluster --name capi-hcloud
 
