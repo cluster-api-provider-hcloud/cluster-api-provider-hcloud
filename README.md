@@ -108,7 +108,7 @@ See ./docs/src/developers or https://docs.capihc.com/developer/developer.html
 ./demo/setup.sh
 
 # Build project and deploy to local cluster
-bazel run //cmd/cluster-api-provider-hcloud:deploy
+make deploy_kind
 ```
 
 - Applying the target cluster with demo-cluster

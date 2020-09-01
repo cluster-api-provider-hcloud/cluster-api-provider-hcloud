@@ -404,6 +404,11 @@ func (s *Service) actualStatus(ctx context.Context) ([]infrav1.HcloudLoadBalance
 
 func (s *Service) addServerToLoadBalancer(ctx context.Context, server *hcloud.Server) error {
 
+	// If server has not been added to the network yet, then the load balancer cannot add it
+	if len(server.PrivateNet) == 0 {
+		return nil
+	}
+
 	myBool := true
 	loadBalancerAddServerTargetOpts := hcloud.LoadBalancerAddServerTargetOpts{Server: server, UsePrivateIP: &myBool}
 
