@@ -56,6 +56,7 @@ func (s *Service) genericLabels() map[string]string {
 
 func (s *Service) createLabels() map[string]string {
 	m := s.genericLabels()
+	m[infrav1.MachineNameTagKey] = s.scope.Name()
 	var machineType string
 	if s.scope.IsControlPlane() == true {
 		machineType = "control_plane"
@@ -309,8 +310,9 @@ func (s *Service) Reconcile(ctx context.Context) (_ *ctrl.Result, err error) {
 	var myTrue = true
 	var myFalse = false
 
+	name := s.scope.Name()
 	opts := hcloud.ServerCreateOpts{
-		Name:   s.scope.Name(),
+		Name:   name,
 		Labels: s.createLabels(),
 		Image: &hcloud.Image{
 			ID: int(*s.scope.HcloudMachine.Status.ImageID),
@@ -360,6 +362,7 @@ func (s *Service) Reconcile(ctx context.Context) (_ *ctrl.Result, err error) {
 	var actualServer *hcloud.Server
 
 	if len(actualServers) == 0 {
+		fmt.Printf("Found no actualServer, server name is %s", name)
 		if res, _, err := s.scope.HcloudClient().CreateServer(s.scope.Ctx, opts); err != nil {
 			return nil, errors.Wrap(err, "failed to create server")
 		} else {
@@ -524,7 +527,7 @@ func setStatusFromAPI(status *infrav1.HcloudMachineStatus, server *hcloud.Server
 // actualStatus gathers all matching server instances, matched by tag
 func (s *Service) actualStatus(ctx context.Context) ([]*hcloud.Server, error) {
 	opts := hcloud.ServerListOpts{}
-	opts.LabelSelector = utils.LabelsToLabelSelector(s.labels())
+	opts.LabelSelector = utils.LabelsToLabelSelector(s.createLabels())
 	servers, err := s.scope.HcloudClient().ListServers(s.scope.Ctx, opts)
 	if err != nil {
 		return nil, err
