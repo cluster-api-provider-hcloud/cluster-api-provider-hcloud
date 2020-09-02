@@ -265,6 +265,7 @@ func (s *Service) GetMainLoadBalancer(ctx context.Context) (*hcloud.LoadBalancer
 	labels := map[string]string{
 		"type": "main",
 	}
+	fmt.Println("Labels of load balancer: ", labels)
 	opts := hcloud.LoadBalancerListOpts{}
 	opts.LabelSelector = utils.LabelsToLabelSelector(labels)
 	loadBalancers, err := s.scope.HcloudClient().ListLoadBalancers(s.scope.Ctx, opts)
@@ -277,7 +278,8 @@ func (s *Service) GetMainLoadBalancer(ctx context.Context) (*hcloud.LoadBalancer
 	} else if len(loadBalancers) > 1 {
 		return nil, fmt.Errorf("Too many, i.e. %v, load balancers exist", len(loadBalancers))
 	} else {
-		return loadBalancers[0], nil
+		lb := loadBalancers[0]
+		return lb, nil
 	}
 }
 
@@ -289,10 +291,27 @@ func (s *Service) compareServerTargets(ctx context.Context) (needCreation []*hcl
 		return nil, nil, errors.Wrap(err, "failed to list all control planes")
 	}
 
-	var controlPlaneStatusIDs intSlice
 	if len(s.scope.HcloudCluster.Status.ControlPlaneLoadBalancers) == 0 {
 		return nil, nil, nil
 	}
+	fmt.Println("Try to get main loadbalancer")
+	lb, err := s.GetMainLoadBalancer(ctx)
+	if err != nil {
+		return nil, nil, errors.Wrap(err, "did not find main load balancer")
+	}
+	fmt.Println("Got it")
+
+	var controlPlaneStatusIDs intSlice
+	for _, lbStatus := range s.scope.HcloudCluster.Status.ControlPlaneLoadBalancers {
+		if lb.ID == lbStatus.ID {
+			controlPlaneStatusIDs = lbStatus.Targets
+		}
+	}
+	if controlPlaneStatusIDs == nil {
+		return nil, nil, errors.Wrap(err, "Could not find main load balancer in status - ControlPlaneLoadBalancers")
+	}
+	fmt.Println("These are the control plane status ids: ", controlPlaneStatusIDs)
+
 	controlPlaneStatusIDs = s.scope.HcloudCluster.Status.ControlPlaneLoadBalancers[0].Targets
 
 	var controlPlaneIDs intSlice
@@ -304,9 +323,12 @@ func (s *Service) compareServerTargets(ctx context.Context) (needCreation []*hcl
 		// Check whether control plane is in target set of load balancer
 		// If not than add it
 		if !controlPlaneStatusIDs.contains(cp.ID) {
+			fmt.Println("This ID gets added: ", cp.ID)
 			needCreation = append(needCreation, cp)
 		}
 	}
+
+	fmt.Println("These are the control plane IDs: ", controlPlaneIDs)
 
 	// Check whether all the targets of the load balancer still exist
 	for _, id := range controlPlaneStatusIDs {
