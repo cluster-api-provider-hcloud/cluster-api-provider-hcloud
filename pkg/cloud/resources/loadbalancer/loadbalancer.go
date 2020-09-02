@@ -115,7 +115,7 @@ func (s *Service) Reconcile(ctx context.Context) (err error) {
 		}
 	}
 	fmt.Println("Deletion targets")
-	for _, target := range needCreationTargets {
+	for _, target := range needDeletionTargets {
 		fmt.Println("target id: ", target.ID)
 		fmt.Println("target label: ", target.Labels)
 	}
