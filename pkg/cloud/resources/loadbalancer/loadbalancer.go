@@ -462,15 +462,10 @@ func (s *Service) addServerToLoadBalancer(ctx context.Context, server *hcloud.Se
 	myBool := true
 	loadBalancerAddServerTargetOpts := hcloud.LoadBalancerAddServerTargetOpts{Server: server, UsePrivateIP: &myBool}
 
-	loadBalancers, err := s.scope.HcloudClient().ListLoadBalancers(ctx, hcloud.LoadBalancerListOpts{})
+	lb, err := s.GetMainLoadBalancer(ctx)
 	if err != nil {
 		return err
 	}
-	// This only works if there is only one load balancer
-	if len(loadBalancers) == 0 {
-		return fmt.Errorf("There is no load balancer. Cannot add server %v", server.ID)
-	}
-	lb := loadBalancers[0]
 
 	// If load balancer has not been attached to a network, then it cannot add a server
 	if len(lb.PrivateNet) == 0 {

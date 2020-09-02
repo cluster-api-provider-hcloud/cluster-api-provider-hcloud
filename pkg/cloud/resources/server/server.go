@@ -492,6 +492,28 @@ func setStatusFromAPI(status *infrav1.HcloudMachineStatus, server *hcloud.Server
 	return nil
 }
 
+func (s *Service) GetMainLoadBalancer(ctx context.Context) (*hcloud.LoadBalancer, error) {
+	labels := map[string]string{
+		"type": "main",
+	}
+	fmt.Println("Labels of load balancer: ", labels)
+	opts := hcloud.LoadBalancerListOpts{}
+	opts.LabelSelector = utils.LabelsToLabelSelector(labels)
+	loadBalancers, err := s.scope.HcloudClient().ListLoadBalancers(s.scope.Ctx, opts)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to list load balancers")
+	}
+
+	if len(loadBalancers) == 0 {
+		return nil, fmt.Errorf("No main load balancer exists")
+	} else if len(loadBalancers) > 1 {
+		return nil, fmt.Errorf("Too many, i.e. %v, load balancers exist", len(loadBalancers))
+	} else {
+		lb := loadBalancers[0]
+		return lb, nil
+	}
+}
+
 func (s *Service) addServerToLoadBalancer(ctx context.Context, server *hcloud.Server) error {
 
 	// If server has not been added to the network yet, then the load balancer cannot add it
@@ -502,15 +524,10 @@ func (s *Service) addServerToLoadBalancer(ctx context.Context, server *hcloud.Se
 	myBool := true
 	loadBalancerAddServerTargetOpts := hcloud.LoadBalancerAddServerTargetOpts{Server: server, UsePrivateIP: &myBool}
 
-	loadBalancers, err := s.scope.HcloudClient().ListLoadBalancers(ctx, hcloud.LoadBalancerListOpts{})
+	lb, err := s.GetMainLoadBalancer(ctx)
 	if err != nil {
 		return err
 	}
-	// This only works if there is only one load balancer
-	if len(loadBalancers) == 0 {
-		return fmt.Errorf("There is no load balancer. Cannot add server %v", server.ID)
-	}
-	lb := loadBalancers[0]
 
 	// If load balancer has not been attached to a network, then it cannot add a server
 	if len(lb.PrivateNet) == 0 {
