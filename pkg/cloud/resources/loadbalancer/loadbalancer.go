@@ -274,6 +274,10 @@ func (s *Service) GetMainLoadBalancer(ctx context.Context) (*hcloud.LoadBalancer
 
 	if len(loadBalancers) == 0 {
 		return nil, fmt.Errorf("No main load balancer exists")
+	} else if len(loadBalancers) > 1 {
+		return nil, fmt.Errorf("Too many, i.e. %v, load balancers exist", len(loadBalancers))
+	} else {
+		return loadBalancers[0], nil
 	}
 }
 
