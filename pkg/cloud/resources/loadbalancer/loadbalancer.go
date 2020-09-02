@@ -12,7 +12,6 @@ import (
 	infrav1 "github.com/cluster-api-provider-hcloud/cluster-api-provider-hcloud/api/v1alpha3"
 	"github.com/cluster-api-provider-hcloud/cluster-api-provider-hcloud/pkg/cloud/scope"
 	"github.com/cluster-api-provider-hcloud/cluster-api-provider-hcloud/pkg/cloud/utils"
-	"github.com/cluster-api-provider-hcloud/cluster-api-provider-hcloud/pkg/record"
 )
 
 type Service struct {
@@ -293,21 +292,6 @@ func (s *Service) compare(actualStatus []infrav1.HcloudLoadBalancerStatus) (need
 	return needCreation, needDeletion
 }
 
-func (s *Service) listControlPlanes() ([]*hcloud.Server, error) {
-	labels := map[string]string{
-		infrav1.ClusterTagKey(s.scope.HcloudCluster.Name): string(infrav1.ResourceLifecycleOwned),
-		"machine_type": "control_plane",
-	}
-	opts := hcloud.ServerListOpts{}
-	opts.LabelSelector = utils.LabelsToLabelSelector(labels)
-	servers, err := s.scope.HcloudClient().ListServers(s.scope.Ctx, opts)
-	if err != nil {
-		return nil, err
-	}
-
-	return servers, nil
-}
-
 // actualStatus gathers all load balancers referenced by ID on object or a
 // appropriate tag and converts them into the status object
 func (s *Service) actualStatus(ctx context.Context) ([]infrav1.HcloudLoadBalancerStatus, error) {
@@ -361,59 +345,4 @@ func (s *Service) actualStatus(ctx context.Context) ([]infrav1.HcloudLoadBalance
 	}
 
 	return loadBalancers, nil
-}
-
-func (s *Service) addServerToLoadBalancer(ctx context.Context, server *hcloud.Server) error {
-
-	// If server has not been added to the network yet, then the load balancer cannot add it
-	if len(server.PrivateNet) == 0 {
-		return nil
-	}
-
-	myBool := true
-	loadBalancerAddServerTargetOpts := hcloud.LoadBalancerAddServerTargetOpts{Server: server, UsePrivateIP: &myBool}
-
-	lb, err := GetMainLoadBalancer(s.scope, ctx)
-	if err != nil {
-		return err
-	}
-
-	// If load balancer has not been attached to a network, then it cannot add a server
-	if len(lb.PrivateNet) == 0 {
-		return nil
-	}
-	_, _, err = s.scope.HcloudClient().AddTargetServerToLoadBalancer(ctx, loadBalancerAddServerTargetOpts, lb)
-	if err != nil {
-		s.scope.V(2).Info("Could not add server as target to load balancer", "Server", server.ID, "Load Balancer", lb.ID)
-		return err
-	} else {
-		record.Eventf(
-			s.scope.HcloudCluster,
-			"AddedAsTargetToLoadBalancer",
-			"Added new server with id %d to the loadbalancer %v",
-			server.ID, lb.ID)
-	}
-	return nil
-}
-
-func (s *Service) deleteServerOfLoadBalancer(ctx context.Context, server *hcloud.Server) error {
-
-	loadBalancers, err := s.scope.HcloudClient().ListLoadBalancers(ctx, hcloud.LoadBalancerListOpts{})
-	if err != nil {
-		return err
-	}
-	// This only works if there is only one load balancer
-	lb := loadBalancers[0]
-	_, _, err = s.scope.HcloudClient().DeleteTargetServerOfLoadBalancer(ctx, lb, server)
-	if err != nil {
-		s.scope.V(2).Info("Could not add server as target to load balancer", "Server", server.ID, "Load Balancer", lb.ID)
-		return err
-	} else {
-		record.Eventf(
-			s.scope.HcloudCluster,
-			"AddedAsTargetToLoadBalancer",
-			"Added new server with id %d to the loadbalancer %v",
-			server.ID, lb.ID)
-	}
-	return nil
 }

@@ -69,23 +69,6 @@ func (s *Service) createLabels() map[string]string {
 	return m
 }
 
-func (s *Service) labels() map[string]string {
-	m := s.genericLabels()
-	m[infrav1.MachineNameTagKey] = s.scope.Name()
-	return m
-}
-
-type intSlice []int
-
-func (s intSlice) contains(e int) bool {
-	for _, i := range s {
-		if i == e {
-			return true
-		}
-	}
-	return false
-}
-
 func (s *Service) Reconcile(ctx context.Context) (_ *ctrl.Result, err error) {
 	// detect failure domain
 	failureDomain, err := s.scope.GetFailureDomain()
@@ -437,17 +420,10 @@ func (s *Service) Delete(ctx context.Context) (_ *ctrl.Result, err error) {
 		actionWait = append(actionWait, server)
 	}
 
-	lb, err := loadbalancer.GetMainLoadBalancer(&s.scope.ClusterScope, ctx)
-	if err != nil {
-		return nil, err
-	}
 	// delete servers that need delete
 	for _, server := range actionDelete {
 		if server.Labels["machine_type"] == "control_plane" {
-			fmt.Printf("Delete server %v as target from load balancer", server.ID)
-			if _, _, err := s.scope.HcloudClient().DeleteTargetServerOfLoadBalancer(ctx, lb, server); err != nil {
-				return nil, errors.Wrap(err, "failed to delete target from server")
-			}
+			s.deleteServerOfLoadBalancer(ctx, server)
 		}
 
 		if _, err := s.scope.HcloudClient().DeleteServer(ctx, server); err != nil {
@@ -532,6 +508,26 @@ func (s *Service) addServerToLoadBalancer(ctx context.Context, server *hcloud.Se
 			s.scope.HcloudCluster,
 			"AddedAsTargetToLoadBalancer",
 			"Added new server with id %d to the loadbalancer %v",
+			server.ID, lb.ID)
+	}
+	return nil
+}
+
+func (s *Service) deleteServerOfLoadBalancer(ctx context.Context, server *hcloud.Server) error {
+
+	lb, err := loadbalancer.GetMainLoadBalancer(&s.scope.ClusterScope, ctx)
+	if err != nil {
+		return err
+	}
+	_, _, err = s.scope.HcloudClient().DeleteTargetServerOfLoadBalancer(ctx, lb, server)
+	if err != nil {
+		s.scope.V(2).Info("Could not delete server as target of load balancer", "Server", server.ID, "Load Balancer", lb.ID)
+		return err
+	} else {
+		record.Eventf(
+			s.scope.HcloudCluster,
+			"DeletedTargetOfLoadBalancer",
+			"Deleted new server with id %d of the loadbalancer %v",
 			server.ID, lb.ID)
 	}
 	return nil
