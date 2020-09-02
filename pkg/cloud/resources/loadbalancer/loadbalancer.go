@@ -302,17 +302,17 @@ func (s *Service) compareServerTargets(ctx context.Context) (needCreation []*hcl
 	fmt.Println("Got it")
 
 	var controlPlaneStatusIDs intSlice
-	i := 0
-	fmt.Println("i: ", i)
+
 	for _, lbStatus := range s.scope.HcloudCluster.Status.ControlPlaneLoadBalancers {
+		fmt.Println("ID of load balancer: ", lb.ID)
+		fmt.Println("ID of load balancer status: ", lbStatus.ID)
 		if lb.ID == lbStatus.ID {
 			controlPlaneStatusIDs = lbStatus.Targets
-			i++
 		}
 	}
-	fmt.Println("i: ", i)
+
 	if controlPlaneStatusIDs == nil {
-		return nil, nil, fmt.Errorf("Could not find main load balancer in status - ControlPlaneLoadBalancers %s", err)
+		return nil, nil, fmt.Errorf("Could not find main load balancer in status - ControlPlaneLoadBalancers %s", "error")
 	}
 	fmt.Println("These are the control plane status ids: ", controlPlaneStatusIDs)
 
