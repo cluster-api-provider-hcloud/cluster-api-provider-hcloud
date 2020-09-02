@@ -84,44 +84,6 @@ func (s intSlice) contains(e int) bool {
 	return false
 }
 
-func (s *Service) addServerToLoadBalancer(server *hcloud.Server) error {
-
-	if len(s.scope.HcloudCluster.Status.ControlPlaneLoadBalancers) == 0 {
-		s.scope.V(2).Info("No load balancer found for adding server as target", "Server", server.ID)
-		return nil
-	}
-
-	var targetIDs intSlice
-	targetIDs = s.scope.HcloudCluster.Status.ControlPlaneLoadBalancers[0].Targets
-
-	if targetIDs.contains(server.ID) {
-		return nil
-	}
-
-	myBool := true
-
-	loadBalancerAddServerTargetOpts := hcloud.LoadBalancerAddServerTargetOpts{Server: server, UsePrivateIP: &myBool}
-
-	loadBalancers, err := s.scope.HcloudClient().ListLoadBalancers(context.Background(), hcloud.LoadBalancerListOpts{})
-	if err != nil {
-		return err
-	}
-	// This only works if there is only one load balancer
-	lb := loadBalancers[0]
-	_, _, err = s.scope.HcloudClient().AddTargetServerToLoadBalancer(context.Background(), loadBalancerAddServerTargetOpts, lb)
-	if err != nil {
-		s.scope.V(2).Info("Could not add server as target to load balancer", "Server", server.ID, "Load Balancer", lb.ID)
-		return err
-	} else {
-		record.Eventf(
-			s.scope.HcloudCluster,
-			"AddedAsTargetToLoadBalancer",
-			"Added new server with id %d to the loadbalancer %v",
-			server.ID, lb.ID)
-	}
-	return nil
-}
-
 func (s *Service) Reconcile(ctx context.Context) (_ *ctrl.Result, err error) {
 	// detect failure domain
 	failureDomain, err := s.scope.GetFailureDomain()
@@ -399,13 +361,6 @@ func (s *Service) Reconcile(ctx context.Context) (_ *ctrl.Result, err error) {
 		s.scope.HcloudMachine.Status.Ready = true
 		return nil, nil
 	}
-	// TODO: Check if we need this here, or if it is redundant as the server cannot be added anyway
-	// add server as target to load balancer
-	/*
-		if err := s.addServerToLoadBalancer(actualServer); err != nil {
-			return nil, errors.New("error adding server as target to load balancer")
-		}
-	*/
 
 	// check if at least one of the adresses is ready
 	var errors []error
@@ -420,6 +375,15 @@ func (s *Service) Reconcile(ctx context.Context) (_ *ctrl.Result, err error) {
 		})
 		if err != nil {
 			return nil, err
+		}
+
+		// Need to have a private network if added to load balancer
+		if len(actualServer.PrivateNet) == 0 {
+			return &ctrl.Result{RequeueAfter: 2 * time.Second}, nil
+		}
+
+		if err := s.addServerToLoadBalancer(ctx, actualServer); err != nil {
+			errors = append(errors, err)
 		}
 
 		if err := scope.IsControlPlaneReady(ctx, clientConfig); err != nil {
@@ -525,6 +489,44 @@ func setStatusFromAPI(status *infrav1.HcloudMachineStatus, server *hcloud.Server
 
 	}
 
+	return nil
+}
+
+func (s *Service) addServerToLoadBalancer(ctx context.Context, server *hcloud.Server) error {
+
+	// If server has not been added to the network yet, then the load balancer cannot add it
+	if len(server.PrivateNet) == 0 {
+		return nil
+	}
+
+	myBool := true
+	loadBalancerAddServerTargetOpts := hcloud.LoadBalancerAddServerTargetOpts{Server: server, UsePrivateIP: &myBool}
+
+	loadBalancers, err := s.scope.HcloudClient().ListLoadBalancers(ctx, hcloud.LoadBalancerListOpts{})
+	if err != nil {
+		return err
+	}
+	// This only works if there is only one load balancer
+	if len(loadBalancers) == 0 {
+		return fmt.Errorf("There is no load balancer. Cannot add server %v", server.ID)
+	}
+	lb := loadBalancers[0]
+
+	// If load balancer has not been attached to a network, then it cannot add a server
+	if len(lb.PrivateNet) == 0 {
+		return nil
+	}
+	_, _, err = s.scope.HcloudClient().AddTargetServerToLoadBalancer(ctx, loadBalancerAddServerTargetOpts, lb)
+	if err != nil {
+		s.scope.V(2).Info("Could not add server as target to load balancer", "Server", server.ID, "Load Balancer", lb.ID)
+		return err
+	} else {
+		record.Eventf(
+			s.scope.HcloudCluster,
+			"AddedAsTargetToLoadBalancer",
+			"Added new server with id %d to the loadbalancer %v",
+			server.ID, lb.ID)
+	}
 	return nil
 }
 
