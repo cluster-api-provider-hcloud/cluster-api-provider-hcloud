@@ -261,6 +261,7 @@ func (s *Service) Delete(ctx context.Context) (err error) {
 	return nil
 }
 
+// GetMainLoadBalancer returns the main load balancer if one exists
 func (s *Service) GetMainLoadBalancer(ctx context.Context) (*hcloud.LoadBalancer, error) {
 	labels := map[string]string{
 		"type": "main",
@@ -274,6 +275,10 @@ func (s *Service) GetMainLoadBalancer(ctx context.Context) (*hcloud.LoadBalancer
 
 	if len(loadBalancers) == 0 {
 		return nil, fmt.Errorf("No main load balancer exists")
+	} else if len(loadBalancers) > 0 {
+		return nil, fmt.Errorf("Too many, i.e. %v, load balancers exist", len(loadBalancers))
+	} else {
+		return loadBalancers[0], nil
 	}
 }
 
