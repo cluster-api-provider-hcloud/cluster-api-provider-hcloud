@@ -17,6 +17,8 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
+	loadbalancer "github.com/cluster-api-provider-hcloud/cluster-api-provider-hcloud/pkg/cloud/resources/loadbalancer"
+
 	kubeletv1beta1 "github.com/cluster-api-provider-hcloud/cluster-api-provider-hcloud/api/kubelet/v1beta1"
 	infrav1 "github.com/cluster-api-provider-hcloud/cluster-api-provider-hcloud/api/v1alpha3"
 	"github.com/cluster-api-provider-hcloud/cluster-api-provider-hcloud/pkg/cloud/resources/server/userdata"
@@ -435,7 +437,7 @@ func (s *Service) Delete(ctx context.Context) (_ *ctrl.Result, err error) {
 		actionWait = append(actionWait, server)
 	}
 
-	lb, err := s.getMainLoadBalancer(ctx)
+	lb, err := loadbalancer.GetMainLoadBalancer(&s.scope.ClusterScope, ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -502,27 +504,6 @@ func setStatusFromAPI(status *infrav1.HcloudMachineStatus, server *hcloud.Server
 	return nil
 }
 
-func (s *Service) getMainLoadBalancer(ctx context.Context) (*hcloud.LoadBalancer, error) {
-	labels := map[string]string{
-		"type": "main",
-	}
-	opts := hcloud.LoadBalancerListOpts{}
-	opts.LabelSelector = utils.LabelsToLabelSelector(labels)
-	loadBalancers, err := s.scope.HcloudClient().ListLoadBalancers(s.scope.Ctx, opts)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to list load balancers")
-	}
-
-	if len(loadBalancers) == 0 {
-		return nil, fmt.Errorf("No main load balancer exists")
-	} else if len(loadBalancers) > 1 {
-		return nil, fmt.Errorf("Too many, i.e. %v, load balancers exist", len(loadBalancers))
-	} else {
-		lb := loadBalancers[0]
-		return lb, nil
-	}
-}
-
 func (s *Service) addServerToLoadBalancer(ctx context.Context, server *hcloud.Server) error {
 
 	// If server has not been added to the network yet, then the load balancer cannot add it
@@ -533,7 +514,7 @@ func (s *Service) addServerToLoadBalancer(ctx context.Context, server *hcloud.Se
 	myBool := true
 	loadBalancerAddServerTargetOpts := hcloud.LoadBalancerAddServerTargetOpts{Server: server, UsePrivateIP: &myBool}
 
-	lb, err := s.getMainLoadBalancer(ctx)
+	lb, err := loadbalancer.GetMainLoadBalancer(&s.scope.ClusterScope, ctx)
 	if err != nil {
 		return err
 	}

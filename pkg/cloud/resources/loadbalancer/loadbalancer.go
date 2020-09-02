@@ -239,14 +239,14 @@ func (s *Service) Delete(ctx context.Context) (err error) {
 	return nil
 }
 
-func (s *Service) getMainLoadBalancer(ctx context.Context) (*hcloud.LoadBalancer, error) {
+func GetMainLoadBalancer(s *scope.ClusterScope, ctx context.Context) (*hcloud.LoadBalancer, error) {
 	labels := map[string]string{
 		"type": "main",
 	}
 	fmt.Println("Labels of load balancer: ", labels)
 	opts := hcloud.LoadBalancerListOpts{}
 	opts.LabelSelector = utils.LabelsToLabelSelector(labels)
-	loadBalancers, err := s.scope.HcloudClient().ListLoadBalancers(s.scope.Ctx, opts)
+	loadBalancers, err := s.HcloudClient().ListLoadBalancers(s.Ctx, opts)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to list load balancers")
 	}
@@ -373,7 +373,7 @@ func (s *Service) addServerToLoadBalancer(ctx context.Context, server *hcloud.Se
 	myBool := true
 	loadBalancerAddServerTargetOpts := hcloud.LoadBalancerAddServerTargetOpts{Server: server, UsePrivateIP: &myBool}
 
-	lb, err := s.getMainLoadBalancer(ctx)
+	lb, err := GetMainLoadBalancer(s.scope, ctx)
 	if err != nil {
 		return err
 	}
