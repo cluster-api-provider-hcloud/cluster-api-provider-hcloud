@@ -87,6 +87,10 @@ func (s *Service) Reconcile(ctx context.Context) (err error) {
 	// Compares spec and actual status to find out if load balancers need to be created/deleted
 	needCreation, needDeletion := s.compare(loadBalancerStatus)
 
+	if len(needCreation) == 0 && len(needDeletion) == 0 {
+		return nil
+	}
+
 	for _, spec := range needCreation {
 		if _, err := s.createLoadBalancer(ctx, spec); err != nil {
 			return errors.Wrap(err, "failed to create load balancer")
@@ -96,32 +100,6 @@ func (s *Service) Reconcile(ctx context.Context) (err error) {
 	for _, status := range needDeletion {
 		if err := s.deleteLoadBalancer(ctx, status); err != nil {
 			return errors.Wrap(err, "failed to delete load balancer")
-		}
-	}
-
-	// update targets of the first, i.e. the main, load balancer
-	needCreationTargets, needDeletionTargets, err := s.compareServerTargets(ctx)
-	if err != nil {
-		return errors.Wrap(err, "failed to update server targets")
-	}
-	fmt.Println("Creation targets")
-	for _, target := range needCreationTargets {
-		fmt.Println("target id: ", target.ID)
-		fmt.Println("target label: ", target.Labels)
-	}
-	for _, server := range needCreationTargets {
-		if err := s.addServerToLoadBalancer(ctx, server); err != nil {
-			return errors.Wrap(err, "failed to add servers to load balancer")
-		}
-	}
-	fmt.Println("Deletion targets")
-	for _, target := range needDeletionTargets {
-		fmt.Println("target id: ", target.ID)
-		fmt.Println("target label: ", target.Labels)
-	}
-	for _, server := range needDeletionTargets {
-		if err := s.deleteServerOfLoadBalancer(ctx, server); err != nil {
-			return errors.Wrap(err, "failed to delete servers of load balancer")
 		}
 	}
 
@@ -261,7 +239,7 @@ func (s *Service) Delete(ctx context.Context) (err error) {
 	return nil
 }
 
-func (s *Service) GetMainLoadBalancer(ctx context.Context) (*hcloud.LoadBalancer, error) {
+func (s *Service) getMainLoadBalancer(ctx context.Context) (*hcloud.LoadBalancer, error) {
 	labels := map[string]string{
 		"type": "main",
 	}
@@ -281,63 +259,6 @@ func (s *Service) GetMainLoadBalancer(ctx context.Context) (*hcloud.LoadBalancer
 		lb := loadBalancers[0]
 		return lb, nil
 	}
-}
-
-// compareServerTargets checks for the main load balancer whether all the control planes are targets, or whether
-// there are targets which are not control planes anymore and have to be deleted
-func (s *Service) compareServerTargets(ctx context.Context) (needCreation []*hcloud.Server, needDeletion []*hcloud.Server, err error) {
-	controlPlanes, err := s.listControlPlanes()
-	if err != nil {
-		return nil, nil, errors.Wrap(err, "failed to list all control planes")
-	}
-
-	if len(s.scope.HcloudCluster.Status.ControlPlaneLoadBalancers) == 0 {
-		return nil, nil, nil
-	}
-
-	lb, err := s.GetMainLoadBalancer(ctx)
-	if err != nil {
-		return nil, nil, errors.Wrap(err, "did not find main load balancer")
-	}
-
-	var controlPlaneStatusIDs intSlice
-
-	i := 0
-	for _, lbStatus := range s.scope.HcloudCluster.Status.ControlPlaneLoadBalancers {
-		if lb.ID == lbStatus.ID {
-			i++
-			controlPlaneStatusIDs = lbStatus.Targets
-		}
-	}
-
-	if i == 0 {
-		return nil, nil, fmt.Errorf("Could not find main load balancer in status - ControlPlaneLoadBalancers %s", "error")
-	}
-
-	var controlPlaneIDs intSlice
-
-	for _, cp := range controlPlanes {
-
-		controlPlaneIDs = append(controlPlaneIDs, cp.ID)
-
-		// Check whether control plane is in target set of load balancer
-		// If not than add it
-		if !controlPlaneStatusIDs.contains(cp.ID) {
-			needCreation = append(needCreation, cp)
-		}
-	}
-
-	// Check whether all the targets of the load balancer still exist
-	for _, id := range controlPlaneStatusIDs {
-		if !controlPlaneIDs.contains(id) {
-			server, _, err := s.scope.HcloudClient().GetServerByID(ctx, id)
-			if err != nil {
-				return nil, nil, errors.Wrap(err, "failed to get server")
-			}
-			needDeletion = append(needDeletion, server)
-		}
-	}
-	return needCreation, needDeletion, nil
 }
 
 func (s *Service) compare(actualStatus []infrav1.HcloudLoadBalancerStatus) (needCreation []infrav1.HcloudLoadBalancerSpec, needDeletion []infrav1.HcloudLoadBalancerStatus) {
@@ -452,7 +373,7 @@ func (s *Service) addServerToLoadBalancer(ctx context.Context, server *hcloud.Se
 	myBool := true
 	loadBalancerAddServerTargetOpts := hcloud.LoadBalancerAddServerTargetOpts{Server: server, UsePrivateIP: &myBool}
 
-	lb, err := s.GetMainLoadBalancer(ctx)
+	lb, err := s.getMainLoadBalancer(ctx)
 	if err != nil {
 		return err
 	}

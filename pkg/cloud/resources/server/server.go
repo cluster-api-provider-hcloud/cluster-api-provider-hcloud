@@ -234,7 +234,6 @@ func (s *Service) Reconcile(ctx context.Context) (_ *ctrl.Result, err error) {
 						)
 					}
 				}
-				fmt.Println(c.APIServer.CertSANs)
 			} else {
 				record.Warnf(
 					s.scope.HcloudMachine,
@@ -326,7 +325,7 @@ func (s *Service) Reconcile(ctx context.Context) (_ *ctrl.Result, err error) {
 	var actualServer *hcloud.Server
 
 	if len(actualServers) == 0 {
-		fmt.Printf("Found no actualServer, server name is %s", name)
+
 		if res, _, err := s.scope.HcloudClient().CreateServer(s.scope.Ctx, opts); err != nil {
 			return nil, errors.Wrap(err, "failed to create server")
 		} else {
@@ -436,8 +435,19 @@ func (s *Service) Delete(ctx context.Context) (_ *ctrl.Result, err error) {
 		actionWait = append(actionWait, server)
 	}
 
+	lb, err := s.getMainLoadBalancer(ctx)
+	if err != nil {
+		return nil, err
+	}
 	// delete servers that need delete
 	for _, server := range actionDelete {
+		if server.Labels["machine_type"] == "control_plane" {
+			fmt.Printf("Delete server %v as target from load balancer", server.ID)
+			if _, _, err := s.scope.HcloudClient().DeleteTargetServerOfLoadBalancer(ctx, lb, server); err != nil {
+				return nil, errors.Wrap(err, "failed to delete target from server")
+			}
+		}
+
 		if _, err := s.scope.HcloudClient().DeleteServer(ctx, server); err != nil {
 			return nil, errors.Wrap(err, "failed to delete server")
 		}
@@ -492,11 +502,10 @@ func setStatusFromAPI(status *infrav1.HcloudMachineStatus, server *hcloud.Server
 	return nil
 }
 
-func (s *Service) GetMainLoadBalancer(ctx context.Context) (*hcloud.LoadBalancer, error) {
+func (s *Service) getMainLoadBalancer(ctx context.Context) (*hcloud.LoadBalancer, error) {
 	labels := map[string]string{
 		"type": "main",
 	}
-	fmt.Println("Labels of load balancer: ", labels)
 	opts := hcloud.LoadBalancerListOpts{}
 	opts.LabelSelector = utils.LabelsToLabelSelector(labels)
 	loadBalancers, err := s.scope.HcloudClient().ListLoadBalancers(s.scope.Ctx, opts)
@@ -524,7 +533,7 @@ func (s *Service) addServerToLoadBalancer(ctx context.Context, server *hcloud.Se
 	myBool := true
 	loadBalancerAddServerTargetOpts := hcloud.LoadBalancerAddServerTargetOpts{Server: server, UsePrivateIP: &myBool}
 
-	lb, err := s.GetMainLoadBalancer(ctx)
+	lb, err := s.getMainLoadBalancer(ctx)
 	if err != nil {
 		return err
 	}
