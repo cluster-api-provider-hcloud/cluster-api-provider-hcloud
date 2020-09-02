@@ -208,17 +208,32 @@ func (s *Service) createLoadBalancer(ctx context.Context, spec infrav1.HcloudLoa
 	return status, nil
 }
 
-func (s *Service) deleteLoadBalancer(ctx context.Context, lb *hcloud.LoadBalancer) error {
+func (s *Service) deleteLoadBalancer(ctx context.Context, status infrav1.HcloudLoadBalancerStatus) error {
 
 	// ensure deleted load balancer is actually owned by us
 	clusterTagKey := infrav1.ClusterTagKey(s.scope.HcloudCluster.Name)
+
+	loadBalancers, err := s.scope.HcloudClient().ListLoadBalancers(ctx, hcloud.LoadBalancerListOpts{})
+	if err != nil {
+		return errors.Wrap(err, "Failed to list load balancers")
+	}
+
+	var lb *hcloud.LoadBalancer
+	for _, loadBalancer := range loadBalancers {
+		if loadBalancer.ID == status.ID {
+			lb = loadBalancer
+		}
+	}
+	if lb == nil {
+		return fmt.Errorf("No load balancer found with ID %v", status.ID)
+	}
 
 	if lb.Labels == nil || infrav1.ResourceLifecycle(lb.Labels[clusterTagKey]) != infrav1.ResourceLifecycleOwned {
 		s.scope.V(3).Info("Ignore request to delete load balancer, as it is not owned", "id", lb.ID, "name", lb.Name)
 		return nil
 	}
 
-	_, err := s.scope.HcloudClient().DeleteLoadBalancer(ctx, lb)
+	_, err = s.scope.HcloudClient().DeleteLoadBalancer(ctx, lb)
 
 	s.scope.V(2).Info("Delete load balancer", "id", lb.ID, "name", lb.Name)
 
@@ -233,21 +248,9 @@ func (s *Service) Delete(ctx context.Context) (err error) {
 		return errors.Wrap(err, "failed to refresh load balancer")
 	}
 
-	loadBalancers, err := s.scope.HcloudClient().ListLoadBalancers(ctx, hcloud.LoadBalancerListOpts{})
-
-	counter := 0
 	for _, lbStatus := range loadBalancerStatus {
-		counter = 0
-		for _, lb := range loadBalancers {
-			if lb.ID == lbStatus.ID {
-				counter++
-				if err := s.deleteLoadBalancer(ctx, lb); err != nil {
-					return errors.Wrap(err, "failed to delete load balancer")
-				}
-			}
-		}
-		if counter == 0 {
-			return fmt.Errorf("No load balancer with id %v found in status", lbStatus.ID)
+		if err := s.deleteLoadBalancer(ctx, lbStatus); err != nil {
+			return errors.Wrap(err, "failed to delete load balancer")
 		}
 	}
 
@@ -258,7 +261,7 @@ func GetMainLoadBalancer(s *scope.ClusterScope, ctx context.Context) (*hcloud.Lo
 	labels := map[string]string{
 		"type": "main",
 	}
-	fmt.Println("Labels of load balancer: ", labels)
+
 	opts := hcloud.LoadBalancerListOpts{}
 	opts.LabelSelector = utils.LabelsToLabelSelector(labels)
 	loadBalancers, err := s.HcloudClient().ListLoadBalancers(s.Ctx, opts)
@@ -298,6 +301,7 @@ func (s *Service) compare(actualStatus []infrav1.HcloudLoadBalancerStatus) (need
 		needCreation = append(needCreation, spec)
 	}
 
+	// load balancers to delete
 	for pos, status := range s.scope.HcloudCluster.Status.ControlPlaneLoadBalancers {
 		if _, ok := matchedStatusToSpecMap[pos]; ok {
 			continue
@@ -327,21 +331,21 @@ func (s *Service) actualStatus(ctx context.Context) ([]infrav1.HcloudLoadBalance
 
 	// refresh existing load balancers
 	clusterTagKey := infrav1.ClusterTagKey(s.scope.HcloudCluster.Name)
-	lbStatuses, err := s.scope.HcloudClient().ListLoadBalancers(ctx, hcloud.LoadBalancerListOpts{})
+	loadBalancers, err := s.scope.HcloudClient().ListLoadBalancers(ctx, hcloud.LoadBalancerListOpts{})
 	if err != nil {
 		return nil, fmt.Errorf("error listing load balancers: %w", err)
 	}
-	for _, lbStatus := range lbStatuses {
-		_, ok := lbStatus.Labels[clusterTagKey]
-		if !ok && !ids.contains(lbStatus.ID) {
+	for _, lb := range loadBalancers {
+		_, ok := lb.Labels[clusterTagKey]
+		if !ok && !ids.contains(lb.ID) {
 			continue
 		}
 
-		apiStatus, err := apiToStatus(lbStatus)
+		lbStatus, err := apiToStatus(lb)
 		if err != nil {
 			return nil, fmt.Errorf("error converting LoadBalancer API to status: %w", err)
 		}
-		lbStatusByID[apiStatus.ID] = apiStatus
+		lbStatusByID[lbStatus.ID] = lbStatus
 	}
 
 	ids = []int{}
@@ -350,15 +354,15 @@ func (s *Service) actualStatus(ctx context.Context) ([]infrav1.HcloudLoadBalance
 	}
 	sort.Ints(ids)
 
-	var loadBalancers []infrav1.HcloudLoadBalancerStatus
+	var lbStatuses []infrav1.HcloudLoadBalancerStatus
 
 	for _, id := range ids {
 		status := lbStatusByID[id]
-		loadBalancers = append(
-			loadBalancers,
+		lbStatuses = append(
+			lbStatuses,
 			*status,
 		)
 	}
 
-	return loadBalancers, nil
+	return lbStatuses, nil
 }
