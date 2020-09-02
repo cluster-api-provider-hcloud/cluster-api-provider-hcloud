@@ -1,8 +1,6 @@
 package manifests
 
 import (
-	"fmt"
-
 	"github.com/go-logr/logr"
 )
 
@@ -21,7 +19,7 @@ func New(log logr.Logger, manifestConfigPath string) *Manifests {
 }
 
 func (m *Manifests) Initialize() error {
-	fmt.Println("Started initializing manifests")
+
 	if m.manifestConfigPath == "" {
 		return nil
 	}

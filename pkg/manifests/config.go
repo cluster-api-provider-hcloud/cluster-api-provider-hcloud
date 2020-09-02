@@ -38,7 +38,7 @@ func sampleParameters() *parameters.ManifestParameters {
 }
 
 func (m *Manifests) initializeConfig() (err error) {
-	fmt.Println("Started initializing the config manifests")
+
 	if err := evaluateJsonnet(ioutil.Discard, m.manifestConfigPath, sampleParameters().ExtVar()); err != nil {
 		return err
 	}
@@ -105,12 +105,12 @@ func evaluateJsonnet(out io.Writer, path string, extVars map[string]string) erro
 	if err != nil {
 		return err
 	}
-	fmt.Println("Evaluated snippet in jsonnet")
+
 	var object interface{}
 	if err := json.Unmarshal([]byte(output), &object); err != nil {
 		return err
 	}
-	fmt.Println("Unmarshaled json in jsonnet")
+
 	enc := yaml.NewEncoder(out)
 	if err := dumpYAML(enc, object); err != nil {
 		return err

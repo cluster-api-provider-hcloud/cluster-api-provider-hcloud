@@ -157,7 +157,7 @@ func (m *Packer) EnsureImage(ctx context.Context, log logr.Logger, hc api.Hcloud
 		var id = infrav1.HcloudImageID(image.ID)
 		return &id, nil
 	}
-	fmt.Println("Ensure Image in Packer.go has been started")
+
 	// schedule build of hcloud image
 	b := &build{Cmd: m.packerCmd(context.Background(), "build", m.packerConfigPath)}
 	b.Env = append(

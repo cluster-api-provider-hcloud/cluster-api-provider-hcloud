@@ -294,32 +294,25 @@ func (s *Service) compareServerTargets(ctx context.Context) (needCreation []*hcl
 	if len(s.scope.HcloudCluster.Status.ControlPlaneLoadBalancers) == 0 {
 		return nil, nil, nil
 	}
-	fmt.Println("Try to get main loadbalancer")
+
 	lb, err := s.GetMainLoadBalancer(ctx)
 	if err != nil {
 		return nil, nil, errors.Wrap(err, "did not find main load balancer")
 	}
-	fmt.Println("Got it")
 
 	var controlPlaneStatusIDs intSlice
 
 	i := 0
 	for _, lbStatus := range s.scope.HcloudCluster.Status.ControlPlaneLoadBalancers {
-		fmt.Println("ID of load balancer: ", lb.ID)
-		fmt.Println("ID of load balancer status: ", lbStatus.ID)
 		if lb.ID == lbStatus.ID {
 			i++
-			fmt.Println("Targets: ", lbStatus.Targets)
 			controlPlaneStatusIDs = lbStatus.Targets
-			fmt.Println("controlPlaneStatusIDs: ", controlPlaneStatusIDs)
 		}
 	}
 
 	if i == 0 {
 		return nil, nil, fmt.Errorf("Could not find main load balancer in status - ControlPlaneLoadBalancers %s", "error")
 	}
-
-	fmt.Println("These are the control plane status ids: ", controlPlaneStatusIDs)
 
 	var controlPlaneIDs intSlice
 
@@ -330,12 +323,9 @@ func (s *Service) compareServerTargets(ctx context.Context) (needCreation []*hcl
 		// Check whether control plane is in target set of load balancer
 		// If not than add it
 		if !controlPlaneStatusIDs.contains(cp.ID) {
-			fmt.Println("This ID gets added: ", cp.ID)
 			needCreation = append(needCreation, cp)
 		}
 	}
-
-	fmt.Println("These are the control plane IDs: ", controlPlaneIDs)
 
 	// Check whether all the targets of the load balancer still exist
 	for _, id := range controlPlaneStatusIDs {
