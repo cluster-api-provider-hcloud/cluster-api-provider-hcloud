@@ -64,6 +64,7 @@ The cluster need some time until it is ready:
 | Full cluster | ~20-25min
 | For the packer | ~10-15min
 | Snapshot | ~2-3min 
+| First control-plane, worker-nodes are created | after ~4min
 | Cluster creation without packer and snapshot 3 control planes, 3 worker | ~10min
 | Worker upscale | ~1-2min
 | Worker downscale |  ~20s

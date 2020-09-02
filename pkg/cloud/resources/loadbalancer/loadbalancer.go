@@ -308,7 +308,7 @@ func (s *Service) compareServerTargets(ctx context.Context) (needCreation []*hcl
 		}
 	}
 	if controlPlaneStatusIDs == nil {
-		return nil, nil, errors.Wrap(err, "Could not find main load balancer in status - ControlPlaneLoadBalancers")
+		return nil, nil, fmt.Errorf("Could not find main load balancer in status - ControlPlaneLoadBalancers %s", err)
 	}
 	fmt.Println("These are the control plane status ids: ", controlPlaneStatusIDs)
 
