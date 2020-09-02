@@ -164,7 +164,7 @@ func (r *HcloudClusterReconciler) reconcileDelete(clusterScope *scope.ClusterSco
 		return reconcile.Result{RequeueAfter: 10 * time.Second}, nil
 	}
 
-	// delete controlplane load balancers
+	// delete load balancers
 	if err := loadbalancer.NewService(clusterScope).Delete(ctx); err != nil {
 		return reconcile.Result{}, errors.Wrapf(err, "failed to delete load balancers for HcloudCluster %s/%s", hcloudCluster.Namespace, hcloudCluster.Name)
 	}
@@ -198,12 +198,12 @@ func (r *HcloudClusterReconciler) reconcileNormal(clusterScope *scope.ClusterSco
 		return reconcile.Result{}, errors.Wrapf(err, "failed to reconcile network for HcloudCluster %s/%s", hcloudCluster.Namespace, hcloudCluster.Name)
 	}
 
-	// reconcile the Controlplane load balancers
+	// reconcile the load balancers
 	if err := loadbalancer.NewService(clusterScope).Reconcile(ctx); err != nil {
 		return reconcile.Result{}, errors.Wrapf(err, "failed to reconcile load balancers for HcloudCluster %s/%s", hcloudCluster.Namespace, hcloudCluster.Name)
 	}
 
-	// add the first control plane load balancer to the status
+	// add the IPv4 of the first (the main) load balancer as host of API endpoint as control plane endpoint
 	if len(hcloudCluster.Status.ControlPlaneLoadBalancers) > 0 {
 		hcloudCluster.Spec.ControlPlaneEndpoint = clusterv1.APIEndpoint{
 			Host: hcloudCluster.Status.ControlPlaneLoadBalancers[0].IPv4,

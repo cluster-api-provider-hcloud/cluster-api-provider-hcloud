@@ -103,12 +103,11 @@ type HcloudLoadBalancerSpec struct {
 	Type      string                          `json:"type,omitempty"`
 }
 type HcloudLoadBalancerStatus struct {
-	ID   int    `json:"id,omitempty"`
-	Name string `json:"name,omitempty"`
-	Type string `json:"type,omitempty"`
-	IPv4 string `json:"ipv4,omitempty"`
-	IPv6 string `json:"ipv6,omitempty"`
-	//Network   string                          `json:"network,omitempty"`
+	ID        int                             `json:"id,omitempty"`
+	Name      string                          `json:"name,omitempty"`
+	Type      string                          `json:"type,omitempty"`
+	IPv4      string                          `json:"ipv4,omitempty"`
+	IPv6      string                          `json:"ipv6,omitempty"`
 	Labels    map[string]string               `json:"-"`
 	Algorithm HcloudLoadBalancerAlgorithmType `json:"algorithm,omitempty"`
 	Targets   []int                           `json:"-"`

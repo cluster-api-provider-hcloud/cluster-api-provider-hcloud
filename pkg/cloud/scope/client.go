@@ -19,6 +19,7 @@ type HcloudClient interface {
 	ListImages(context.Context, hcloud.ImageListOpts) ([]*hcloud.Image, error)
 	CreateServer(context.Context, hcloud.ServerCreateOpts) (hcloud.ServerCreateResult, *hcloud.Response, error)
 	ListServers(context.Context, hcloud.ServerListOpts) ([]*hcloud.Server, error)
+	GetServerByID(context.Context, int) (*hcloud.Server, *hcloud.Response, error)
 	DeleteServer(context.Context, *hcloud.Server) (*hcloud.Response, error)
 	ShutdownServer(context.Context, *hcloud.Server) (*hcloud.Action, *hcloud.Response, error)
 	CreateVolume(context.Context, hcloud.VolumeCreateOpts) (hcloud.VolumeCreateResult, *hcloud.Response, error)
@@ -81,6 +82,10 @@ func (c *realClient) CreateServer(ctx context.Context, opts hcloud.ServerCreateO
 
 func (c *realClient) ListServers(ctx context.Context, opts hcloud.ServerListOpts) ([]*hcloud.Server, error) {
 	return c.client.Server.AllWithOpts(ctx, opts)
+}
+
+func (c *realClient) GetServerByID(ctx context.Context, id int) (*hcloud.Server, *hcloud.Response, error) {
+	return c.client.Server.GetByID(ctx, id)
 }
 
 func (c *realClient) ShutdownServer(ctx context.Context, server *hcloud.Server) (*hcloud.Action, *hcloud.Response, error) {

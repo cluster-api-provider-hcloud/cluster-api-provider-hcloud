@@ -38,17 +38,12 @@ func (s intSlice) contains(e int) bool {
 	return false
 }
 
+// gets the information of the Hetzner load balancer object and returns it in our status object
 func apiToStatus(lb *hcloud.LoadBalancer) (*infrav1.HcloudLoadBalancerStatus, error) {
+
 	ipv4 := lb.PublicNet.IPv4.IP.String()
 	ipv6 := lb.PublicNet.IPv6.IP.String()
 
-	/*
-		var network string
-		if len(lb.PrivateNet) > 0 {
-			fmt.Printf(lb.PrivateNet[0].Network.IPRange.IP.String())
-			network = fmt.Sprintf("%s/%s", lb.PrivateNet[0].Network.IPRange.IP.String(), string(lb.PrivateNet[0].Network.IPRange.Mask))
-		}
-	*/
 	var algType infrav1.HcloudLoadBalancerAlgorithmType
 
 	if lb.Algorithm.Type == hcloud.LoadBalancerAlgorithmTypeRoundRobin {
@@ -73,8 +68,7 @@ func apiToStatus(lb *hcloud.LoadBalancer) (*infrav1.HcloudLoadBalancerStatus, er
 		IPv6:      ipv6,
 		Labels:    lb.Labels,
 		Algorithm: algType,
-		//Network:   network,
-		Targets: targetIDs,
+		Targets:   targetIDs,
 	}
 	return status, nil
 }
@@ -89,6 +83,8 @@ func (s *Service) Reconcile(ctx context.Context) (err error) {
 	s.scope.HcloudCluster.Status.ControlPlaneLoadBalancers = loadBalancerStatus
 
 	s.scope.V(3).Info("Reconcile load balancers")
+
+	// Compares spec and actual status to find out if load balancers need to be created/deleted
 	needCreation, needDeletion := s.compare(loadBalancerStatus)
 
 	for _, spec := range needCreation {
@@ -103,22 +99,19 @@ func (s *Service) Reconcile(ctx context.Context) (err error) {
 		}
 	}
 
-	// update targets of load balancer
-	needCreationTargets, needDeletionTargets, err := s.compareServerTargets()
+	// update targets of the first, i.e. the main, load balancer
+	needCreationTargets, needDeletionTargets, err := s.compareServerTargets(ctx)
 	if err != nil {
 		return errors.Wrap(err, "failed to update server targets")
 	}
 
-	if len(needCreationTargets) == 0 && len(needDeletionTargets) == 0 {
-		return nil
-	}
-
+	fmt.Println("needCreationTargets: ", needCreationTargets)
 	for _, server := range needCreationTargets {
 		if err := s.addServerToLoadBalancer(ctx, server); err != nil {
 			return errors.Wrap(err, "failed to add servers to load balancer")
 		}
 	}
-
+	fmt.Println("needDeletionTargets: ", needDeletionTargets)
 	for _, server := range needDeletionTargets {
 		if err := s.deleteServerOfLoadBalancer(ctx, server); err != nil {
 			return errors.Wrap(err, "failed to delete servers of load balancer")
@@ -154,9 +147,8 @@ func (s *Service) createLoadBalancer(ctx context.Context, spec infrav1.HcloudLoa
 	hc := s.scope.HcloudCluster
 
 	name := names.SimpleNameGenerator.GenerateName(hc.Name + "-loadbalancer-")
-	clusterTagKey := infrav1.ClusterTagKey(hc.Name)
-	// defaults to the smalles load balancer, 25 targets should be enough for the control-planes
 
+	// Get the Hetzner cloud object of load balancer type
 	loadBalancerType, _, err := s.scope.HcloudClient().GetLoadBalancerTypeByName(ctx, spec.Type)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to find load balancer type")
@@ -194,14 +186,16 @@ func (s *Service) createLoadBalancer(ctx context.Context, spec infrav1.HcloudLoa
 		Proxyprotocol:   &mybool,
 	}
 
+	clusterTagKey := infrav1.ClusterTagKey(hc.Name)
+
+	// The first load balancer automatically becomes the main one that has the control
+	// planes as targets.
 	labels := map[string]string{clusterTagKey: string(infrav1.ResourceLifecycleOwned)}
 	if len(s.scope.HcloudCluster.Status.ControlPlaneLoadBalancers) == 0 {
 		labels["type"] = "main"
 	} else {
 		labels["type"] = "other"
 	}
-
-	//loadBalancerCreateOptsTarget := hcloud.LoadBalancerCreateOptsTarget{Type: hcloud.LoadBalancerTargetTypeServer}
 
 	opts := hcloud.LoadBalancerCreateOpts{
 		LoadBalancerType: loadBalancerType,
@@ -211,7 +205,6 @@ func (s *Service) createLoadBalancer(ctx context.Context, spec infrav1.HcloudLoa
 		Network:          network,
 		Labels:           labels,
 		Services:         []hcloud.LoadBalancerCreateOptsService{kubeapiservice},
-		//Targets:          []hcloud.LoadBalancerCreateOptsTarget{loadBalancerCreateOptsTarget},
 	}
 
 	lb, _, err := s.scope.HcloudClient().CreateLoadBalancer(ctx, opts)
@@ -228,18 +221,23 @@ func (s *Service) createLoadBalancer(ctx context.Context, spec infrav1.HcloudLoa
 }
 
 func (s *Service) deleteLoadBalancer(ctx context.Context, status infrav1.HcloudLoadBalancerStatus) error {
+
 	// ensure deleted load balancer is actually owned by us
 	clusterTagKey := infrav1.ClusterTagKey(s.scope.HcloudCluster.Name)
+
 	if status.Labels == nil || infrav1.ResourceLifecycle(status.Labels[clusterTagKey]) != infrav1.ResourceLifecycleOwned {
 		s.scope.V(3).Info("Ignore request to delete load balancer, as it is not owned", "id", status.ID, "name", status.Name)
 		return nil
 	}
+
 	_, err := s.scope.HcloudClient().DeleteLoadBalancer(ctx, &hcloud.LoadBalancer{ID: status.ID})
+
 	s.scope.V(2).Info("Delete load balancer", "id", status.ID, "name", status.Name)
+
 	return err
 }
 
-// deleting loadbalancer
+// Delete calls the deleteLoadBalancer function to delete one load balancer after another
 func (s *Service) Delete(ctx context.Context) (err error) {
 	// update current status
 	loadBalancerStatus, err := s.actualStatus(ctx)
@@ -256,14 +254,13 @@ func (s *Service) Delete(ctx context.Context) (err error) {
 	return nil
 }
 
-func (s *Service) compareServerTargets() (needCreation []*hcloud.Server, needDeletion []*hcloud.Server, err error) {
+// compareServerTargets checks for the main load balancer whether all the control planes are targets, or whether
+// there are targets which are not control planes anymore and have to be deleted
+func (s *Service) compareServerTargets(ctx context.Context) (needCreation []*hcloud.Server, needDeletion []*hcloud.Server, err error) {
 	controlPlanes, err := s.listControlPlanes()
 	if err != nil {
 		return nil, nil, errors.Wrap(err, "failed to list all control planes")
 	}
-
-	hcloudToken := s.scope.HcloudClient().Token()
-	hclient := hcloud.NewClient(hcloud.WithToken(hcloudToken))
 
 	var controlPlaneStatusIDs intSlice
 	if len(s.scope.HcloudCluster.Status.ControlPlaneLoadBalancers) == 0 {
@@ -276,17 +273,18 @@ func (s *Service) compareServerTargets() (needCreation []*hcloud.Server, needDel
 	for _, cp := range controlPlanes {
 
 		controlPlaneIDs = append(controlPlaneIDs, cp.ID)
-		// Check whether control plane is in target set of loadbalancer
-		// If not than add it
 
+		// Check whether control plane is in target set of load balancer
+		// If not than add it
 		if !controlPlaneStatusIDs.contains(cp.ID) {
 			needCreation = append(needCreation, cp)
 		}
 	}
 
+	// Check whether all the targets of the load balancer still exist
 	for _, id := range controlPlaneStatusIDs {
 		if !controlPlaneIDs.contains(id) {
-			server, _, err := hclient.Server.GetByID(context.Background(), id)
+			server, _, err := s.scope.HcloudClient().GetServerByID(ctx, id)
 			if err != nil {
 				return nil, nil, errors.Wrap(err, "failed to get server")
 			}
@@ -328,16 +326,13 @@ func (s *Service) compare(actualStatus []infrav1.HcloudLoadBalancerStatus) (need
 	return needCreation, needDeletion
 }
 
-func (s *Service) labels() map[string]string {
-	return map[string]string{
+func (s *Service) listControlPlanes() ([]*hcloud.Server, error) {
+	labels := map[string]string{
 		infrav1.ClusterTagKey(s.scope.HcloudCluster.Name): string(infrav1.ResourceLifecycleOwned),
 		"machine_type": "control_plane",
 	}
-}
-
-func (s *Service) listControlPlanes() ([]*hcloud.Server, error) {
 	opts := hcloud.ServerListOpts{}
-	opts.LabelSelector = utils.LabelsToLabelSelector(s.labels())
+	opts.LabelSelector = utils.LabelsToLabelSelector(labels)
 	servers, err := s.scope.HcloudClient().ListServers(s.scope.Ctx, opts)
 	if err != nil {
 		return nil, err
@@ -417,7 +412,11 @@ func (s *Service) addServerToLoadBalancer(ctx context.Context, server *hcloud.Se
 		return err
 	}
 	// This only works if there is only one load balancer
+	if len(loadBalancers) == 0 {
+		return fmt.Errorf("There is no load balancer. Cannot add server %v", server.ID)
+	}
 	lb := loadBalancers[0]
+
 	_, _, err = s.scope.HcloudClient().AddTargetServerToLoadBalancer(ctx, loadBalancerAddServerTargetOpts, lb)
 	if err != nil {
 		s.scope.V(2).Info("Could not add server as target to load balancer", "Server", server.ID, "Load Balancer", lb.ID)

@@ -538,5 +538,4 @@ func (s *Service) actualStatus(ctx context.Context) ([]*hcloud.Server, error) {
 	}
 
 	return servers, nil
-
 }
