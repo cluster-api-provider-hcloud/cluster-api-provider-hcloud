@@ -78,7 +78,7 @@ The cluster need some time until it is ready:
 ```sh
 KUBECONFIG_GUEST=$(pwd)/.kubeconfig-cluster-dev
 kubectl get secrets cluster-dev-kubeconfig -o json | jq -r .data.value | base64 -d > $KUBECONFIG_GUEST
-KUBECONFIG=$KUBECONFIG_GUEST kubectl get nodes,pods -A
+KUBECONFIG=$KUBECONFIG_GUEST kubectl get all,nodes -A
 ```
 [clusterctl]: https://github.com/kubernetes-sigs/cluster-api/releases/tag/v0.3.6
 [Cluster API - Quick Start guide]: https://cluster-api.sigs.k8s.io/user/quick-start.html
