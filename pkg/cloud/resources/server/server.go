@@ -50,15 +50,13 @@ func stringSliceContains(s []string, e string) bool {
 	return false
 }
 
-func (s *Service) genericLabels() map[string]string {
-	return map[string]string{
-		infrav1.ClusterTagKey(s.scope.HcloudCluster.Name): string(infrav1.ResourceLifecycleOwned),
-	}
-}
-
 func (s *Service) createLabels() map[string]string {
-	m := s.genericLabels()
-	m[infrav1.MachineNameTagKey] = s.scope.Name()
+
+	m := map[string]string{
+		infrav1.ClusterTagKey(s.scope.HcloudCluster.Name): string(infrav1.ResourceLifecycleOwned),
+		infrav1.MachineNameTagKey:                         s.scope.Name(),
+	}
+
 	var machineType string
 	if s.scope.IsControlPlane() == true {
 		machineType = "control_plane"
