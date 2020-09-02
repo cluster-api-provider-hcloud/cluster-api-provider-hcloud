@@ -312,8 +312,6 @@ func (s *Service) compareServerTargets(ctx context.Context) (needCreation []*hcl
 	}
 	fmt.Println("These are the control plane status ids: ", controlPlaneStatusIDs)
 
-	controlPlaneStatusIDs = s.scope.HcloudCluster.Status.ControlPlaneLoadBalancers[0].Targets
-
 	var controlPlaneIDs intSlice
 
 	for _, cp := range controlPlanes {
