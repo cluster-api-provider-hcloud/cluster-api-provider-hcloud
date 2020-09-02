@@ -32,6 +32,11 @@ spec:
   - fsn1  # first location is used for location of Loadbalancer
   - nbg1
   - hel1
+  network:
+    cidrBlock: 10.1.0.0/16
+    subnets:
+    - cidrBlock: 10.1.0.0/24
+      networkZone: eu-central
   sshKeys:
   - name: cluster
   tokenRef:
