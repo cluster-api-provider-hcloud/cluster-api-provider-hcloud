@@ -144,6 +144,10 @@ func (s *Service) createLoadBalancer(ctx context.Context, spec infrav1.HcloudLoa
 	location := &hcloud.Location{Name: string(hc.Status.Locations[0])}
 
 	var network *hcloud.Network
+
+	if hc.Status.Network == nil {
+		return nil, errors.New("no network set on the cluster")
+	}
 	networkID := s.scope.HcloudCluster.Status.Network.ID
 	networks, err := s.scope.HcloudClient().ListNetworks(ctx, hcloud.NetworkListOpts{})
 	if err != nil {
@@ -204,19 +208,19 @@ func (s *Service) createLoadBalancer(ctx context.Context, spec infrav1.HcloudLoa
 	return status, nil
 }
 
-func (s *Service) deleteLoadBalancer(ctx context.Context, status infrav1.HcloudLoadBalancerStatus) error {
+func (s *Service) deleteLoadBalancer(ctx context.Context, lb *hcloud.LoadBalancer) error {
 
 	// ensure deleted load balancer is actually owned by us
 	clusterTagKey := infrav1.ClusterTagKey(s.scope.HcloudCluster.Name)
 
-	if status.Labels == nil || infrav1.ResourceLifecycle(status.Labels[clusterTagKey]) != infrav1.ResourceLifecycleOwned {
-		s.scope.V(3).Info("Ignore request to delete load balancer, as it is not owned", "id", status.ID, "name", status.Name)
+	if lb.Labels == nil || infrav1.ResourceLifecycle(lb.Labels[clusterTagKey]) != infrav1.ResourceLifecycleOwned {
+		s.scope.V(3).Info("Ignore request to delete load balancer, as it is not owned", "id", lb.ID, "name", lb.Name)
 		return nil
 	}
 
-	_, err := s.scope.HcloudClient().DeleteLoadBalancer(ctx, &hcloud.LoadBalancer{ID: status.ID})
+	_, err := s.scope.HcloudClient().DeleteLoadBalancer(ctx, lb)
 
-	s.scope.V(2).Info("Delete load balancer", "id", status.ID, "name", status.Name)
+	s.scope.V(2).Info("Delete load balancer", "id", lb.ID, "name", lb.Name)
 
 	return err
 }
@@ -229,9 +233,21 @@ func (s *Service) Delete(ctx context.Context) (err error) {
 		return errors.Wrap(err, "failed to refresh load balancer")
 	}
 
-	for _, status := range loadBalancerStatus {
-		if err := s.deleteLoadBalancer(ctx, status); err != nil {
-			return errors.Wrap(err, "failed to delete load balancer")
+	loadBalancers, err := s.scope.HcloudClient().ListLoadBalancers(ctx, hcloud.LoadBalancerListOpts{})
+
+	counter := 0
+	for _, lbStatus := range loadBalancerStatus {
+		counter = 0
+		for _, lb := range loadBalancers {
+			if lb.ID == lbStatus.ID {
+				counter++
+				if err := s.deleteLoadBalancer(ctx, lb); err != nil {
+					return errors.Wrap(err, "failed to delete load balancer")
+				}
+			}
+		}
+		if counter == 0 {
+			return fmt.Errorf("No load balancer with id %v found in status", lbStatus.ID)
 		}
 	}
 
