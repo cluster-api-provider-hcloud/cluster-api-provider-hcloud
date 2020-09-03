@@ -15,6 +15,7 @@ import (
 )
 
 func (m *Manifests) initializeKubectl() (err error) {
+
 	m.kubectlPath, err = exec.LookPath("kubectl")
 	if err != nil {
 		return fmt.Errorf("error finding kubectl: %w", err)

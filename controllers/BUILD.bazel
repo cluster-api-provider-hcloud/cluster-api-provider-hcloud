@@ -13,7 +13,7 @@ go_library(
     visibility = ["//visibility:public"],
     deps = [
         "//api/v1alpha3:go_default_library",
-        "//pkg/cloud/resources/floatingip:go_default_library",
+        "//pkg/cloud/resources/loadbalancer:go_default_library",
         "//pkg/cloud/resources/location:go_default_library",
         "//pkg/cloud/resources/network:go_default_library",
         "//pkg/cloud/resources/server:go_default_library",

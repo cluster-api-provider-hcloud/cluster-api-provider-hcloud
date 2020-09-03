@@ -10,12 +10,16 @@ import (
 type HcloudClient interface {
 	Token() string
 	ListLocation(context.Context) ([]*hcloud.Location, error)
-	CreateFloatingIP(context.Context, hcloud.FloatingIPCreateOpts) (hcloud.FloatingIPCreateResult, *hcloud.Response, error)
-	DeleteFloatingIP(context.Context, *hcloud.FloatingIP) (*hcloud.Response, error)
-	ListFloatingIPs(context.Context, hcloud.FloatingIPListOpts) ([]*hcloud.FloatingIP, error)
+	CreateLoadBalancer(context.Context, hcloud.LoadBalancerCreateOpts) (hcloud.LoadBalancerCreateResult, *hcloud.Response, error)
+	DeleteLoadBalancer(context.Context, *hcloud.LoadBalancer) (*hcloud.Response, error)
+	ListLoadBalancers(context.Context, hcloud.LoadBalancerListOpts) ([]*hcloud.LoadBalancer, error)
+	GetLoadBalancerTypeByName(context.Context, string) (*hcloud.LoadBalancerType, *hcloud.Response, error)
+	AddTargetServerToLoadBalancer(context.Context, hcloud.LoadBalancerAddServerTargetOpts, *hcloud.LoadBalancer) (*hcloud.Action, *hcloud.Response, error)
+	DeleteTargetServerOfLoadBalancer(context.Context, *hcloud.LoadBalancer, *hcloud.Server) (*hcloud.Action, *hcloud.Response, error)
 	ListImages(context.Context, hcloud.ImageListOpts) ([]*hcloud.Image, error)
 	CreateServer(context.Context, hcloud.ServerCreateOpts) (hcloud.ServerCreateResult, *hcloud.Response, error)
 	ListServers(context.Context, hcloud.ServerListOpts) ([]*hcloud.Server, error)
+	GetServerByID(context.Context, int) (*hcloud.Server, *hcloud.Response, error)
 	DeleteServer(context.Context, *hcloud.Server) (*hcloud.Response, error)
 	ShutdownServer(context.Context, *hcloud.Server) (*hcloud.Action, *hcloud.Response, error)
 	CreateVolume(context.Context, hcloud.VolumeCreateOpts) (hcloud.VolumeCreateResult, *hcloud.Response, error)
@@ -44,16 +48,28 @@ func (c *realClient) ListLocation(ctx context.Context) ([]*hcloud.Location, erro
 	return c.client.Location.All(ctx)
 }
 
-func (c *realClient) CreateFloatingIP(ctx context.Context, opts hcloud.FloatingIPCreateOpts) (hcloud.FloatingIPCreateResult, *hcloud.Response, error) {
-	return c.client.FloatingIP.Create(ctx, opts)
+func (c *realClient) CreateLoadBalancer(ctx context.Context, opts hcloud.LoadBalancerCreateOpts) (hcloud.LoadBalancerCreateResult, *hcloud.Response, error) {
+	return c.client.LoadBalancer.Create(ctx, opts)
 }
 
-func (c *realClient) DeleteFloatingIP(ctx context.Context, ip *hcloud.FloatingIP) (*hcloud.Response, error) {
-	return c.client.FloatingIP.Delete(ctx, ip)
+func (c *realClient) DeleteLoadBalancer(ctx context.Context, loadBalancer *hcloud.LoadBalancer) (*hcloud.Response, error) {
+	return c.client.LoadBalancer.Delete(ctx, loadBalancer)
 }
 
-func (c *realClient) ListFloatingIPs(ctx context.Context, opts hcloud.FloatingIPListOpts) ([]*hcloud.FloatingIP, error) {
-	return c.client.FloatingIP.AllWithOpts(ctx, opts)
+func (c *realClient) ListLoadBalancers(ctx context.Context, opts hcloud.LoadBalancerListOpts) ([]*hcloud.LoadBalancer, error) {
+	return c.client.LoadBalancer.AllWithOpts(ctx, opts)
+}
+
+func (c *realClient) GetLoadBalancerTypeByName(ctx context.Context, name string) (*hcloud.LoadBalancerType, *hcloud.Response, error) {
+	return c.client.LoadBalancerType.GetByName(ctx, name)
+}
+
+func (c *realClient) AddTargetServerToLoadBalancer(ctx context.Context, opts hcloud.LoadBalancerAddServerTargetOpts, lb *hcloud.LoadBalancer) (*hcloud.Action, *hcloud.Response, error) {
+	return c.client.LoadBalancer.AddServerTarget(ctx, lb, opts)
+}
+
+func (c *realClient) DeleteTargetServerOfLoadBalancer(ctx context.Context, lb *hcloud.LoadBalancer, server *hcloud.Server) (*hcloud.Action, *hcloud.Response, error) {
+	return c.client.LoadBalancer.RemoveServerTarget(ctx, lb, server)
 }
 
 func (c *realClient) ListImages(ctx context.Context, opts hcloud.ImageListOpts) ([]*hcloud.Image, error) {
@@ -66,6 +82,10 @@ func (c *realClient) CreateServer(ctx context.Context, opts hcloud.ServerCreateO
 
 func (c *realClient) ListServers(ctx context.Context, opts hcloud.ServerListOpts) ([]*hcloud.Server, error) {
 	return c.client.Server.AllWithOpts(ctx, opts)
+}
+
+func (c *realClient) GetServerByID(ctx context.Context, id int) (*hcloud.Server, *hcloud.Response, error) {
+	return c.client.Server.GetByID(ctx, id)
 }
 
 func (c *realClient) ShutdownServer(ctx context.Context, server *hcloud.Server) (*hcloud.Action, *hcloud.Response, error) {

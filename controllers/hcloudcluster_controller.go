@@ -46,7 +46,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
-	"github.com/cluster-api-provider-hcloud/cluster-api-provider-hcloud/pkg/cloud/resources/floatingip"
+	loadbalancer "github.com/cluster-api-provider-hcloud/cluster-api-provider-hcloud/pkg/cloud/resources/loadbalancer"
 	"github.com/cluster-api-provider-hcloud/cluster-api-provider-hcloud/pkg/cloud/resources/location"
 	"github.com/cluster-api-provider-hcloud/cluster-api-provider-hcloud/pkg/cloud/resources/network"
 	"github.com/cluster-api-provider-hcloud/cluster-api-provider-hcloud/pkg/cloud/scope"
@@ -164,9 +164,9 @@ func (r *HcloudClusterReconciler) reconcileDelete(clusterScope *scope.ClusterSco
 		return reconcile.Result{RequeueAfter: 10 * time.Second}, nil
 	}
 
-	// delete controlplane floating IPs
-	if err := floatingip.NewService(clusterScope).Delete(ctx); err != nil {
-		return reconcile.Result{}, errors.Wrapf(err, "failed to delete floating IPs for HcloudCluster %s/%s", hcloudCluster.Namespace, hcloudCluster.Name)
+	// delete load balancers
+	if err := loadbalancer.NewService(clusterScope).Delete(ctx); err != nil {
+		return reconcile.Result{}, errors.Wrapf(err, "failed to delete load balancers for HcloudCluster %s/%s", hcloudCluster.Namespace, hcloudCluster.Name)
 	}
 
 	// delete the network
@@ -198,15 +198,15 @@ func (r *HcloudClusterReconciler) reconcileNormal(clusterScope *scope.ClusterSco
 		return reconcile.Result{}, errors.Wrapf(err, "failed to reconcile network for HcloudCluster %s/%s", hcloudCluster.Namespace, hcloudCluster.Name)
 	}
 
-	// reconcile the Controlplane Floating IPs
-	if err := floatingip.NewService(clusterScope).Reconcile(ctx); err != nil {
-		return reconcile.Result{}, errors.Wrapf(err, "failed to reconcile floating IPs for HcloudCluster %s/%s", hcloudCluster.Namespace, hcloudCluster.Name)
+	// reconcile the load balancers
+	if err := loadbalancer.NewService(clusterScope).Reconcile(ctx); err != nil {
+		return reconcile.Result{}, errors.Wrapf(err, "failed to reconcile load balancers for HcloudCluster %s/%s", hcloudCluster.Namespace, hcloudCluster.Name)
 	}
 
-	// add the first control plane  floating IP to the status
-	if len(hcloudCluster.Status.ControlPlaneFloatingIPs) > 0 {
+	// add the IPv4 of the first (the main) load balancer as host of API endpoint as control plane endpoint
+	if len(hcloudCluster.Status.ControlPlaneLoadBalancers) > 0 {
 		hcloudCluster.Spec.ControlPlaneEndpoint = clusterv1.APIEndpoint{
-			Host: hcloudCluster.Status.ControlPlaneFloatingIPs[0].IP,
+			Host: hcloudCluster.Status.ControlPlaneLoadBalancers[0].IPv4,
 			Port: clusterScope.ControlPlaneAPIEndpointPort(),
 		}
 	}

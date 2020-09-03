@@ -17,6 +17,8 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
+	loadbalancer "github.com/cluster-api-provider-hcloud/cluster-api-provider-hcloud/pkg/cloud/resources/loadbalancer"
+
 	kubeletv1beta1 "github.com/cluster-api-provider-hcloud/cluster-api-provider-hcloud/api/kubelet/v1beta1"
 	infrav1 "github.com/cluster-api-provider-hcloud/cluster-api-provider-hcloud/api/v1alpha3"
 	"github.com/cluster-api-provider-hcloud/cluster-api-provider-hcloud/pkg/cloud/resources/server/userdata"
@@ -48,15 +50,20 @@ func stringSliceContains(s []string, e string) bool {
 	return false
 }
 
-func (s *Service) genericLabels() map[string]string {
-	return map[string]string{
-		infrav1.ClusterTagKey(s.scope.HcloudCluster.Name): string(infrav1.ResourceLifecycleOwned),
-	}
-}
+func (s *Service) createLabels() map[string]string {
 
-func (s *Service) labels() map[string]string {
-	m := s.genericLabels()
-	m[infrav1.MachineNameTagKey] = s.scope.Name()
+	m := map[string]string{
+		infrav1.ClusterTagKey(s.scope.HcloudCluster.Name): string(infrav1.ResourceLifecycleOwned),
+		infrav1.MachineNameTagKey:                         s.scope.Name(),
+	}
+
+	var machineType string
+	if s.scope.IsControlPlane() == true {
+		machineType = "control_plane"
+	} else {
+		machineType = "worker"
+	}
+	m["machine_type"] = machineType
 	return m
 }
 
@@ -198,8 +205,9 @@ func (s *Service) Reconcile(ctx context.Context) (_ *ctrl.Result, err error) {
 
 				// configure APIserver serving certificate
 				extraNames := []string{"127.0.0.1", "localhost"}
-				for _, name := range s.scope.HcloudCluster.Status.ControlPlaneFloatingIPs {
-					extraNames = append(extraNames, name.IP)
+				for _, lb := range s.scope.HcloudCluster.Status.ControlPlaneLoadBalancers {
+					extraNames = append(extraNames, lb.IPv4)
+					extraNames = append(extraNames, lb.IPv6)
 				}
 				for _, name := range extraNames {
 					if !stringSliceContains(c.APIServer.CertSANs, name) {
@@ -247,9 +255,11 @@ func (s *Service) Reconcile(ctx context.Context) (_ *ctrl.Result, err error) {
 
 	var myTrue = true
 	var myFalse = false
+
+	name := s.scope.Name()
 	opts := hcloud.ServerCreateOpts{
-		Name:   s.scope.Name(),
-		Labels: s.labels(),
+		Name:   name,
+		Labels: s.createLabels(),
 		Image: &hcloud.Image{
 			ID: int(*s.scope.HcloudMachine.Status.ImageID),
 		},
@@ -298,6 +308,7 @@ func (s *Service) Reconcile(ctx context.Context) (_ *ctrl.Result, err error) {
 	var actualServer *hcloud.Server
 
 	if len(actualServers) == 0 {
+
 		if res, _, err := s.scope.HcloudClient().CreateServer(s.scope.Ctx, opts); err != nil {
 			return nil, errors.Wrap(err, "failed to create server")
 		} else {
@@ -333,7 +344,7 @@ func (s *Service) Reconcile(ctx context.Context) (_ *ctrl.Result, err error) {
 		return nil, nil
 	}
 
-	// check if at lest one of the adresses is ready
+	// check if at least one of the adresses is ready
 	var errors []error
 	for _, address := range s.scope.HcloudMachine.Status.Addresses {
 		if address.Type != corev1.NodeExternalIP && address.Type != corev1.NodeExternalDNS {
@@ -346,6 +357,15 @@ func (s *Service) Reconcile(ctx context.Context) (_ *ctrl.Result, err error) {
 		})
 		if err != nil {
 			return nil, err
+		}
+
+		// Need to have a private network if added to load balancer
+		if len(actualServer.PrivateNet) == 0 {
+			return &ctrl.Result{RequeueAfter: 2 * time.Second}, nil
+		}
+
+		if err := s.addServerToLoadBalancer(ctx, actualServer); err != nil {
+			errors = append(errors, err)
 		}
 
 		if err := scope.IsControlPlaneReady(ctx, clientConfig); err != nil {
@@ -400,6 +420,10 @@ func (s *Service) Delete(ctx context.Context) (_ *ctrl.Result, err error) {
 
 	// delete servers that need delete
 	for _, server := range actionDelete {
+		if server.Labels["machine_type"] == "control_plane" {
+			s.deleteServerOfLoadBalancer(ctx, server)
+		}
+
 		if _, err := s.scope.HcloudClient().DeleteServer(ctx, server); err != nil {
 			return nil, errors.Wrap(err, "failed to delete server")
 		}
@@ -454,15 +478,67 @@ func setStatusFromAPI(status *infrav1.HcloudMachineStatus, server *hcloud.Server
 	return nil
 }
 
+func (s *Service) addServerToLoadBalancer(ctx context.Context, server *hcloud.Server) error {
+
+	// If server has not been added to the network yet, then the load balancer cannot add it
+	if len(server.PrivateNet) == 0 {
+		return nil
+	}
+
+	myBool := true
+	loadBalancerAddServerTargetOpts := hcloud.LoadBalancerAddServerTargetOpts{Server: server, UsePrivateIP: &myBool}
+
+	lb, err := loadbalancer.GetMainLoadBalancer(&s.scope.ClusterScope, ctx)
+	if err != nil {
+		return err
+	}
+
+	// If load balancer has not been attached to a network, then it cannot add a server
+	if len(lb.PrivateNet) == 0 {
+		return nil
+	}
+	_, _, err = s.scope.HcloudClient().AddTargetServerToLoadBalancer(ctx, loadBalancerAddServerTargetOpts, lb)
+	if err != nil {
+		s.scope.V(2).Info("Could not add server as target to load balancer", "Server", server.ID, "Load Balancer", lb.ID)
+		return err
+	} else {
+		record.Eventf(
+			s.scope.HcloudCluster,
+			"AddedAsTargetToLoadBalancer",
+			"Added new server with id %d to the loadbalancer %v",
+			server.ID, lb.ID)
+	}
+	return nil
+}
+
+func (s *Service) deleteServerOfLoadBalancer(ctx context.Context, server *hcloud.Server) error {
+
+	lb, err := loadbalancer.GetMainLoadBalancer(&s.scope.ClusterScope, ctx)
+	if err != nil {
+		return err
+	}
+	_, _, err = s.scope.HcloudClient().DeleteTargetServerOfLoadBalancer(ctx, lb, server)
+	if err != nil {
+		s.scope.V(2).Info("Could not delete server as target of load balancer", "Server", server.ID, "Load Balancer", lb.ID)
+		return err
+	} else {
+		record.Eventf(
+			s.scope.HcloudCluster,
+			"DeletedTargetOfLoadBalancer",
+			"Deleted new server with id %d of the loadbalancer %v",
+			server.ID, lb.ID)
+	}
+	return nil
+}
+
 // actualStatus gathers all matching server instances, matched by tag
 func (s *Service) actualStatus(ctx context.Context) ([]*hcloud.Server, error) {
 	opts := hcloud.ServerListOpts{}
-	opts.LabelSelector = utils.LabelsToLabelSelector(s.labels())
+	opts.LabelSelector = utils.LabelsToLabelSelector(s.createLabels())
 	servers, err := s.scope.HcloudClient().ListServers(s.scope.Ctx, opts)
 	if err != nil {
 		return nil, err
 	}
 
 	return servers, nil
-
 }

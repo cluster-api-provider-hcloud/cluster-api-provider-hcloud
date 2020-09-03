@@ -6,9 +6,9 @@ require (
 	github.com/bronze1man/yaml2json v0.0.0-20190501122504-861f66b7262b
 	github.com/fatih/color v1.7.0
 	github.com/go-logr/logr v0.1.0
-	github.com/golang/mock v1.4.1
+	github.com/golang/mock v1.4.3
 	github.com/google/go-jsonnet v0.15.0
-	github.com/hetznercloud/hcloud-go v1.17.0
+	github.com/hetznercloud/hcloud-go v1.22.0
 	github.com/onsi/ginkgo v1.12.0
 	github.com/onsi/gomega v1.9.0
 	github.com/pkg/errors v0.9.1

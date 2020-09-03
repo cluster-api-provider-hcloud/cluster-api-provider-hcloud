@@ -38,6 +38,7 @@ func sampleParameters() *parameters.ManifestParameters {
 }
 
 func (m *Manifests) initializeConfig() (err error) {
+
 	if err := evaluateJsonnet(ioutil.Discard, m.manifestConfigPath, sampleParameters().ExtVar()); err != nil {
 		return err
 	}

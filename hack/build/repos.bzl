@@ -639,8 +639,8 @@ def go_repositories():
         build_file_generation = "on",
         build_file_proto_mode = "disable_global",
         importpath = "github.com/golang/mock",
-        sum = "h1:ocYkMQY5RrXTYgXl7ICpV0IXwlEQGwKIsery4gyXa1U=",
-        version = "v1.4.1",
+        sum = "h1:GV+pQPG/EUUbkh47niozDcADz6go/dUwhVzdUQHIVRw=",
+        version = "v1.4.3",
     )
     go_repository(
         name = "com_github_golang_protobuf",
@@ -663,8 +663,8 @@ def go_repositories():
         build_file_generation = "on",
         build_file_proto_mode = "disable_global",
         importpath = "github.com/google/go-cmp",
-        sum = "h1:xsAVV57WRhGj6kEIi8ReJzQlHHqcBYCElAvkovg3B/4=",
-        version = "v0.4.0",
+        sum = "h1:/QaMHBdZ26BB3SSst0Iwl10Epc+xhTquomWX0oZEB6w=",
+        version = "v0.5.0",
     )
     go_repository(
         name = "com_github_google_go_github",
@@ -830,8 +830,8 @@ def go_repositories():
         build_file_generation = "on",
         build_file_proto_mode = "disable_global",
         importpath = "github.com/hetznercloud/hcloud-go",
-        sum = "h1:IKH0GLLoTEfgMuBY+GaaVTwjYChecrHFVo4/t0sIkGU=",
-        version = "v1.17.0",
+        sum = "h1:CC0jwkaBzwP4ObFE0sdJBTvGh5DE9kB/tuDETnRfOik=",
+        version = "v1.22.0",
     )
     go_repository(
         name = "com_github_hpcloud_tail",

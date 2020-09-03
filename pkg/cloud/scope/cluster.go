@@ -206,10 +206,10 @@ func (s *ClusterScope) ClientConfigWithAPIEndpoint(endpoint clusterv1.APIEndpoin
 func (s *ClusterScope) manifestParameters() (*parameters.ManifestParameters, error) {
 	var p parameters.ManifestParameters
 
-	for _, floatingIP := range s.HcloudCluster.Status.ControlPlaneFloatingIPs {
-		p.HcloudFloatingIPs = append(
-			p.HcloudFloatingIPs,
-			floatingIP.IP,
+	for _, loadBalancer := range s.HcloudCluster.Status.ControlPlaneLoadBalancers {
+		p.HcloudLoadBalancerIPv4s = append(
+			p.HcloudLoadBalancerIPv4s,
+			loadBalancer.IPv4,
 		)
 	}
 

@@ -38,20 +38,20 @@ func (m *MockHcloudClient) EXPECT() *MockHcloudClientMockRecorder {
 	return m.recorder
 }
 
-// CreateFloatingIP mocks base method
-func (m *MockHcloudClient) CreateFloatingIP(arg0 context.Context, arg1 hcloud.FloatingIPCreateOpts) (hcloud.FloatingIPCreateResult, *hcloud.Response, error) {
+// CreateLoadBalancer mocks base method
+func (m *MockHcloudClient) CreateLoadBalancer(arg0 context.Context, arg1 hcloud.LoadBalancerCreateOpts) (hcloud.LoadBalancerCreateResult, *hcloud.Response, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CreateFloatingIP", arg0, arg1)
-	ret0, _ := ret[0].(hcloud.FloatingIPCreateResult)
+	ret := m.ctrl.Call(m, "CreateLoadBalancer", arg0, arg1)
+	ret0, _ := ret[0].(hcloud.LoadBalancerCreateResult)
 	ret1, _ := ret[1].(*hcloud.Response)
 	ret2, _ := ret[2].(error)
 	return ret0, ret1, ret2
 }
 
-// CreateFloatingIP indicates an expected call of CreateFloatingIP
-func (mr *MockHcloudClientMockRecorder) CreateFloatingIP(arg0, arg1 interface{}) *gomock.Call {
+// CreateLoadBalancer indicates an expected call of CreateLoadBalancer
+func (mr *MockHcloudClientMockRecorder) CreateLoadBalancer(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateFloatingIP", reflect.TypeOf((*MockHcloudClient)(nil).CreateFloatingIP), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateLoadBalancer", reflect.TypeOf((*MockHcloudClient)(nil).CreateLoadBalancer), arg0, arg1)
 }
 
 // CreateNetwork mocks base method
@@ -102,19 +102,19 @@ func (mr *MockHcloudClientMockRecorder) CreateVolume(arg0, arg1 interface{}) *go
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateVolume", reflect.TypeOf((*MockHcloudClient)(nil).CreateVolume), arg0, arg1)
 }
 
-// DeleteFloatingIP mocks base method
-func (m *MockHcloudClient) DeleteFloatingIP(arg0 context.Context, arg1 *hcloud.FloatingIP) (*hcloud.Response, error) {
+// DeleteLoadBalancer mocks base method
+func (m *MockHcloudClient) DeleteLoadBalancer(arg0 context.Context, arg1 *hcloud.LoadBalancer) (*hcloud.Response, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "DeleteFloatingIP", arg0, arg1)
+	ret := m.ctrl.Call(m, "DeleteLoadBalancer", arg0, arg1)
 	ret0, _ := ret[0].(*hcloud.Response)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// DeleteFloatingIP indicates an expected call of DeleteFloatingIP
-func (mr *MockHcloudClientMockRecorder) DeleteFloatingIP(arg0, arg1 interface{}) *gomock.Call {
+// DeleteLoadBalancer indicates an expected call of DeleteLoadBalancer
+func (mr *MockHcloudClientMockRecorder) DeleteLoadBalancer(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteFloatingIP", reflect.TypeOf((*MockHcloudClient)(nil).DeleteFloatingIP), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteLoadBalancer", reflect.TypeOf((*MockHcloudClient)(nil).DeleteLoadBalancer), arg0, arg1)
 }
 
 // DeleteNetwork mocks base method
@@ -162,21 +162,6 @@ func (mr *MockHcloudClientMockRecorder) DeleteVolume(arg0, arg1 interface{}) *go
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteVolume", reflect.TypeOf((*MockHcloudClient)(nil).DeleteVolume), arg0, arg1)
 }
 
-// ListFloatingIPs mocks base method
-func (m *MockHcloudClient) ListFloatingIPs(arg0 context.Context, arg1 hcloud.FloatingIPListOpts) ([]*hcloud.FloatingIP, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ListFloatingIPs", arg0, arg1)
-	ret0, _ := ret[0].([]*hcloud.FloatingIP)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// ListFloatingIPs indicates an expected call of ListFloatingIPs
-func (mr *MockHcloudClientMockRecorder) ListFloatingIPs(arg0, arg1 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListFloatingIPs", reflect.TypeOf((*MockHcloudClient)(nil).ListFloatingIPs), arg0, arg1)
-}
-
 // ListImages mocks base method
 func (m *MockHcloudClient) ListImages(arg0 context.Context, arg1 hcloud.ImageListOpts) ([]*hcloud.Image, error) {
 	m.ctrl.T.Helper()
@@ -190,6 +175,21 @@ func (m *MockHcloudClient) ListImages(arg0 context.Context, arg1 hcloud.ImageLis
 func (mr *MockHcloudClientMockRecorder) ListImages(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListImages", reflect.TypeOf((*MockHcloudClient)(nil).ListImages), arg0, arg1)
+}
+
+// ListLoadBalancers mocks base method
+func (m *MockHcloudClient) ListLoadBalancers(arg0 context.Context, arg1 hcloud.LoadBalancerListOpts) ([]*hcloud.LoadBalancer, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ListLoadBalancers", arg0, arg1)
+	ret0, _ := ret[0].([]*hcloud.LoadBalancer)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ListLoadBalancers indicates an expected call of ListLoadBalancers
+func (mr *MockHcloudClientMockRecorder) ListLoadBalancers(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListLoadBalancers", reflect.TypeOf((*MockHcloudClient)(nil).ListLoadBalancers), arg0, arg1)
 }
 
 // ListLocation mocks base method

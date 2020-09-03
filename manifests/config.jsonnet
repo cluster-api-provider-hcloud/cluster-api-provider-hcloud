@@ -3,8 +3,8 @@ local cilium = import 'cilium/cilium.libsonnet';
 local flannel = import 'flannel/flannel.libsonnet';
 local hcloudCloudControllerManager = import 'hcloud-cloud-controller-manager/hcloud-cloud-controller-manager.libsonnet';
 local hcloudCSI = import 'hcloud-csi/hcloud-csi.libsonnet';
-local hcloudMetalLBFloater = import 'hcloud-metallb-floater/hcloud-metallb-floater.libsonnet';
-local metalLB = import 'metallb/metallb.libsonnet';
+//local hcloudMetalLBFloater = import 'hcloud-metallb-floater/hcloud-metallb-floater.libsonnet';
+//local metalLB = import 'metallb/metallb.libsonnet';
 local metricsServer = import 'metrics-server/metrics-server.libsonnet';
 
 local defaultConfig = {
@@ -27,7 +27,7 @@ local defaultConfig = {
   podsCIDRBlock: '192.168.0.0/16',
   hcloudToken: 'xx',
   hcloudNetwork: 'yy',
-  hcloudFloatingIPs: ['1.1.1.1', '2.2.2.2'],
+  hcloudLoadBalancerIPv4s: ['1.1.1.1', '2.2.2.2'],
   network: {
   },
 };
@@ -72,7 +72,7 @@ local addons = {
     },
   },
 
-  controlPlaneServices: std.mapWithIndex(newControlPlaneService, $._config.hcloudFloatingIPs),
+  controlPlaneServices: std.mapWithIndex(newControlPlaneService, $._config.hcloudLoadBalancerIPv4s),
 
   workarounds: {
     // This fixes a problem join v1.18 node to a v1.17 control plane
@@ -136,8 +136,8 @@ local new(c) = (
   hcloudCloudControllerManager +
   hcloudCSI +
   metricsServer +
-  hcloudMetalLBFloater +
-  metalLB +
+  //hcloudMetalLBFloater +
+  //metalLB +
   {
     _config+:: c,
   } +

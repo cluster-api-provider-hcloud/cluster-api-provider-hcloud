@@ -10,8 +10,9 @@ spec:
     key: token
   sshKeys:
     - name: id_rsa
-  controlPlaneFloatingIPs:
-    - type: IPv4
+  controlPlaneLoadBalancer:
+  - type: lb11
+    algorithm: round_robin
 ---
 apiVersion: cluster.x-k8s.io/v1alpha3
 kind: Cluster

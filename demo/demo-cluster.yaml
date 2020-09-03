@@ -6,7 +6,7 @@ metadata:
 spec:
   clusterNetwork:
     pods:
-      cidrBlocks: ["172.16.0.0/12"]
+      cidrBlocks: ["10.100.0.0/14"]
     services:
       cidrBlocks: ["192.168.0.0/16"]
     serviceDomain: "cluster.local"
@@ -25,15 +25,18 @@ metadata:
   name: cluster-dev
   namespace: default
 spec:
-  controlPlaneFloatingIPs:
-  - name: KubeApiEndpointIPv4
-    type: IPv4
-  - name: KubeAPIEndpointIPv6
-    type: IPv6
+  controlPlaneLoadbalancer:
+  - type: lb11
+    algorithm: round_robin
   locations:
-  - fsn1
+  - fsn1  # first location is used for location of Loadbalancer
   - nbg1
   - hel1
+  network:
+    cidrBlock: 10.0.0.0/8
+    subnets:
+    - cidrBlock: 10.100.0.0/14
+      networkZone: eu-central
   sshKeys:
   - name: cluster
   tokenRef:

@@ -11,10 +11,10 @@ import (
 )
 
 type ManifestParameters struct {
-	HcloudToken       *string
-	HcloudNetwork     *intstr.IntOrString
-	HcloudFloatingIPs []string
-	PodCIDRBlock      *net.IPNet
+	HcloudToken             *string
+	HcloudNetwork           *intstr.IntOrString
+	HcloudLoadBalancerIPv4s []string
+	PodCIDRBlock            *net.IPNet
 
 	Network *ManifestNetwork
 }
@@ -32,7 +32,7 @@ type ManifestNetworkCilium struct {
 func (m *ManifestParameters) ExtVar() map[string]string {
 	extVar := make(map[string]string)
 
-	extVar["hcloud-floating-ips"] = strings.Join(m.HcloudFloatingIPs, ",")
+	extVar["hcloud-loadbalancer"] = strings.Join(m.HcloudLoadBalancerIPv4s, ",")
 
 	if key, val := "hcloud-token", m.HcloudToken; val != nil {
 		extVar[key] = *val

@@ -4,7 +4,7 @@ local utils = import 'utils.libsonnet';
 local myConfig = {
   hcloudToken: std.extVar('hcloud-token'),
   hcloudNetwork: std.extVar('hcloud-network'),
-  hcloudFloatingIPs: std.split(std.extVar('hcloud-floating-ips'), ','),
+  hcloudLoadBalancerIPv4s: std.split(std.extVar('hcloud-loadbalancer'), ','),
   podsCIDRBlock: std.extVar('pod-cidr-block'),
   local networkConfig = std.parseJson(std.extVar('network')),
   network+: {

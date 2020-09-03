@@ -19,6 +19,7 @@ func New(log logr.Logger, manifestConfigPath string) *Manifests {
 }
 
 func (m *Manifests) Initialize() error {
+
 	if m.manifestConfigPath == "" {
 		return nil
 	}

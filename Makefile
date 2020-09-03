@@ -40,3 +40,13 @@ vet:
 mockgen:
 	mkdir -p pkg/cloud/scope/mock
 	mockgen github.com/cluster-api-provider-hcloud/cluster-api-provider-hcloud/pkg/cloud/scope HcloudClient,Manifests,Packer > pkg/cloud/scope/mock/scope.go
+
+
+# Generate hack/build/repos.bzl from go.mod
+.PHONY: bazel_repos
+bazel_repos:
+	bazel run //:gazelle -- update-repos -from_file=go.mod -to_macro=repositories.bzl%go_repositories -prune=true
+
+.PHONY: delete_capihc
+delete_capihc:
+	kubectl delete namespace capi-hcloud-system

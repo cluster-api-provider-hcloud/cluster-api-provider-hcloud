@@ -64,12 +64,13 @@ The cluster need some time until it is ready:
 | Full cluster | ~20-25min
 | For the packer | ~10-15min
 | Snapshot | ~2-3min 
+| First control-plane, worker-nodes are created | after ~4min
 | Cluster creation without packer and snapshot 3 control planes, 3 worker | ~10min
 | Worker upscale | ~1-2min
 | Worker downscale |  ~20s
 | Control plane upscale per node | ~2.5min
 | Control plane downscale per node | ~1min
-| Control-plane Failover with Metallb | ~20s 
+
 
 - Once the Control Plane has a ready replica, create a kubeconfig for the
   hcloud cluster and test connectivity:
@@ -77,7 +78,7 @@ The cluster need some time until it is ready:
 ```sh
 KUBECONFIG_GUEST=$(pwd)/.kubeconfig-cluster-dev
 kubectl get secrets cluster-dev-kubeconfig -o json | jq -r .data.value | base64 -d > $KUBECONFIG_GUEST
-KUBECONFIG=$KUBECONFIG_GUEST kubectl get nodes,pods -A
+KUBECONFIG=$KUBECONFIG_GUEST kubectl get all,nodes -A
 ```
 [clusterctl]: https://github.com/kubernetes-sigs/cluster-api/releases/tag/v0.3.6
 [Cluster API - Quick Start guide]: https://cluster-api.sigs.k8s.io/user/quick-start.html
@@ -97,6 +98,7 @@ See ./docs/src/developers or https://docs.capihc.com/developer/developer.html
 - packer
 - BAZEL
 - Go 1.13
+- gomock
 - watch (On MAC: `brew install watch`)
 - JQ (On MAC: `brew install jq`)
 
@@ -107,7 +109,7 @@ See ./docs/src/developers or https://docs.capihc.com/developer/developer.html
 ./demo/setup.sh
 
 # Build project and deploy to local cluster
-bazel run //cmd/cluster-api-provider-hcloud:deploy
+make deploy_kind
 ```
 
 - Applying the target cluster with demo-cluster
@@ -124,10 +126,18 @@ kubectl create secret generic hcloud-token --from-literal=token=$TOKEN
 # Apply the manifest to your management cluster; cluster name is cluster-dev; use quickstart guide for getting access to the target cluster
 kubectl apply -f ./demo/demo-cluster.yaml
 
-# Deleting the cluster
+## Get Logs:
+kubectl logs -f deployment/capi-hcloud-controller-manager -c manager --v=4 -n capi-hcloud-system
+
+# Deleting the target cluster
 kubectl delete -f ./demo/demo-cluster.yaml
+
+# Deleting the controller
+make delete_capihc
 
 # Deleting the management cluster
 kind delete cluster --name capi-hcloud
+
 ```
+
 
