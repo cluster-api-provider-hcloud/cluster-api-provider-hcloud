@@ -672,7 +672,7 @@
                   "value": "true"
                 }
               ],
-              "image": "calico/node:v3.13.2",
+              "image": "calico/node:v3.15",
               "livenessProbe": {
                 "exec": {
                   "command": [
@@ -758,7 +758,7 @@
                   }
                 }
               ],
-              "image": "calico/cni:v3.13.2",
+              "image": "calico/cni:v3.15",
               "name": "upgrade-ipam",
               "securityContext": {
                 "privileged": true
@@ -814,7 +814,7 @@
                   "value": "false"
                 }
               ],
-              "image": "calico/cni:v3.13.2",
+              "image": "calico/cni:v3.15",
               "name": "install-cni",
               "securityContext": {
                 "privileged": true
@@ -831,7 +831,7 @@
               ]
             },
             {
-              "image": "calico/pod2daemon-flexvol:v3.13.2",
+              "image": "calico/pod2daemon-flexvol:v3.15",
               "name": "flexvol-driver",
               "securityContext": {
                 "privileged": true
@@ -985,7 +985,7 @@
                   "value": "kubernetes"
                 }
               ],
-              "image": "calico/kube-controllers:v3.13.2",
+              "image": "calico/kube-controllers:v3.15",
               "name": "calico-kube-controllers",
               "readinessProbe": {
                 "exec": {
