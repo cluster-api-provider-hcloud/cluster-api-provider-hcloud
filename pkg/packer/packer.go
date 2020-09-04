@@ -58,7 +58,7 @@ func New(log logr.Logger) *Packer {
 
 func (m *Packer) Initialize(hc *infrav1.HcloudCluster) error {
 
-	m.packerConfigPath = fmt.Sprintf("/%s-packer-config/packer-centos7-crio.json", hc.Spec.Image)
+	m.packerConfigPath = fmt.Sprintf("/%s-packer-config/image.json", hc.Spec.Image)
 	if m.packerConfigPath == "" {
 		return nil
 	}
