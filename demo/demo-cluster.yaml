@@ -42,6 +42,7 @@ spec:
   tokenRef:
     key: token
     name: hcloud-token
+  image: centos-7
 ---
 apiVersion: controlplane.cluster.x-k8s.io/v1alpha3
 kind: KubeadmControlPlane

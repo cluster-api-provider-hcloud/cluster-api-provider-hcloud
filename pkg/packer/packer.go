@@ -49,15 +49,16 @@ func (b *build) Start() error {
 	return err
 }
 
-func New(log logr.Logger, packerConfigPath string) *Packer {
+func New(log logr.Logger) *Packer {
 	return &Packer{
-		log:              log,
-		packerConfigPath: packerConfigPath,
-		builds:           make(map[string]*build),
+		log:    log,
+		builds: make(map[string]*build),
 	}
 }
 
-func (m *Packer) Initialize() error {
+func (m *Packer) Initialize(hc *infrav1.HcloudCluster) error {
+
+	m.packerConfigPath = fmt.Sprintf("/%s-packer-config/packer-centos7-crio.json", hc.Spec.Image)
 	if m.packerConfigPath == "" {
 		return nil
 	}

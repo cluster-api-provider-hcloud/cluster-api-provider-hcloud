@@ -61,6 +61,8 @@ type HcloudClusterSpec struct {
 
 	// Manifests represents the config for manifests to apply
 	Manifests *HcloudClusterSpecManifests `json:"manifests,omitempty"`
+
+	Image string `json:"image,omitempty"`
 }
 
 type HcloudNetwork struct {

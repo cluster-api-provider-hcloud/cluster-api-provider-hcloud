@@ -84,13 +84,8 @@ var rootCmd = &cobra.Command{
 				setupLog.Error(err, "unable to initialise manifests manager")
 				os.Exit(1)
 			}
-
-			// Initialise packer generator
-			packerMgr := packer.New(ctrl.Log.WithName("module").WithName("packer"), rootFlags.PackerConfigPath)
-			if err := packerMgr.Initialize(); err != nil {
-				setupLog.Error(err, "unable to initialise packer manager")
-				os.Exit(1)
-			}
+			//Packer generator, initialization happens in cluster controller
+			packerMgr := packer.New(ctrl.Log.WithName("module").WithName("packer"))
 
 			if err = (&controllers.HcloudClusterReconciler{
 				Client:    mgr.GetClient(),

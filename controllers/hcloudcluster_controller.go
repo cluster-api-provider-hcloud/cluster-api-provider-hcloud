@@ -18,6 +18,7 @@ package controllers
 import (
 	"context"
 	"fmt"
+	"os"
 	"reflect"
 	"strings"
 	"sync"
@@ -86,6 +87,12 @@ func (r *HcloudClusterReconciler) Reconcile(req ctrl.Request) (_ ctrl.Result, re
 			return reconcile.Result{}, nil
 		}
 		return reconcile.Result{}, err
+	}
+
+	// Initialize Packer
+	if err := r.Packer.Initialize(hcloudCluster); err != nil {
+		log.Error(err, "unable to initialise packer manager")
+		os.Exit(1)
 	}
 
 	// Fetch the Cluster

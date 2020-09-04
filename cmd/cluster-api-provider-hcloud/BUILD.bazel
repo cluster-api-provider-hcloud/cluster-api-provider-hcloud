@@ -87,7 +87,7 @@ pkg_tar(
     deps = [
         ":host_bin_tar",
         "//manifests",
-        "//packer",
+        "//packer/centos-7",
     ],
 )
 
@@ -97,7 +97,7 @@ container_layer(
     name = "target_bin_layer",
     tars = [
         "//manifests",
-        "//packer",
+        "//packer/centos-7:packer",
     ],
 )
 
@@ -126,8 +126,6 @@ go_image(
         "--verbose",
         "--manifests-config-path",
         "/manifests-config/config-extvar.jsonnet",
-        "--packer-config-path",
-        "/packer-config/packer-centos7-crio.json",
     ],
     base = ":base_image",
     binary = ":cluster-api-provider-hcloud",
