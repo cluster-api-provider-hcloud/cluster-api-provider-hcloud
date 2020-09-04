@@ -84,8 +84,6 @@ spec:
   template:
     spec:
       type: cx21-ceph
-      sshKeys:
-      - name: control-plane
 ---
 apiVersion: cluster.x-k8s.io/v1alpha3
 kind: MachineDeployment
@@ -189,8 +187,6 @@ spec:
   template:
     spec:
       type: cx11
-      sshKeys:
-      - name: worker
 ---
 apiVersion: cluster-api-provider-hcloud.capihc.com/v1alpha3
 kind: HcloudMachineTemplate
@@ -201,8 +197,6 @@ spec:
   template:
     spec:
       type: cx11
-      sshKeys:
-      - name: worker
 ---
 apiVersion: cluster-api-provider-hcloud.capihc.com/v1alpha3
 kind: HcloudMachineTemplate
@@ -213,8 +207,6 @@ spec:
   template:
     spec:
       type: cx11
-      sshKeys:
-      - name: worker
 ---
 apiVersion: bootstrap.cluster.x-k8s.io/v1alpha3
 kind: KubeadmConfigTemplate
