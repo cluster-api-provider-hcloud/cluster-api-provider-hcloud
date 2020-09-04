@@ -97,7 +97,7 @@ container_layer(
     name = "target_bin_layer",
     tars = [
         "//manifests",
-        "//packer",
+        "//packer:packer",
     ],
 )
 
@@ -126,8 +126,8 @@ go_image(
         "--verbose",
         "--manifests-config-path",
         "/manifests-config/config-extvar.jsonnet",
-        "--packer-config-path",
-        "/packer-config/packer-centos7-crio.json",
+        #"--packer-config-path",
+        #"/packer-config/packer-centos7-crio.json",
     ],
     base = ":base_image",
     binary = ":cluster-api-provider-hcloud",

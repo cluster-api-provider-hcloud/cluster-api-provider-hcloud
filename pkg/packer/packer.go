@@ -49,15 +49,18 @@ func (b *build) Start() error {
 	return err
 }
 
-func New(log logr.Logger, packerConfigPath string) *Packer {
+func New(log logr.Logger) *Packer {
 	return &Packer{
-		log:              log,
-		packerConfigPath: packerConfigPath,
-		builds:           make(map[string]*build),
+		log: log,
+		// packerConfigPath: packerConfigPath,
+		builds: make(map[string]*build),
 	}
 }
 
 func (m *Packer) Initialize() error {
+
+	m.packerConfigPath = "/packer-config/packer-centos7-crio.json"
+
 	if m.packerConfigPath == "" {
 		return nil
 	}
