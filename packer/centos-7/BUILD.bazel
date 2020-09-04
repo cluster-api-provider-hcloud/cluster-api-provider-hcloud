@@ -19,7 +19,7 @@ pkg_tar(
         ":scripts",
     ],
     mode = "0o644",
-    package_dir = "packer-config",
+    package_dir = "centos-7-packer-config",
     strip_prefix = ".",
     visibility = ["//visibility:public"],
 )

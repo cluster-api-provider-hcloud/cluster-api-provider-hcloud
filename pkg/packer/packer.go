@@ -59,7 +59,7 @@ func New(log logr.Logger) *Packer {
 
 func (m *Packer) Initialize() error {
 
-	m.packerConfigPath = "/packer-config/packer-centos7-crio.json"
+	m.packerConfigPath = "/centos-7-packer-config/packer-centos7-crio.json"
 
 	if m.packerConfigPath == "" {
 		return nil

@@ -75,6 +75,8 @@ spec:
                 maxItems: 10
                 minItems: 1
                 type: array
+              image:
+                type: string
               locations:
                 items:
                   type: string
