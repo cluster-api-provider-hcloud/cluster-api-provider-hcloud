@@ -115,10 +115,10 @@ make deploy_kind
 - Applying the target cluster with demo-cluster
 
 ```sh
-# Create the 3 SSH Keys and name the keys control-plane, worker and cluster
-ssh-keygen -t ed25519 -C "your_email@example.com" -f ~/.ssh/<control-plane | worker | cluster>
+# Create an SSH Key
+ssh-keygen -t ed25519 -C "your_email@example.com" -f ~/.ssh/cluster
 
-# Create a Project on Hetzner Cloud and upload them
+# Create a Project on Hetzner Cloud and upload the public key. 
 
 # Create a token on Hetzner Cloud and apply it as secret
 kubectl create secret generic hcloud-token --from-literal=token=$TOKEN
