@@ -89,7 +89,7 @@ func (r *HcloudClusterReconciler) Reconcile(req ctrl.Request) (_ ctrl.Result, re
 		return reconcile.Result{}, err
 	}
 
-	if err := r.Packer.Initialize(); err != nil {
+	if err := r.Packer.Initialize(hcloudCluster); err != nil {
 		log.Error(err, "unable to initialise packer manager")
 		os.Exit(1)
 	}

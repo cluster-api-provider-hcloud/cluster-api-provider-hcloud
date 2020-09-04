@@ -57,10 +57,10 @@ func New(log logr.Logger) *Packer {
 	}
 }
 
-func (m *Packer) Initialize() error {
+func (m *Packer) Initialize(hc *infrav1.HcloudCluster) error {
 
-	m.packerConfigPath = "/centos-7-packer-config/packer-centos7-crio.json"
-
+	//m.packerConfigPath = "/centos-7-packer-config/packer-centos7-crio.json"
+	m.packerConfigPath = fmt.Sprintf("/%s-packer-config/packer-centos7-crio.json", hc.Spec.Image)
 	if m.packerConfigPath == "" {
 		return nil
 	}
