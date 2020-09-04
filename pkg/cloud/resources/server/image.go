@@ -20,6 +20,7 @@ func (s *Service) findImageIDBySpec(ctx context.Context, spec *infrav1.HcloudIma
 		}
 		return s.scope.EnsureImage(ctx, &packerapi.PackerParameters{
 			KubernetesVersion: strings.Trim(*version, "v"),
+			Image:             s.scope.HcloudCluster.Spec.Image,
 		})
 	}
 
