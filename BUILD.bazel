@@ -32,7 +32,7 @@ filegroup(
         "//controllers:all-srcs",
         "//hack:all-srcs",
         "//manifests:all-srcs",
-        "//packer:all-srcs",
+        "//packer/centos-7:all-srcs",
         "//pkg/cloud/resources/loadbalancer:all-srcs",
         "//pkg/cloud/resources/location:all-srcs",
         "//pkg/cloud/resources/network:all-srcs",
