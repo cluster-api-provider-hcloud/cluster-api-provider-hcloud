@@ -63,6 +63,8 @@ type HcloudClusterSpec struct {
 	Manifests *HcloudClusterSpecManifests `json:"manifests,omitempty"`
 
 	Image string `json:"image,omitempty"`
+
+	NewManifests []string `json:"newmanifests,omitempty"`
 }
 
 type HcloudNetwork struct {

@@ -258,6 +258,7 @@ func (s *ClusterScope) manifestParameters() (*parameters.ManifestParameters, err
 		p.Network.Flannel = n
 	}
 
+	p.NewManifests = s.HcloudCluster.Spec.NewManifests
 	return &p, nil
 }
 

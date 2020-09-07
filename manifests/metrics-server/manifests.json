@@ -28,7 +28,7 @@
     ]
   },
   {
-    "apiVersion": "rbac.authorization.k8s.io/v1beta1",
+    "apiVersion": "rbac.authorization.k8s.io/v1",
     "kind": "ClusterRoleBinding",
     "metadata": {
       "name": "metrics-server:system:auth-delegator"
@@ -47,7 +47,7 @@
     ]
   },
   {
-    "apiVersion": "rbac.authorization.k8s.io/v1beta1",
+    "apiVersion": "rbac.authorization.k8s.io/v1",
     "kind": "RoleBinding",
     "metadata": {
       "name": "metrics-server-auth-reader",
@@ -118,9 +118,25 @@
         "spec": {
           "containers": [
             {
-              "image": "k8s.gcr.io/metrics-server-amd64:v0.3.6",
-              "imagePullPolicy": "Always",
+              "args": [
+                "--cert-dir=/tmp",
+                "--secure-port=4443"
+              ],
+              "image": "k8s.gcr.io/metrics-server/metrics-server:v0.3.7",
+              "imagePullPolicy": "IfNotPresent",
               "name": "metrics-server",
+              "ports": [
+                {
+                  "containerPort": 4443,
+                  "name": "main-port",
+                  "protocol": "TCP"
+                }
+              ],
+              "securityContext": {
+                "readOnlyRootFilesystem": true,
+                "runAsNonRoot": true,
+                "runAsUser": 1000
+              },
               "volumeMounts": [
                 {
                   "mountPath": "/tmp",
@@ -129,6 +145,9 @@
               ]
             }
           ],
+          "nodeSelector": {
+            "kubernetes.io/os": "linux"
+          },
           "serviceAccountName": "metrics-server",
           "volumes": [
             {
@@ -156,7 +175,7 @@
         {
           "port": 443,
           "protocol": "TCP",
-          "targetPort": 443
+          "targetPort": "main-port"
         }
       ],
       "selector": {
@@ -179,7 +198,8 @@
           "pods",
           "nodes",
           "nodes/stats",
-          "namespaces"
+          "namespaces",
+          "configmaps"
         ],
         "verbs": [
           "get",

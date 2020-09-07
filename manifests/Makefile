@@ -1,38 +1,31 @@
 HELM := helm3
 
-fetch: hcloud-ip-floater/manifests.json hcloud-cloud-controller-manager/manifests.json calico/manifests.json hcloud-csi/manifests.json
+fetch: hcloud-cloud-controller-manager/manifests.json calico/manifests.json hcloud-csi/manifests.json
 
-hcloud-ip-floater/manifests.json:
-	kubectl convert -k $(shell dirname "$@")/upstream -o json | jq .items > $@
 
-hcloud-metallb-floater/manifests.json:
-	kubectl convert -k $(shell dirname "$@")/upstream -o json | jq .items > $@
-
-HCLOUD_CLOUD_CONTROLLER_MANAGER_VERSION := 1.5.0
+HCLOUD_CLOUD_CONTROLLER_MANAGER_VERSION := 1.7.0
 hcloud-cloud-controller-manager/manifests.json:
 	mkdir -p $(shell dirname "$@")
 	curl -sL https://raw.githubusercontent.com/hetznercloud/hcloud-cloud-controller-manager/v$(HCLOUD_CLOUD_CONTROLLER_MANAGER_VERSION)/deploy/v$(HCLOUD_CLOUD_CONTROLLER_MANAGER_VERSION).yaml | \
 		go run ../hack/yaml2json.go | \
 		jq -s  > $@
 
-HCLOUD_CSI_VERSION := 1.2.2
+HCLOUD_CSI_VERSION := 1.4.0
 hcloud-csi/manifests.json:
 	mkdir -p $(shell dirname "$@")
 	curl -sL https://raw.githubusercontent.com/hetznercloud/csi-driver/v$(HCLOUD_CSI_VERSION)/deploy/kubernetes/hcloud-csi.yml | \
 		go run ../hack/yaml2json.go | \
 		jq -s  > $@
 
-CALICO_VERSION := 3.13
+CALICO_VERSION := 3.16
 calico/manifests.json:
 	mkdir -p $(shell dirname "$@")
 	curl -sL https://docs.projectcalico.org/v$(CALICO_VERSION)/manifests/calico.yaml | \
 		go run ../hack/yaml2json.go | \
 		jq -s  > $@
 
-metallb/manifests.json:
-	kubectl convert -k $(shell dirname "$@")/upstream -o json | jq .items > $@
 
-METRICS_SERVER_VERSION := 0.3.6
+METRICS_SERVER_VERSION := 0.3.7
 metrics-server/manifests.json:
 	mkdir -p $(shell dirname "$@")/tmp
 	curl -sL https://github.com/kubernetes-sigs/metrics-server/archive/v$(METRICS_SERVER_VERSION).tar.gz | tar xzf - --strip-components 3 -C $(shell dirname "$@")/tmp metrics-server-$(METRICS_SERVER_VERSION)/deploy/1.8+

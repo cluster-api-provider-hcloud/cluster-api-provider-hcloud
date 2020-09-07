@@ -7,7 +7,10 @@
     },
     "spec": {
       "attachRequired": true,
-      "podInfoOnMount": true
+      "podInfoOnMount": true,
+      "volumeLifecycleModes": [
+        "Persistent"
+      ]
     }
   },
   {
@@ -50,7 +53,8 @@
           "get",
           "list",
           "watch",
-          "update"
+          "update",
+          "patch"
         ]
       },
       {
@@ -131,7 +135,8 @@
           "list",
           "watch",
           "create",
-          "delete"
+          "delete",
+          "patch"
         ]
       },
       {
@@ -139,13 +144,15 @@
           ""
         ],
         "resources": [
-          "persistentvolumeclaims"
+          "persistentvolumeclaims",
+          "persistentvolumeclaims/status"
         ],
         "verbs": [
           "get",
           "list",
           "watch",
-          "update"
+          "update",
+          "patch"
         ]
       },
       {
@@ -265,7 +272,7 @@
                 "--csi-address=/var/lib/csi/sockets/pluginproxy/csi.sock",
                 "--v=5"
               ],
-              "image": "quay.io/k8scsi/csi-attacher:v1.2.1",
+              "image": "quay.io/k8scsi/csi-attacher:v2.2.0",
               "name": "csi-attacher",
               "securityContext": {
                 "allowPrivilegeEscalation": true,
@@ -313,7 +320,7 @@
                 "--feature-gates=Topology=true",
                 "--v=5"
               ],
-              "image": "quay.io/k8scsi/csi-provisioner:v1.3.1",
+              "image": "quay.io/k8scsi/csi-provisioner:v1.6.0",
               "name": "csi-provisioner",
               "securityContext": {
                 "allowPrivilegeEscalation": true,
@@ -351,13 +358,28 @@
                   }
                 }
               ],
-              "image": "hetznercloud/hcloud-csi-driver:1.2.2",
+              "image": "hetznercloud/hcloud-csi-driver:1.4.0",
               "imagePullPolicy": "Always",
+              "livenessProbe": {
+                "failureThreshold": 5,
+                "httpGet": {
+                  "path": "/healthz",
+                  "port": "healthz"
+                },
+                "initialDelaySeconds": 10,
+                "periodSeconds": 2,
+                "timeoutSeconds": 3
+              },
               "name": "hcloud-csi-driver",
               "ports": [
                 {
                   "containerPort": 9189,
                   "name": "metrics"
+                },
+                {
+                  "containerPort": 9808,
+                  "name": "healthz",
+                  "protocol": "TCP"
                 }
               ],
               "securityContext": {
@@ -369,6 +391,20 @@
                 },
                 "privileged": true
               },
+              "volumeMounts": [
+                {
+                  "mountPath": "/var/lib/csi/sockets/pluginproxy/",
+                  "name": "socket-dir"
+                }
+              ]
+            },
+            {
+              "args": [
+                "--csi-address=/var/lib/csi/sockets/pluginproxy/csi.sock"
+              ],
+              "image": "quay.io/k8scsi/livenessprobe:v1.1.0",
+              "imagePullPolicy": "Always",
+              "name": "liveness-probe",
               "volumeMounts": [
                 {
                   "mountPath": "/var/lib/csi/sockets/pluginproxy/",
@@ -429,7 +465,7 @@
                   }
                 }
               ],
-              "image": "quay.io/k8scsi/csi-node-driver-registrar:v1.2.0",
+              "image": "quay.io/k8scsi/csi-node-driver-registrar:v1.3.0",
               "name": "csi-node-driver-registrar",
               "securityContext": {
                 "privileged": true
@@ -465,13 +501,28 @@
                   }
                 }
               ],
-              "image": "hetznercloud/hcloud-csi-driver:1.2.2",
+              "image": "hetznercloud/hcloud-csi-driver:1.4.0",
               "imagePullPolicy": "Always",
+              "livenessProbe": {
+                "failureThreshold": 5,
+                "httpGet": {
+                  "path": "/healthz",
+                  "port": "healthz"
+                },
+                "initialDelaySeconds": 10,
+                "periodSeconds": 2,
+                "timeoutSeconds": 3
+              },
               "name": "hcloud-csi-driver",
               "ports": [
                 {
                   "containerPort": 9189,
                   "name": "metrics"
+                },
+                {
+                  "containerPort": 9808,
+                  "name": "healthz",
+                  "protocol": "TCP"
                 }
               ],
               "securityContext": {
@@ -492,9 +543,37 @@
                   "name": "device-dir"
                 }
               ]
+            },
+            {
+              "args": [
+                "--csi-address=/csi/csi.sock"
+              ],
+              "image": "quay.io/k8scsi/livenessprobe:v1.1.0",
+              "imagePullPolicy": "Always",
+              "name": "liveness-probe",
+              "volumeMounts": [
+                {
+                  "mountPath": "/csi",
+                  "name": "plugin-dir"
+                }
+              ]
             }
           ],
           "serviceAccount": "hcloud-csi",
+          "tolerations": [
+            {
+              "effect": "NoExecute",
+              "operator": "Exists"
+            },
+            {
+              "effect": "NoSchedule",
+              "operator": "Exists"
+            },
+            {
+              "key": "CriticalAddonsOnly",
+              "operator": "Exists"
+            }
+          ],
           "volumes": [
             {
               "hostPath": {
@@ -533,6 +612,9 @@
     "apiVersion": "v1",
     "kind": "Service",
     "metadata": {
+      "labels": {
+        "app": "hcloud-csi"
+      },
       "name": "hcloud-csi-controller-metrics",
       "namespace": "kube-system"
     },
@@ -553,6 +635,9 @@
     "apiVersion": "v1",
     "kind": "Service",
     "metadata": {
+      "labels": {
+        "app": "hcloud-csi"
+      },
       "name": "hcloud-csi-node-metrics",
       "namespace": "kube-system"
     },

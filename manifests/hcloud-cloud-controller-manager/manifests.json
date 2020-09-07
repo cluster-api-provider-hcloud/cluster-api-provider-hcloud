@@ -76,15 +76,6 @@
                       "name": "hcloud"
                     }
                   }
-                },
-                {
-                  "name": "HCLOUD_NETWORK",
-                  "valueFrom": {
-                    "secretKeyRef": {
-                      "key": "network",
-                      "name": "hcloud"
-                    }
-                  }
                 }
               ],
               "image": "hetznercloud/hcloud-cloud-controller-manager:v1.7.0",
