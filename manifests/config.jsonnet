@@ -1,5 +1,4 @@
 local calico = import 'calico/calico.libsonnet';
-local cilium = import 'cilium/cilium.libsonnet';
 local flannel = import 'flannel/flannel.libsonnet';
 local hcloudCloudControllerManager = import 'hcloud-cloud-controller-manager/hcloud-cloud-controller-manager.libsonnet';
 local hcloudCSI = import 'hcloud-csi/hcloud-csi.libsonnet';
@@ -7,6 +6,7 @@ local metricsServer = import 'metrics-server/metrics-server.libsonnet';
 
 local AllManifests = {
     "calico": import "calico/calico.libsonnet",
+    "cilium": import 'cilium/cilium.libsonnet',
     "hcloudCSI": import "hcloud-csi/hcloud-csi.libsonnet",
     "metricsServer": import "metrics-server/metrics-server.libsonnet",
     "hcloudCloudControllerManager": import "hcloud-cloud-controller-manager/hcloud-cloud-controller-manager.libsonnet"
@@ -49,8 +49,6 @@ local defaultConfig = {
   hcloudToken: 'xx',
   hcloudNetwork: 'yy',
   hcloudLoadBalancerIPv4s: ['1.1.1.1', '2.2.2.2'],
-  network: {
-  },
 };
 
 local newControlPlaneService(pos, ip) = {
@@ -142,19 +140,11 @@ local addons = {
   },
 };
 
-local hasNetwork(config, network) =
-  if std.objectHas(config, 'network')
-  then std.objectHas(config.network, network)
-  else false;
 
 local new(c) = (
   {
     _config+:: defaultConfig,
   } +
-  (if hasNetwork(c, 'calico') then calico else {}) +
-  (if hasNetwork(c, 'cilium') then cilium else {}) +
-  (if hasNetwork(c, 'flannel') then flannel else {}) +
-
   (if std.objectHas(c, 'manifests') then
     getManifests(c.manifests)
   else 
@@ -169,5 +159,5 @@ local new(c) = (
   new(config)::
     new(config),
 
-  example: new({ network+: { calico: {} } }),
+  example: new({}),
 }

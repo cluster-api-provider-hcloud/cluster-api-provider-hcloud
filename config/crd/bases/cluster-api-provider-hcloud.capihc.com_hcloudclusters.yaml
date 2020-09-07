@@ -82,39 +82,9 @@ spec:
                   type: string
                 type: array
               manifests:
-                description: Manifests represents the config for manifests to apply
-                properties:
-                  disabled:
-                    type: boolean
-                  network:
-                    properties:
-                      calico:
-                        type: object
-                      cilium:
-                        properties:
-                          ipSecKeysRef:
-                            description: SecretKeySelector selects a key of a Secret.
-                            properties:
-                              key:
-                                description: The key of the secret to select from.  Must be a valid secret key.
-                                type: string
-                              name:
-                                description: 'Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names TODO: Add other useful fields. apiVersion, kind, uid?'
-                                type: string
-                              optional:
-                                description: Specify whether the Secret or its key must be defined
-                                type: boolean
-                            required:
-                            - key
-                            type: object
-                        type: object
-                      flannel:
-                        properties:
-                          backend:
-                            type: string
-                        type: object
-                    type: object
-                type: object
+                items:
+                  type: string
+                type: array
               network:
                 properties:
                   cidrBlock:
@@ -129,10 +99,6 @@ spec:
                       type: object
                     type: array
                 type: object
-              newmanifests:
-                items:
-                  type: string
-                type: array
               sshKeys:
                 description: define cluster wide SSH keys
                 items:

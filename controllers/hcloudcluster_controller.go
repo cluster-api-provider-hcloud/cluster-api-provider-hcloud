@@ -350,44 +350,8 @@ func (c *managementCluster) Eventf(eventtype, reason, message string, args ...in
 	c.recorder.Eventf(c.hcloudCluster, eventtype, reason, message, args...)
 }
 
-func (r *HcloudClusterReconciler) reconcileManifestsNetwork(clusterScope *scope.ClusterScope) error {
-	hcloudCluster := clusterScope.HcloudCluster
-	manifests := hcloudCluster.Spec.CNI
-
-	// if nothing is set default to calico
-	if manifests == nil {
-		hcloudCluster.Spec.CNI = &infrav1.HcloudClusterSpecCNIManifests{
-			Network: &infrav1.HcloudClusterSpecManifestsNetwork{
-				Calico: &infrav1.HcloudClusterSpecManifestsNetworkCalico{},
-			},
-		}
-		manifests = hcloudCluster.Spec.CNI
-	}
-
-	// if Cilium with IPSec is enabled ensure we have an existing PSK
-	if manifests != nil && manifests.Network != nil && manifests.Network.Cilium != nil {
-
-		// if IPSec is enabled ensure key ref is set
-		cilium := manifests.Network.Cilium
-		if cilium.IPSecKeysRef != nil {
-			if cilium.IPSecKeysRef.Name == "" {
-				cilium.IPSecKeysRef.Name = fmt.Sprintf("%s-cilium-ipsec-keys", hcloudCluster.Name)
-			}
-			if cilium.IPSecKeysRef.Key == "" {
-				cilium.IPSecKeysRef.Key = "keys"
-			}
-		}
-	}
-
-	return nil
-}
-
 func (r *HcloudClusterReconciler) reconcileManifests(clusterScope *scope.ClusterScope) error {
 	hcloudCluster := clusterScope.HcloudCluster
-
-	if err := r.reconcileManifestsNetwork(clusterScope); err != nil {
-		return err
-	}
 
 	// Check if manifests need to be applied or reapplied
 	expectedHash, err := clusterScope.ManifestsHash()
