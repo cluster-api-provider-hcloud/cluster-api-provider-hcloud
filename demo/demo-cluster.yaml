@@ -43,7 +43,7 @@ spec:
     key: token
     name: hcloud-token
   image: centos-7
-  newmanifests: 
+  manifests: 
   - hcloudCSI
   - metricsServer
   - hcloudCloudControllerManager

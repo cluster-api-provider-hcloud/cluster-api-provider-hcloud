@@ -59,12 +59,12 @@ type HcloudClusterSpec struct {
 
 	TokenRef *corev1.SecretKeySelector `json:"tokenRef,omitempty"`
 
-	// Manifests represents the config for manifests to apply
-	Manifests *HcloudClusterSpecManifests `json:"manifests,omitempty"`
+	// CNI Manifests represents the config for manifests to apply
+	CNI *HcloudClusterSpecCNIManifests `json:"cni,omitempty"`
 
 	Image string `json:"image,omitempty"`
 
-	NewManifests []string `json:"newmanifests,omitempty"`
+	Manifests []string `json:"manifests,omitempty"`
 }
 
 type HcloudNetwork struct {
@@ -117,7 +117,7 @@ type HcloudLoadBalancerStatus struct {
 	Targets   []int                           `json:"-"`
 }
 
-type HcloudClusterSpecManifests struct {
+type HcloudClusterSpecCNIManifests struct {
 	Disabled *bool                              `json:"disabled,omitempty"`
 	Network  *HcloudClusterSpecManifestsNetwork `json:"network,omitempty"`
 }

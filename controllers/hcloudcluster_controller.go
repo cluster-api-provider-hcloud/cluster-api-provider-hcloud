@@ -352,16 +352,16 @@ func (c *managementCluster) Eventf(eventtype, reason, message string, args ...in
 
 func (r *HcloudClusterReconciler) reconcileManifestsNetwork(clusterScope *scope.ClusterScope) error {
 	hcloudCluster := clusterScope.HcloudCluster
-	manifests := hcloudCluster.Spec.Manifests
+	manifests := hcloudCluster.Spec.CNI
 
 	// if nothing is set default to calico
 	if manifests == nil {
-		hcloudCluster.Spec.Manifests = &infrav1.HcloudClusterSpecManifests{
+		hcloudCluster.Spec.CNI = &infrav1.HcloudClusterSpecCNIManifests{
 			Network: &infrav1.HcloudClusterSpecManifestsNetwork{
 				Calico: &infrav1.HcloudClusterSpecManifestsNetworkCalico{},
 			},
 		}
-		manifests = hcloudCluster.Spec.Manifests
+		manifests = hcloudCluster.Spec.CNI
 	}
 
 	// if Cilium with IPSec is enabled ensure we have an existing PSK

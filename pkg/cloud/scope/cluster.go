@@ -232,13 +232,13 @@ func (s *ClusterScope) manifestParameters() (*parameters.ManifestParameters, err
 	}
 	p.PodCIDRBlock = podCidrBlock
 
-	if s.HcloudCluster.Spec.Manifests == nil || s.HcloudCluster.Spec.Manifests.Network == nil {
-		return nil, errors.Wrap(err, "No overlay network configured in spec.manifests.network")
+	if s.HcloudCluster.Spec.CNI == nil || s.HcloudCluster.Spec.CNI.Network == nil {
+		return nil, errors.Wrap(err, "No overlay network configured in spec.cni.network")
 	}
 
 	// convert config to the format expected by JSONNET
 	p.Network = &parameters.ManifestNetwork{}
-	clusterNetwork := s.HcloudCluster.Spec.Manifests.Network
+	clusterNetwork := s.HcloudCluster.Spec.CNI.Network
 	if n := clusterNetwork.Calico; n != nil {
 		p.Network.Calico = n
 	}
@@ -258,7 +258,7 @@ func (s *ClusterScope) manifestParameters() (*parameters.ManifestParameters, err
 		p.Network.Flannel = n
 	}
 
-	p.NewManifests = s.HcloudCluster.Spec.NewManifests
+	p.Manifests = s.HcloudCluster.Spec.Manifests
 	return &p, nil
 }
 
@@ -333,13 +333,13 @@ func (s *ClusterScope) ApplyManifestsWithClientConfig(ctx context.Context, c cli
 }
 
 func (s *ClusterScope) IsUsingCilium() bool {
-	if s.HcloudCluster.Spec.Manifests == nil {
+	if s.HcloudCluster.Spec.CNI == nil {
 		return false
 	}
-	if s.HcloudCluster.Spec.Manifests.Network == nil {
+	if s.HcloudCluster.Spec.CNI.Network == nil {
 		return false
 	}
-	if s.HcloudCluster.Spec.Manifests.Network.Cilium == nil {
+	if s.HcloudCluster.Spec.CNI.Network.Cilium == nil {
 		return false
 	}
 	return true

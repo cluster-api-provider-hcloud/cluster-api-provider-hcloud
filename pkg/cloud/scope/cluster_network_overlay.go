@@ -11,7 +11,7 @@ import (
 )
 
 func (s *ClusterScope) EnsureCiliumIPSecKeysExists(ctx context.Context) (keys *string, err error) {
-	keyRef := s.HcloudCluster.Spec.Manifests.Network.Cilium.IPSecKeysRef
+	keyRef := s.HcloudCluster.Spec.CNI.Network.Cilium.IPSecKeysRef
 
 	var keySecret corev1.Secret
 	var secretName = types.NamespacedName{

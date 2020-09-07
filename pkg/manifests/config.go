@@ -31,7 +31,7 @@ func sampleParameters() *parameters.ManifestParameters {
 		HcloudToken:   &hcloudToken,
 		HcloudNetwork: &hcloudNetwork,
 		PodCIDRBlock:  podCIDRBlock,
-		NewManifests:  manifests,
+		Manifests:     manifests,
 		Network: &parameters.ManifestNetwork{
 			Calico: &infrav1.HcloudClusterSpecManifestsNetworkCalico{},
 		},
