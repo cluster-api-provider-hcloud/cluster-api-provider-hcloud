@@ -5,7 +5,6 @@ go_library(
     srcs = [
         "client.go",
         "cluster.go",
-        "cluster_network_overlay.go",
         "machine.go",
         "volume.go",
     ],

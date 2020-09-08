@@ -59,10 +59,9 @@ type HcloudClusterSpec struct {
 
 	TokenRef *corev1.SecretKeySelector `json:"tokenRef,omitempty"`
 
-	// Manifests represents the config for manifests to apply
-	Manifests *HcloudClusterSpecManifests `json:"manifests,omitempty"`
-
 	Image string `json:"image,omitempty"`
+
+	Manifests []string `json:"manifests,omitempty"`
 }
 
 type HcloudNetwork struct {
@@ -113,28 +112,6 @@ type HcloudLoadBalancerStatus struct {
 	Labels    map[string]string               `json:"-"`
 	Algorithm HcloudLoadBalancerAlgorithmType `json:"algorithm,omitempty"`
 	Targets   []int                           `json:"-"`
-}
-
-type HcloudClusterSpecManifests struct {
-	Disabled *bool                              `json:"disabled,omitempty"`
-	Network  *HcloudClusterSpecManifestsNetwork `json:"network,omitempty"`
-}
-
-type HcloudClusterSpecManifestsNetwork struct {
-	Calico  *HcloudClusterSpecManifestsNetworkCalico  `json:"calico,omitempty"`
-	Cilium  *HcloudClusterSpecManifestsNetworkCilium  `json:"cilium,omitempty"`
-	Flannel *HcloudClusterSpecManifestsNetworkFlannel `json:"flannel,omitempty"`
-}
-
-type HcloudClusterSpecManifestsNetworkCalico struct {
-}
-
-type HcloudClusterSpecManifestsNetworkCilium struct {
-	IPSecKeysRef *corev1.SecretKeySelector `json:"ipSecKeysRef,omitempty"`
-}
-
-type HcloudClusterSpecManifestsNetworkFlannel struct {
-	Backend string `json:"backend,omitempty"`
 }
 
 type HcloudClusterStatusManifests struct {

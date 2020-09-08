@@ -1,11 +1,32 @@
 local calico = import 'calico/calico.libsonnet';
-local cilium = import 'cilium/cilium.libsonnet';
 local flannel = import 'flannel/flannel.libsonnet';
 local hcloudCloudControllerManager = import 'hcloud-cloud-controller-manager/hcloud-cloud-controller-manager.libsonnet';
 local hcloudCSI = import 'hcloud-csi/hcloud-csi.libsonnet';
-//local hcloudMetalLBFloater = import 'hcloud-metallb-floater/hcloud-metallb-floater.libsonnet';
-//local metalLB = import 'metallb/metallb.libsonnet';
 local metricsServer = import 'metrics-server/metrics-server.libsonnet';
+
+local AllManifests = {
+    "calico": import "calico/calico.libsonnet",
+    "cilium": import 'cilium/cilium.libsonnet',
+    "hcloudCSI": import "hcloud-csi/hcloud-csi.libsonnet",
+    "metricsServer": import "metrics-server/metrics-server.libsonnet",
+    "hcloudCloudControllerManager": import "hcloud-cloud-controller-manager/hcloud-cloud-controller-manager.libsonnet"
+};
+
+local getManifestFromKey(x) = 
+  if std.objectHas(AllManifests,x) then
+    AllManifests[x] 
+  else
+    std.trace("Manifest key not found: " + x, {});
+
+local join_objects(objs) =
+  local aux(arr, i, running) =
+    if i >= std.length(arr) then
+      running
+    else
+      aux(arr, i + 1, running + arr[i]) tailstrict;
+  aux(objs, 0, {});
+
+local getManifests(keys) = join_objects(std.map(getManifestFromKey, keys));
 
 local defaultConfig = {
   hcloudNetworkRef: {
@@ -28,8 +49,6 @@ local defaultConfig = {
   hcloudToken: 'xx',
   hcloudNetwork: 'yy',
   hcloudLoadBalancerIPv4s: ['1.1.1.1', '2.2.2.2'],
-  network: {
-  },
 };
 
 local newControlPlaneService(pos, ip) = {
@@ -121,23 +140,15 @@ local addons = {
   },
 };
 
-local hasNetwork(config, network) =
-  if std.objectHas(config, 'network')
-  then std.objectHas(config.network, network)
-  else false;
 
 local new(c) = (
   {
     _config+:: defaultConfig,
   } +
-  (if hasNetwork(c, 'calico') then calico else {}) +
-  (if hasNetwork(c, 'cilium') then cilium else {}) +
-  (if hasNetwork(c, 'flannel') then flannel else {}) +
-  hcloudCloudControllerManager +
-  hcloudCSI +
-  metricsServer +
-  //hcloudMetalLBFloater +
-  //metalLB +
+  (if std.objectHas(c, 'manifests') then
+    getManifests(c.manifests)
+  else 
+    {}) +
   {
     _config+:: c,
   } +
@@ -148,5 +159,5 @@ local new(c) = (
   new(config)::
     new(config),
 
-  example: new({ network+: { calico: {} } }),
+  example: new({}),
 }

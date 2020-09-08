@@ -14,14 +14,13 @@ import (
 	"gopkg.in/yaml.v3"
 	"k8s.io/apimachinery/pkg/util/intstr"
 
-	infrav1 "github.com/cluster-api-provider-hcloud/cluster-api-provider-hcloud/api/v1alpha3"
 	"github.com/cluster-api-provider-hcloud/cluster-api-provider-hcloud/pkg/manifests/parameters"
 )
 
 func sampleParameters() *parameters.ManifestParameters {
 	hcloudNetwork := intstr.FromString("cluster-dev")
 	hcloudToken := "my-token"
-
+	manifests := []string{"hcloudCSI", "metricsServer"}
 	_, podCIDRBlock, err := net.ParseCIDR("192.168.0.0/17")
 	if err != nil {
 		panic(err)
@@ -31,9 +30,7 @@ func sampleParameters() *parameters.ManifestParameters {
 		HcloudToken:   &hcloudToken,
 		HcloudNetwork: &hcloudNetwork,
 		PodCIDRBlock:  podCIDRBlock,
-		Network: &parameters.ManifestNetwork{
-			Calico: &infrav1.HcloudClusterSpecManifestsNetworkCalico{},
-		},
+		Manifests:     manifests,
 	}
 }
 

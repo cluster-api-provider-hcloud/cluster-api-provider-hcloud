@@ -6,11 +6,7 @@ local myConfig = {
   hcloudNetwork: std.extVar('hcloud-network'),
   hcloudLoadBalancerIPv4s: std.split(std.extVar('hcloud-loadbalancer'), ','),
   podsCIDRBlock: std.extVar('pod-cidr-block'),
-  local networkConfig = std.parseJson(std.extVar('network')),
-  network+: {
-    [k]+: networkConfig[k]
-    for k in std.objectFields(networkConfig)
-  },
+  manifests: std.split(std.extVar('manifests'), ','),
 };
 
 local addLabelIfNotExists(key, value) =
