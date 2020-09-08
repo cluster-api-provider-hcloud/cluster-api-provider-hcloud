@@ -87,7 +87,7 @@ pkg_tar(
     deps = [
         ":host_bin_tar",
         "//manifests",
-        "//packer/centos-7",
+        "//packer/centos-7:packer",
     ],
 )
 
