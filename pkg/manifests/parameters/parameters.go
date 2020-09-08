@@ -13,6 +13,7 @@ type ManifestParameters struct {
 	HcloudLoadBalancerIPv4s []string
 	PodCIDRBlock            *net.IPNet
 	Manifests               []string
+	LoadBalancerName        *string
 }
 
 func (m *ManifestParameters) ExtVar() map[string]string {
@@ -21,6 +22,10 @@ func (m *ManifestParameters) ExtVar() map[string]string {
 	extVar["hcloud-loadbalancer"] = strings.Join(m.HcloudLoadBalancerIPv4s, ",")
 
 	extVar["manifests"] = strings.Join(m.Manifests, ",")
+
+	if key, val := "loadbalancer-name", m.LoadBalancerName; val != nil {
+		extVar[key] = *val
+	}
 
 	if key, val := "hcloud-token", m.HcloudToken; val != nil {
 		extVar[key] = *val

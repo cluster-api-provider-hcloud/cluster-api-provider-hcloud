@@ -57,6 +57,9 @@ local newControlPlaneService(pos, ip) = {
   metadata: {
     name: 'kube-apiserver-%d' % pos,
     namespace: 'kube-system',
+    annotations: {
+      "load-balancer.hetzner.cloud/name": 'lb-test-name',
+    },
   },
   spec: {
     selector: {
@@ -76,6 +79,8 @@ local newControlPlaneService(pos, ip) = {
   },
 };
 
+local insertRealLBName(obj, lbName) = std.parseJson(std.strReplace(std.toString(obj), 'lb-test-name', lbName));
+
 local addons = {
   hcloudSecret: {
     apiVersion: 'v1',
@@ -91,7 +96,7 @@ local addons = {
     },
   },
 
-  controlPlaneServices: std.mapWithIndex(newControlPlaneService, $._config.hcloudLoadBalancerIPv4s),
+  controlPlaneServices: insertRealLBName(std.mapWithIndex(newControlPlaneService, $._config.hcloudLoadBalancerIPv4s), $._config.loadBalancerName),
 
   workarounds: {
     // This fixes a problem join v1.18 node to a v1.17 control plane
