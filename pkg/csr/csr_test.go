@@ -25,7 +25,7 @@ func newCSR() *x509.CertificateRequest {
 
 func newMachine() *infrav1.HcloudMachine {
 	m := &infrav1.HcloudMachine{}
-	m.Name = "cluster-dev-control-plane-z5lhh"
+	m.Name = "christian-dev-control-plane-z5lhh"
 	m.Status.Addresses = []corev1.NodeAddress{
 		{
 			Type:    corev1.NodeInternalIP,

@@ -1,4 +1,4 @@
-// TODO: Update test
+// TODO: Update this test
 /*
 local config = import 'config.jsonnet';
 
@@ -22,5 +22,12 @@ local flannelManifests(x) = std.filter(
 
   keysDefaults: flannelManifests($.testDefaults),
 }
+
+THIS TEST EXPECTS THE FOLLOWING OUTPUT IN test_config_flannel.json:
+   {
+    "keysDefaults": [
+        "flannel"
+    ]
+   }
 */
 {}
