@@ -213,6 +213,11 @@ func (s *ClusterScope) manifestParameters() (*parameters.ManifestParameters, err
 		)
 	}
 
+	// Should this be the first loadbalancer or the main one?
+	// We have to give an annotation to the loadbalancer created here with kubeapi
+	// so that it will be properly managed by HcloudControllerManager
+	p.LoadBalancerName = &s.HcloudCluster.Status.ControlPlaneLoadBalancers[0].Name
+
 	p.HcloudToken = &s.hcloudToken
 
 	if s.HcloudCluster.Status.Network != nil {

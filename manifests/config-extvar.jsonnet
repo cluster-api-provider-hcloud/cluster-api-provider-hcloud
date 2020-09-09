@@ -7,6 +7,7 @@ local myConfig = {
   hcloudLoadBalancerIPv4s: std.split(std.extVar('hcloud-loadbalancer'), ','),
   podsCIDRBlock: std.extVar('pod-cidr-block'),
   manifests: std.split(std.extVar('manifests'), ','),
+  loadBalancerName: std.extVar('loadbalancer-name')
 };
 
 local addLabelIfNotExists(key, value) =
