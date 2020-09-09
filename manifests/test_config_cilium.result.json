@@ -1,18 +1,1 @@
-{
-   "keysDefaults": [
-      "cilium",
-      "cilium-config",
-      "cilium-operator"
-   ],
-   "keysWithFlannel": [
-      "cilium",
-      "cilium-config",
-      "cilium-operator",
-      "flannel"
-   ],
-   "keysWithIPSec": [
-      "cilium",
-      "cilium-config",
-      "cilium-operator"
-   ]
-}
+{}

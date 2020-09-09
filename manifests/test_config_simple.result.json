@@ -1,34 +1,8 @@
 {
    "keys": [
-      "cloud-controller-manager",
-      "configMap",
       "controlPlaneServices",
-      "csi.hetzner.cloud",
-      "hcloud-cloud-controller-manager",
-      "hcloud-csi",
-      "hcloud-csi-controller",
-      "hcloud-csi-controller-metrics",
-      "hcloud-csi-node",
-      "hcloud-csi-node-metrics",
-      "hcloud-metallb-floater-controller",
-      "hcloud-metallb-floater-leader-election-role",
-      "hcloud-metallb-floater-leader-election-rolebinding",
-      "hcloud-volumes",
       "hcloudSecret",
-      "metallb-config-watcher",
-      "metallb-controller",
-      "metallb-metallb-system",
-      "metallb-metallb-system:controller",
-      "metallb-metallb-system:speaker",
-      "metallb-pod-lister",
-      "metallb-speaker",
-      "metrics-server",
-      "metrics-server-auth-reader",
-      "metrics-server:system:auth-delegator",
-      "system:aggregated-metrics-reader",
-      "system:cloud-controller-manager",
-      "system:metrics-server",
-      "v1beta1.metrics.k8s.io",
       "workarounds"
    ]
 }
+
