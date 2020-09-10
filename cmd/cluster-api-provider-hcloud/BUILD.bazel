@@ -87,7 +87,8 @@ pkg_tar(
     deps = [
         ":host_bin_tar",
         "//manifests",
-        "//packer/centos-7:packer",
+        "//packer/centos-7_k8s-universal:packer",
+        "//packer/centos-8_k8s-v1.19.0:packer",
     ],
 )
 
@@ -97,7 +98,8 @@ container_layer(
     name = "target_bin_layer",
     tars = [
         "//manifests",
-        "//packer/centos-7:packer",
+        "//packer/centos-7_k8s-universal:packer",
+        "//packer/centos-8_k8s-v1.19.0:packer",
     ],
 )
 
