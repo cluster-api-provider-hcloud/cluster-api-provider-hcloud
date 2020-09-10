@@ -76,10 +76,20 @@ local newControlPlaneService(pos, ip) = {
     type: 'LoadBalancer',
     loadBalancerIP: ip,
     externalTrafficPolicy: 'Local',
+    externalIPs: [
+      ip,
+    ],
+  },
+  status: {
+    loadBalancer: {
+      ingress: [
+        {"ip": ip},
+      ],
+    },
   },
 };
 
-local insertRealLBName(obj, lbName) = std.parseJson(std.strReplace(std.toString(obj), 'lb-test-name', lbName));
+local insertRealLBName(obj, lbName) = std.parseJson(std.strReplace(std.toString(obj), 'lb-test-name', 'lbName'));
 
 local addons = {
   hcloudSecret: {
@@ -97,7 +107,9 @@ local addons = {
   },
 
   controlPlaneServices: insertRealLBName(std.mapWithIndex(newControlPlaneService, $._config.hcloudLoadBalancerIPv4s), $._config.loadBalancerName),
-
+  mycontrolPlaneServices: std.mapWithIndex(newControlPlaneService, $._config.hcloudLoadBalancerIPv4s),
+  test: std.trace(std.toString($.controlPlaneServices), $.controlPlaneServices),
+  mytest: std.trace(std.toString($.mycontrolPlaneServices), $.mycontrolPlaneServices),
   workarounds: {
     // This fixes a problem join v1.18 node to a v1.17 control plane
     // https://github.com/kubernetes/kubeadm/issues/2079
