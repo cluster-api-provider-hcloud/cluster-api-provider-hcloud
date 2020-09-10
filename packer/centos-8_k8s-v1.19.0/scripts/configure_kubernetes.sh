@@ -48,9 +48,6 @@ semanage fcontext -a -t container_file_t /var/lib/etcd
 mkdir -p /var/lib/etcd
 restorecon -rv /var /etc
 
-# temporary fix for SELinux in kubernetes 1.16+,1.17+
-handle_version 1.19.0
-
 # enable completion
 echo 'source <(kubectl completion bash)' >>~/.bashrc
 

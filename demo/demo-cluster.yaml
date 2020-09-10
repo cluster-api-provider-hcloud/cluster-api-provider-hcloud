@@ -42,7 +42,7 @@ spec:
   tokenRef:
     key: token
     name: hcloud-token
-  image: centos-7
+  image: centos-7_k8s-universal
   manifests: 
   - hcloudCSI
   - metricsServer
