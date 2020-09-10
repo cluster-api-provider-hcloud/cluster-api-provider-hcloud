@@ -34,8 +34,7 @@
         "{{user `scripts`}}/configure_base.sh",
         "{{user `scripts`}}/configure_cri.sh",
         "{{user `scripts`}}/configure_kubernetes.sh",
-        "{{user `scripts`}}/configure_later_kernel.sh",
-        "{{user `scripts`}}/configure_wireguard.sh",
+        "{{user `scripts`}}/configure_kernel.sh",
         "{{user `scripts`}}/cleanup_ssh_host_keys.sh"
       ]
     }
