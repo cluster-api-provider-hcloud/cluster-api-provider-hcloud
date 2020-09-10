@@ -73,6 +73,9 @@ local newControlPlaneService(pos, ip) = {
     type: 'LoadBalancer',
     loadBalancerIP: ip,
     externalTrafficPolicy: 'Local',
+    externalIPs: [
+      ip,
+    ],
   },
 };
 
