@@ -3,6 +3,11 @@ kind: Cluster
 metadata:
   name: cluster-dev
   namespace: default
+  labels:
+    cni: calico-datastore-k8s
+    csi: hcloud-csi
+    ccm: hcloud-controller-manager-privnet
+    metrics-server: metrics-server
 spec:
   clusterNetwork:
     pods:
@@ -42,11 +47,7 @@ spec:
   tokenRef:
     key: token
     name: hcloud-token
-  manifests: 
-  - hcloudCSI
-  - metricsServer
-  - hcloudCloudControllerManager
-  - calico
+  manifests: []
 ---
 apiVersion: controlplane.cluster.x-k8s.io/v1alpha3
 kind: KubeadmControlPlane
