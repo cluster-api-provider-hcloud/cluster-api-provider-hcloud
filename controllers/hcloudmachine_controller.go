@@ -17,7 +17,6 @@ package controllers
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
@@ -68,8 +67,6 @@ func (r *HcloudMachineReconciler) Reconcile(req ctrl.Request) (_ ctrl.Result, re
 		return reconcile.Result{}, err
 	}
 
-	fmt.Println(hcloudMachine.Spec.Type)
-	fmt.Println(hcloudMachine.Spec.ImageName)
 	// Initialize Packer
 	if hcloudMachine.Status.ImageInitialized == false {
 

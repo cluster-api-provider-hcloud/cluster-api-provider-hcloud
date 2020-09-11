@@ -59,9 +59,7 @@ func New(log logr.Logger) *Packer {
 func (m *Packer) Initialize(machine *infrav1.HcloudMachine) error {
 
 	m.packerConfigPath = fmt.Sprintf("/%s-packer-config/image.json", machine.Spec.ImageName)
-	if m.packerConfigPath == "" {
-		return nil
-	}
+
 	if err := m.initializePacker(); err != nil {
 		return err
 	}

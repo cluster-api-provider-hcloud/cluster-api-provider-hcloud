@@ -20,8 +20,6 @@ type HcloudClient interface {
 type PackerParameters struct {
 	KubernetesVersion string
 	Image             string
-	// TODO add option to configure ContainerRuntime
-	// TODO add option to configure OperatingSystem
 }
 
 func (p *PackerParameters) Hash() string {
@@ -37,6 +35,5 @@ func (p *PackerParameters) EnvironmentVariables() []string {
 	return []string{
 		fmt.Sprintf("PACKER_KUBERNETES_VERSION=%s", p.KubernetesVersion),
 		fmt.Sprintf("PACKER_TEMPLATE_HASH=%s", p.Hash()),
-		fmt.Sprintf("PACKER_IMAGE=%s", p.Image),
 	}
 }
