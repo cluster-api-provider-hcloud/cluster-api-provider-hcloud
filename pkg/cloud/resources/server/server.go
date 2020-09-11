@@ -76,17 +76,14 @@ func (s *Service) Reconcile(ctx context.Context) (_ *ctrl.Result, err error) {
 	s.scope.HcloudMachine.Status.Location = infrav1.HcloudLocation(failureDomain)
 
 	// gather image ID
-	imageID, err := s.findImageIDBySpec(s.scope.Ctx, s.scope.HcloudMachine.Spec.Image)
+	imageID, err := s.findImageIDBySpec(s.scope.Ctx, "")
 	if err != nil {
 		return nil, err
 	}
 	if imageID == nil {
 		return &ctrl.Result{RequeueAfter: 2 * time.Second}, nil
 	}
-	if s.scope.HcloudMachine.Spec.Image == nil {
-		s.scope.HcloudMachine.Spec.Image = &infrav1.HcloudImageSpec{}
-	}
-	s.scope.HcloudMachine.Spec.Image.ID = imageID
+
 	s.scope.HcloudMachine.Status.ImageID = imageID
 
 	// gather volumes

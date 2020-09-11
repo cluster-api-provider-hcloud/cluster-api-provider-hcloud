@@ -56,9 +56,9 @@ func New(log logr.Logger) *Packer {
 	}
 }
 
-func (m *Packer) Initialize(hc *infrav1.HcloudCluster) error {
+func (m *Packer) Initialize(machine *infrav1.HcloudMachine) error {
 
-	m.packerConfigPath = fmt.Sprintf("/%s-packer-config/image.json", hc.Spec.Image)
+	m.packerConfigPath = fmt.Sprintf("/%s-packer-config/image.json", machine.Spec.ImageName)
 	if m.packerConfigPath == "" {
 		return nil
 	}
@@ -109,7 +109,7 @@ func (m *Packer) packerCmd(ctx context.Context, args ...string) *exec.Cmd {
 // EnsureImage checks if the API has an image already build and if not, it will
 // run packer build to create one
 func (m *Packer) EnsureImage(ctx context.Context, log logr.Logger, hc api.HcloudClient, parameters *api.PackerParameters) (*infrav1.HcloudImageID, error) {
-
+	fmt.Println("Started ensureImage")
 	hash := parameters.Hash()
 	key := fmt.Sprintf("%s%s", infrav1.NameHcloudProviderPrefix, "template-hash")
 
