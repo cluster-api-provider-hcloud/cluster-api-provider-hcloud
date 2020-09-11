@@ -35,7 +35,7 @@ spec:
   network:
     cidrBlock: 10.0.0.0/8
     subnets:
-    - cidrBlock: 10.100.0.0/14
+    - cidrBlock: 10.0.0.0/16
       networkZone: eu-central
   sshKeys:
   - name: cluster
@@ -45,8 +45,8 @@ spec:
   image: centos-8_k8s-v1.19.0
   manifests: 
   - calico
-  - hcloudCSI
   - metricsServer
+  - hcloudCSI
   - hcloudCloudControllerManager
 ---
 apiVersion: controlplane.cluster.x-k8s.io/v1alpha3
