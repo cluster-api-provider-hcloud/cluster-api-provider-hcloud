@@ -1,5 +1,7 @@
 package server
 
+// TODO: Delete this file
+/*
 import (
 	"context"
 	"strings"
@@ -21,7 +23,6 @@ func (s *Service) findImageIDBySpec(ctx context.Context, spec string) (*infrav1.
 			Image:             s.scope.HcloudMachine.Spec.ImageName,
 		})
 	}
-	/*
 		// specific image specified
 		images, err := s.scope.HcloudClient().ListImages(ctx, hcloud.ImageListOpts{})
 		if err != nil {
@@ -47,6 +48,6 @@ func (s *Service) findImageIDBySpec(ctx context.Context, spec string) (*infrav1.
 			}
 
 		}
-	*/
 	return nil, errors.New("no matching image found")
 }
+*/

@@ -28,6 +28,7 @@ func (p *PackerParameters) Hash() string {
 	h := md5.New()
 	h.Write([]byte(fmt.Sprintf("%d", imageVersion)))
 	h.Write([]byte(p.KubernetesVersion))
+	h.Write([]byte(p.Image))
 	return fmt.Sprintf("%x", h.Sum(nil))
 
 }
