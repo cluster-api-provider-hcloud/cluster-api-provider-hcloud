@@ -3,6 +3,7 @@
     "hcloud_token": "{{env `HCLOUD_TOKEN`}}",
     "scripts": "{{template_dir}}/scripts",
     "os": "centos-7",
+    "image-name": "centos-7_k8s-universal",
     "kubernetes_version": "{{env `PACKER_KUBERNETES_VERSION`}}",
     "template_hash": "{{env `PACKER_TEMPLATE_HASH`}}"
   },

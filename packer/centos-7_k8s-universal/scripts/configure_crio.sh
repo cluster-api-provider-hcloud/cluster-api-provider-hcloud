@@ -36,3 +36,4 @@ perl -i -0pe 's#plugin_dirs\s*=\s*\[[^\]]*\]#plugin_dirs = [\n  "/opt/cni/bin",\
 
 # enable systemd service after next boot
 systemctl enable crio.service
+

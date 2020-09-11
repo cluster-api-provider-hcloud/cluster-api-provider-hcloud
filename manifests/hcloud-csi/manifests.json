@@ -353,7 +353,7 @@
                   "valueFrom": {
                     "secretKeyRef": {
                       "key": "token",
-                      "name": "hcloud-csi"
+                      "name": "hcloud"
                     }
                   }
                 }
@@ -496,7 +496,7 @@
                   "valueFrom": {
                     "secretKeyRef": {
                       "key": "token",
-                      "name": "hcloud-csi"
+                      "name": "hcloud"
                     }
                   }
                 }
