@@ -1,7 +1,7 @@
 load("@bazel_tools//tools/build_defs/pkg:pkg.bzl", "pkg_tar")
 
 filegroup(
-    name = "centos_crio",
+    name = "centos_cri",
     srcs = [
         "image.json",
     ],
@@ -15,7 +15,7 @@ filegroup(
 pkg_tar(
     name = "packer",
     srcs = [
-        ":centos_crio",
+        ":centos_cri",
         ":scripts",
     ],
     mode = "0o644",
@@ -29,10 +29,10 @@ sh_test(
     srcs = ["packer-validate.sh"],
     args = [
         "$(location //hack:packer_host_bin)",
-        "$(location :centos8_crio)",
+        "$(location :centos_cri)",
     ],
     data = [
-        ":centos_crio",
+        ":centos_cri",
         ":scripts",
         "//hack:packer_host_bin",
     ],
