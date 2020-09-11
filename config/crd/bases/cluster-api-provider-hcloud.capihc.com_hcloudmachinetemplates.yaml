@@ -41,12 +41,7 @@ spec:
                     description: Spec is the specification of the desired behavior of the machine.
                     properties:
                       image:
-                        properties:
-                          id:
-                            type: integer
-                          name:
-                            type: string
-                        type: object
+                        type: string
                       providerID:
                         description: ProviderID is the unique identifier as specified by the cloud provider.
                         type: string

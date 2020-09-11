@@ -59,8 +59,6 @@ type HcloudClusterSpec struct {
 
 	TokenRef *corev1.SecretKeySelector `json:"tokenRef,omitempty"`
 
-	Image string `json:"image,omitempty"`
-
 	Manifests []string `json:"manifests,omitempty"`
 }
 

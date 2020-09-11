@@ -42,7 +42,6 @@ spec:
   tokenRef:
     key: token
     name: hcloud-token
-  image: centos-7_k8s-universal
   manifests: 
   - hcloudCSI
   - metricsServer
@@ -89,6 +88,7 @@ spec:
   template:
     spec:
       type: cx21-ceph
+      image: centos-7_k8s-universal
 ---
 apiVersion: cluster.x-k8s.io/v1alpha3
 kind: MachineDeployment
@@ -192,6 +192,7 @@ spec:
   template:
     spec:
       type: cx11
+      image: centos-7_k8s-universal
 ---
 apiVersion: cluster-api-provider-hcloud.capihc.com/v1alpha3
 kind: HcloudMachineTemplate
@@ -202,6 +203,7 @@ spec:
   template:
     spec:
       type: cx11
+      image: centos-7_k8s-universal
 ---
 apiVersion: cluster-api-provider-hcloud.capihc.com/v1alpha3
 kind: HcloudMachineTemplate
@@ -212,6 +214,7 @@ spec:
   template:
     spec:
       type: cx11
+      image: centos-8_k8s-v1.19.0
 ---
 apiVersion: bootstrap.cluster.x-k8s.io/v1alpha3
 kind: KubeadmConfigTemplate

@@ -67,6 +67,17 @@ func (r *HcloudMachineReconciler) Reconcile(req ctrl.Request) (_ ctrl.Result, re
 		return reconcile.Result{}, err
 	}
 
+	// Initialize Packer
+	if hcloudMachine.Status.ImageInitialized == false {
+
+		if err := r.Packer.Initialize(hcloudMachine); err != nil {
+			log.Error(err, "unable to initialise packer manager")
+			return reconcile.Result{}, err
+		}
+		// TODO: Set this value to false if the image of the machine is changed
+		hcloudMachine.Status.ImageInitialized = true
+	}
+
 	// Fetch the Machine
 	machine, err := util.GetOwnerMachine(ctx, r.Client, hcloudMachine.ObjectMeta)
 	if err != nil {

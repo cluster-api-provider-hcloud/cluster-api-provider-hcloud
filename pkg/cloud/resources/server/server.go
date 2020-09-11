@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"net/url"
+	"strings"
 	"time"
 
 	"github.com/hetznercloud/hcloud-go/hcloud"
@@ -17,13 +18,13 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
-	loadbalancer "github.com/cluster-api-provider-hcloud/cluster-api-provider-hcloud/pkg/cloud/resources/loadbalancer"
-
 	kubeletv1beta1 "github.com/cluster-api-provider-hcloud/cluster-api-provider-hcloud/api/kubelet/v1beta1"
 	infrav1 "github.com/cluster-api-provider-hcloud/cluster-api-provider-hcloud/api/v1alpha3"
+	loadbalancer "github.com/cluster-api-provider-hcloud/cluster-api-provider-hcloud/pkg/cloud/resources/loadbalancer"
 	"github.com/cluster-api-provider-hcloud/cluster-api-provider-hcloud/pkg/cloud/resources/server/userdata"
 	"github.com/cluster-api-provider-hcloud/cluster-api-provider-hcloud/pkg/cloud/scope"
 	"github.com/cluster-api-provider-hcloud/cluster-api-provider-hcloud/pkg/cloud/utils"
+	packerapi "github.com/cluster-api-provider-hcloud/cluster-api-provider-hcloud/pkg/packer/api"
 	"github.com/cluster-api-provider-hcloud/cluster-api-provider-hcloud/pkg/record"
 )
 
@@ -76,17 +77,18 @@ func (s *Service) Reconcile(ctx context.Context) (_ *ctrl.Result, err error) {
 	s.scope.HcloudMachine.Status.Location = infrav1.HcloudLocation(failureDomain)
 
 	// gather image ID
-	imageID, err := s.findImageIDBySpec(s.scope.Ctx, s.scope.HcloudMachine.Spec.Image)
+	version := s.scope.Machine.Spec.Version
+	imageID, err := s.scope.EnsureImage(ctx, &packerapi.PackerParameters{
+		KubernetesVersion: strings.Trim(*version, "v"),
+		Image:             s.scope.HcloudMachine.Spec.ImageName,
+	})
 	if err != nil {
 		return nil, err
 	}
 	if imageID == nil {
 		return &ctrl.Result{RequeueAfter: 2 * time.Second}, nil
 	}
-	if s.scope.HcloudMachine.Spec.Image == nil {
-		s.scope.HcloudMachine.Spec.Image = &infrav1.HcloudImageSpec{}
-	}
-	s.scope.HcloudMachine.Spec.Image.ID = imageID
+
 	s.scope.HcloudMachine.Status.ImageID = imageID
 
 	// gather volumes

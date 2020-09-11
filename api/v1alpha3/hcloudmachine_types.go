@@ -33,11 +33,11 @@ type HcloudMachineSpec struct {
 	// define Machine specific SSH keys, overrides cluster wide SSH keys
 	SSHKeys []HcloudSSHKeySpec `json:"sshKeys,omitempty"`
 
-	Image *HcloudImageSpec `json:"image,omitempty"`
-
 	Type HcloudMachineTypeSpec `json:"type,omitempty"`
 
 	Volumes []HcloudMachineVolume `json:"volumes,omitempty"`
+
+	ImageName string `json:"image,omitempty"`
 
 	// ProviderID is the unique identifier as specified by the cloud provider.
 	// +optional
@@ -62,11 +62,6 @@ type HcloudMachineVolume struct {
 	MountPath string `json:"mountPath,omitempty"`
 }
 
-type HcloudImageSpec struct {
-	Name *string        `json:"name,omitempty"`
-	ID   *HcloudImageID `json:"id,omitempty"`
-}
-
 // HcloudMachineStatus defines the observed state of HcloudMachine
 type HcloudMachineStatus struct {
 	Location    HcloudLocation    `json:"location,omitempty"`
@@ -80,6 +75,11 @@ type HcloudMachineStatus struct {
 	// Ready is true when the provider resource is ready.
 	// +optional
 	Ready bool `json:"ready"`
+
+	// ImageInitialized returns true if the image has been successfully
+	// initialized by packer
+	// +optional
+	ImageInitialized bool `json:"imageInitialized,omitempty"`
 
 	// Addresses contains the server's associated addresses.
 	Addresses []v1.NodeAddress `json:"addresses,omitempty"`

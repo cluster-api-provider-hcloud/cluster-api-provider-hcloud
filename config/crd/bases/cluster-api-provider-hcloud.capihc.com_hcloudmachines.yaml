@@ -52,12 +52,7 @@ spec:
             description: HcloudMachineSpec defines the desired state of HcloudMachine
             properties:
               image:
-                properties:
-                  id:
-                    type: integer
-                  name:
-                    type: string
-                type: object
+                type: string
               providerID:
                 description: ProviderID is the unique identifier as specified by the cloud provider.
                 type: string
@@ -113,6 +108,9 @@ spec:
                 type: string
               imageID:
                 type: integer
+              imageInitialized:
+                description: ImageInitialized returns true if the image has been successfully initialized by packer
+                type: boolean
               location:
                 type: string
               networkZone:
