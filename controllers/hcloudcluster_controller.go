@@ -201,7 +201,8 @@ func (r *HcloudClusterReconciler) reconcileNormal(clusterScope *scope.ClusterSco
 	if hcloudCluster.Spec.KubeAPIServerDomain != nil {
 		hcloudCluster.Status.KubeAPIServerDomain = *hcloudCluster.Spec.KubeAPIServerDomain
 	}
-
+	fmt.Println(hcloudCluster.Status.KubeAPIServerDomain)
+	fmt.Printf("in Cluster controller: %s", hcloudCluster.Status.KubeAPIServerDomain)
 	// reconcile the load balancers
 	if err := loadbalancer.NewService(clusterScope).Reconcile(ctx); err != nil {
 		return reconcile.Result{}, errors.Wrapf(err, "failed to reconcile load balancers for HcloudCluster %s/%s", hcloudCluster.Namespace, hcloudCluster.Name)

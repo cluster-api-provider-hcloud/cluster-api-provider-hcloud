@@ -1,6 +1,7 @@
 package parameters
 
 import (
+	"fmt"
 	"net"
 	"strings"
 
@@ -21,10 +22,16 @@ func (m *ManifestParameters) ExtVar() map[string]string {
 
 	if key, val := "kube-apiserver-ip", m.KubeAPIServerIPv4; val != nil {
 		extVar[key] = *val
+	} else {
+		extVar[key] = ""
 	}
+
+	fmt.Printf("Parameters.go: %s", *m.KubeAPIServerDomain)
 
 	if key, val := "kube-apiserver-domain", m.KubeAPIServerDomain; val != nil {
 		extVar[key] = *val
+	} else {
+		extVar[key] = ""
 	}
 
 	extVar["manifests"] = strings.Join(m.Manifests, ",")

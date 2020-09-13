@@ -20,6 +20,7 @@ import (
 func sampleParameters() *parameters.ManifestParameters {
 	hcloudNetwork := intstr.FromString("cluster-dev")
 	hcloudToken := "my-token"
+	kubeAPIServerDomain := ""
 	manifests := []string{"hcloudCSI", "metricsServer"}
 	_, podCIDRBlock, err := net.ParseCIDR("192.168.0.0/17")
 	if err != nil {
@@ -27,10 +28,11 @@ func sampleParameters() *parameters.ManifestParameters {
 	}
 
 	return &parameters.ManifestParameters{
-		HcloudToken:   &hcloudToken,
-		HcloudNetwork: &hcloudNetwork,
-		PodCIDRBlock:  podCIDRBlock,
-		Manifests:     manifests,
+		HcloudToken:         &hcloudToken,
+		HcloudNetwork:       &hcloudNetwork,
+		PodCIDRBlock:        podCIDRBlock,
+		Manifests:           manifests,
+		KubeAPIServerDomain: &kubeAPIServerDomain,
 	}
 }
 
