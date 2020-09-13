@@ -67,6 +67,8 @@ spec:
                       type: string
                     id:
                       type: integer
+                    listenPort:
+                      type: integer
                     name:
                       type: string
                     type:
