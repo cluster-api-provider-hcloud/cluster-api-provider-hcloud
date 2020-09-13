@@ -48,7 +48,7 @@ local defaultConfig = {
   podsCIDRBlock: '192.168.0.0/16',
   hcloudToken: 'xx',
   hcloudNetwork: 'yy',
-  hcloudLoadBalancerIPv4s: ['1.1.1.1', '2.2.2.2'],
+  hcloudLoadBalancerIPv4: '1.1.1.1',
 };
 
 local specs(ip, domain) =
@@ -96,7 +96,7 @@ local newControlPlaneService(ip, domain) = {
   apiVersion: 'v1',
   kind: 'Service',
   metadata: {
-    name: 'kube-apiserver,
+    name: 'kube-apiserver',
     namespace: 'kube-system',
   },
   spec: specs(ip, domain),
