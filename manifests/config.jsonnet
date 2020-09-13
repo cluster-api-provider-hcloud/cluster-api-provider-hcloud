@@ -96,7 +96,7 @@ local newControlPlaneService(ip, domain) = {
   apiVersion: 'v1',
   kind: 'Service',
   metadata: {
-    name: 'kube-apiserver-%d' % pos,
+    name: 'kube-apiserver,
     namespace: 'kube-system',
   },
   spec: specs(ip, domain),
