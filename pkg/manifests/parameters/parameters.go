@@ -8,17 +8,24 @@ import (
 )
 
 type ManifestParameters struct {
-	HcloudToken             *string
-	HcloudNetwork           *intstr.IntOrString
-	HcloudLoadBalancerIPv4s []string
-	PodCIDRBlock            *net.IPNet
-	Manifests               []string
+	HcloudToken         *string
+	HcloudNetwork       *intstr.IntOrString
+	KubeAPIServerIPv4   *string
+	KubeAPIServerDomain *string
+	PodCIDRBlock        *net.IPNet
+	Manifests           []string
 }
 
 func (m *ManifestParameters) ExtVar() map[string]string {
 	extVar := make(map[string]string)
 
-	extVar["hcloud-loadbalancer"] = strings.Join(m.HcloudLoadBalancerIPv4s, ",")
+	if key, val := "kube-apiserver-ip", m.KubeAPIServerIPv4; val != nil {
+		extVar[key] = *val
+	}
+
+	if key, val := "kube-apiserver-domain", m.KubeAPIServerDomain; val != nil {
+		extVar[key] = *val
+	}
 
 	extVar["manifests"] = strings.Join(m.Manifests, ",")
 
