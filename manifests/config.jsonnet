@@ -117,7 +117,7 @@ local addons = {
     },
   },
 
-  controlPlaneServices: newControlPlaneService($._config.hcloudLoadBalancerIPv4, $._config.kubeAPIServerDomain),
+  controlPlaneServices: newControlPlaneService($._config.kubeAPIServerIPv4, $._config.kubeAPIServerDomain),
 
   workarounds: {
     // This fixes a problem join v1.18 node to a v1.17 control plane
