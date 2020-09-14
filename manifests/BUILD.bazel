@@ -14,35 +14,6 @@ jsonnet_library(
         ":config_files",
     ],
     visibility = ["//visibility:public"],
-    deps = [
-        "//manifests/calico:lib",
-        "//manifests/cilium:lib",
-        "//manifests/flannel:lib",
-        "//manifests/hcloud-cloud-controller-manager:lib",
-        "//manifests/hcloud-csi:lib",
-        "//manifests/metrics-server:lib",
-    ],
-)
-
-jsonnet_to_json_test(
-    name = "test_config_simple",
-    src = "test_config_simple.jsonnet",
-    golden = "test_config_simple.result.json",
-    deps = [":config"],
-)
-
-jsonnet_to_json_test(
-    name = "test_config_cilium",
-    src = "test_config_cilium.jsonnet",
-    golden = "test_config_cilium.result.json",
-    deps = [":config"],
-)
-
-jsonnet_to_json_test(
-    name = "test_config_flannel",
-    src = "test_config_flannel.jsonnet",
-    golden = "test_config_flannel.result.json",
-    deps = [":config"],
 )
 
 filegroup(
@@ -73,6 +44,7 @@ pkg_tar(
     name = "manifests",
     srcs = [
         ":config",
+        ":utils"
     ],
     include_runfiles = True,
     mode = "0o644",
@@ -92,12 +64,6 @@ filegroup(
     name = "all-srcs",
     srcs = [
         ":package-srcs",
-        "//manifests/calico:all-srcs",
-        "//manifests/cilium:all-srcs",
-        "//manifests/flannel:all-srcs",
-        "//manifests/hcloud-cloud-controller-manager:all-srcs",
-        "//manifests/hcloud-csi:all-srcs",
-        "//manifests/metrics-server:all-srcs",
     ],
     tags = ["automanaged"],
     visibility = ["//visibility:public"],

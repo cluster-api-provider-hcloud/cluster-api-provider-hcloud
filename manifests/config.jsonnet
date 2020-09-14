@@ -1,56 +1,3 @@
-local calico = import 'calico/calico.libsonnet';
-local flannel = import 'flannel/flannel.libsonnet';
-local hcloudCloudControllerManager = import 'hcloud-cloud-controller-manager/hcloud-cloud-controller-manager.libsonnet';
-local hcloudCSI = import 'hcloud-csi/hcloud-csi.libsonnet';
-local metricsServer = import 'metrics-server/metrics-server.libsonnet';
-
-local AllManifests = {
-    "calico": import "calico/calico.libsonnet",
-    "cilium": import 'cilium/cilium.libsonnet',
-    "hcloudCSI": import "hcloud-csi/hcloud-csi.libsonnet",
-    "metricsServer": import "metrics-server/metrics-server.libsonnet",
-    "hcloudCloudControllerManager": import "hcloud-cloud-controller-manager/hcloud-cloud-controller-manager.libsonnet"
-};
-
-local getManifestFromKey(x) = 
-  if std.objectHas(AllManifests,x) then
-    AllManifests[x] 
-  else
-    std.trace("Manifest key not found: " + x, {});
-
-local join_objects(objs) =
-  local aux(arr, i, running) =
-    if i >= std.length(arr) then
-      running
-    else
-      aux(arr, i + 1, running + arr[i]) tailstrict;
-  aux(objs, 0, {});
-
-local getManifests(keys) = join_objects(std.map(getManifestFromKey, keys));
-
-local defaultConfig = {
-  hcloudNetworkRef: {
-    valueFrom: {
-      secretKeyRef: {
-        key: 'network',
-        name: 'hcloud',
-      },
-    },
-  },
-  hcloudTokenRef: {
-    valueFrom: {
-      secretKeyRef: {
-        key: 'token',
-        name: 'hcloud',
-      },
-    },
-  },
-  podsCIDRBlock: '192.168.0.0/16',
-  hcloudToken: 'xx',
-  hcloudNetwork: 'yy',
-  hcloudLoadBalancerIPv4: '1.1.1.1',
-};
-
 local specs(ip, domain) =
   if (domain == "") then {
     selector: {
@@ -168,13 +115,6 @@ local addons = {
 
 
 local new(c) = (
-  {
-    _config+:: defaultConfig,
-  } +
-  (if std.objectHas(c, 'manifests') then
-    getManifests(c.manifests)
-  else 
-    {}) +
   {
     _config+:: c,
   } +

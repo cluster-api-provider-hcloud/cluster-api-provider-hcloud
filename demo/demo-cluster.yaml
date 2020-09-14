@@ -43,11 +43,6 @@ spec:
   tokenRef:
     key: token
     name: hcloud-token
-  manifests: 
-  - hcloudCSI
-  - metricsServer
-  - hcloudCloudControllerManager
-  - calico
 ---
 apiVersion: controlplane.cluster.x-k8s.io/v1alpha3
 kind: KubeadmControlPlane

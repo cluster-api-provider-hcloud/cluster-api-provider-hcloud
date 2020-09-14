@@ -60,8 +60,6 @@ type HcloudClusterSpec struct {
 	Network *HcloudNetworkSpec `json:"network,omitempty"`
 
 	TokenRef *corev1.SecretKeySelector `json:"tokenRef,omitempty"`
-
-	Manifests []string `json:"manifests,omitempty"`
 }
 
 type HcloudNetwork struct {

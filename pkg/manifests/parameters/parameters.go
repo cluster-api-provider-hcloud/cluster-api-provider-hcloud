@@ -1,9 +1,6 @@
 package parameters
 
 import (
-	"net"
-	"strings"
-
 	"k8s.io/apimachinery/pkg/util/intstr"
 )
 
@@ -12,8 +9,6 @@ type ManifestParameters struct {
 	HcloudNetwork       *intstr.IntOrString
 	KubeAPIServerIPv4   *string
 	KubeAPIServerDomain *string
-	PodCIDRBlock        *net.IPNet
-	Manifests           []string
 }
 
 func (m *ManifestParameters) ExtVar() map[string]string {
@@ -31,8 +26,6 @@ func (m *ManifestParameters) ExtVar() map[string]string {
 		extVar[key] = ""
 	}
 
-	extVar["manifests"] = strings.Join(m.Manifests, ",")
-
 	if key, val := "hcloud-token", m.HcloudToken; val != nil {
 		extVar[key] = *val
 	}
@@ -41,10 +34,6 @@ func (m *ManifestParameters) ExtVar() map[string]string {
 		extVar[key] = val.String()
 	} else {
 		extVar[key] = ""
-	}
-
-	if key, val := "pod-cidr-block", m.PodCIDRBlock; val != nil {
-		extVar[key] = val.String()
 	}
 
 	return extVar
