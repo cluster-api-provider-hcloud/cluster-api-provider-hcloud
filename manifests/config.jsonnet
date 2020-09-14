@@ -82,7 +82,7 @@ local specs(ip, domain) =
         targetPort: 6443,
       },
     ],
-    type: 'ExternalName',
+    type: 'LoadBalancer',
     loadBalancerIP: ip,
     externalTrafficPolicy: 'Local',
     externalName: domain,
