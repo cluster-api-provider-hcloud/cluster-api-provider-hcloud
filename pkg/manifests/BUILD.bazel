@@ -39,9 +39,3 @@ filegroup(
     visibility = ["//visibility:public"],
 )
 
-go_test(
-    name = "go_default_test",
-    srcs = ["config_test.go"],
-    data = ["//manifests:config"],
-    embed = [":go_default_library"],
-)

@@ -1,8 +1,6 @@
 package parameters
 
 import (
-	"strings"
-
 	"k8s.io/apimachinery/pkg/util/intstr"
 )
 
@@ -11,7 +9,6 @@ type ManifestParameters struct {
 	HcloudNetwork       *intstr.IntOrString
 	KubeAPIServerIPv4   *string
 	KubeAPIServerDomain *string
-	PodCIDRBlock        *net.IPNet
 	Manifests           []string
 }
 
