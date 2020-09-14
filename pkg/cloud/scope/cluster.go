@@ -3,7 +3,6 @@ package scope
 import (
 	"context"
 	"fmt"
-	"net"
 
 	"github.com/go-logr/logr"
 	"github.com/hetznercloud/hcloud-go/hcloud"
@@ -220,19 +219,6 @@ func (s *ClusterScope) manifestParameters() (*parameters.ManifestParameters, err
 		p.HcloudNetwork = &hcloudNetwork
 	}
 
-	if s.Cluster.Spec.ClusterNetwork == nil || s.Cluster.Spec.ClusterNetwork.Pods == nil || len(s.Cluster.Spec.ClusterNetwork.Pods.CIDRBlocks) == 0 {
-		return nil, errors.New("No pod cidr network set")
-	}
-	if len(s.Cluster.Spec.ClusterNetwork.Pods.CIDRBlocks) != 1 {
-		return nil, errors.New("More than one pod cidr network set")
-	}
-	_, podCidrBlock, err := net.ParseCIDR(s.Cluster.Spec.ClusterNetwork.Pods.CIDRBlocks[0])
-	if err != nil {
-		return nil, errors.Wrap(err, "Invalid pod cidr network set")
-	}
-	p.PodCIDRBlock = podCidrBlock
-
-	p.Manifests = s.HcloudCluster.Spec.Manifests
 	return &p, nil
 }
 

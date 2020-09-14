@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	"net"
 	"path/filepath"
 	"sort"
 
@@ -20,17 +19,10 @@ import (
 func sampleParameters() *parameters.ManifestParameters {
 	hcloudNetwork := intstr.FromString("cluster-dev")
 	hcloudToken := "my-token"
-	manifests := []string{"hcloudCSI", "metricsServer"}
-	_, podCIDRBlock, err := net.ParseCIDR("192.168.0.0/17")
-	if err != nil {
-		panic(err)
-	}
 
 	return &parameters.ManifestParameters{
 		HcloudToken:   &hcloudToken,
 		HcloudNetwork: &hcloudNetwork,
-		PodCIDRBlock:  podCIDRBlock,
-		Manifests:     manifests,
 	}
 }
 
