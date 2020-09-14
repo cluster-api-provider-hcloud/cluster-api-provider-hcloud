@@ -25,7 +25,7 @@ metadata:
   name: cluster-dev
   namespace: default
 spec:
-  kubeAPIServerDomain: cluster.syself.net
+  kubeAPIServerDomain: https://cluster.syself.net
   controlPlaneLoadbalancer:
   - type: lb11
     algorithm: round_robin
