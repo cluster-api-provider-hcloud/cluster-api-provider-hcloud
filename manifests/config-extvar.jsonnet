@@ -4,7 +4,10 @@ local utils = import 'utils.libsonnet';
 local myConfig = {
   hcloudToken: std.extVar('hcloud-token'),
   hcloudNetwork: std.extVar('hcloud-network'),
-  hcloudLoadBalancerIPv4s: std.split(std.extVar('hcloud-loadbalancer'), ','),
+  kubeAPIServerIPv4: std.extVar('kube-apiserver-ip'),
+  kubeAPIServerDomain: std.extVar('kube-apiserver-domain'),
+  podsCIDRBlock: std.extVar('pod-cidr-block'),
+  manifests: std.split(std.extVar('manifests'), ','),
 };
 
 local addLabelIfNotExists(key, value) =

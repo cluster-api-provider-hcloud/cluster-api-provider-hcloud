@@ -51,6 +51,8 @@ type HcloudClusterSpec struct {
 	// +kubebuilder:validation:MaxItems=10
 	ControlPlaneLoadBalancers []HcloudLoadBalancerSpec `json:"controlPlaneLoadbalancer,omitempty"`
 
+	KubeAPIServerDomain *string `json:"kubeAPIServerDomain,omitempty"`
+
 	// ControlPlaneEndpoint represents the endpoint used to communicate with the control plane.
 	// +optional
 	ControlPlaneEndpoint clusterv1.APIEndpoint `json:"controlPlaneEndpoint"`
@@ -101,14 +103,15 @@ type HcloudLoadBalancerSpec struct {
 	ListenPort *int                            `json:"listenPort,omitempty"`
 }
 type HcloudLoadBalancerStatus struct {
-	ID        int                             `json:"id,omitempty"`
-	Name      string                          `json:"name,omitempty"`
-	Type      string                          `json:"type,omitempty"`
-	IPv4      string                          `json:"ipv4,omitempty"`
-	IPv6      string                          `json:"ipv6,omitempty"`
-	Labels    map[string]string               `json:"-"`
-	Algorithm HcloudLoadBalancerAlgorithmType `json:"algorithm,omitempty"`
-	Targets   []int                           `json:"-"`
+	ID         int                             `json:"id,omitempty"`
+	Name       string                          `json:"name,omitempty"`
+	Type       string                          `json:"type,omitempty"`
+	IPv4       string                          `json:"ipv4,omitempty"`
+	IPv6       string                          `json:"ipv6,omitempty"`
+	ListenPort int                             `json:"listenPort,omitempty"`
+	Labels     map[string]string               `json:"-"`
+	Algorithm  HcloudLoadBalancerAlgorithmType `json:"algorithm,omitempty"`
+	Targets    []int                           `json:"-"`
 }
 
 type HcloudClusterStatusManifests struct {
@@ -122,6 +125,7 @@ type HcloudClusterStatus struct {
 	NetworkZone               HcloudNetworkZone          `json:"networkZone,omitempty"`
 	ControlPlaneLoadBalancers []HcloudLoadBalancerStatus `json:"controlPlaneLoadBalancers,omitempty"`
 
+	KubeAPIServerDomain string `json:"kubeAPIServerDomain,omitempty"`
 	// +optional
 	Network *HcloudNetworkStatus `json:"network,omitempty"`
 

@@ -19,7 +19,6 @@ import (
 func sampleParameters() *parameters.ManifestParameters {
 	hcloudNetwork := intstr.FromString("cluster-dev")
 	hcloudToken := "my-token"
-
 	return &parameters.ManifestParameters{
 		HcloudToken:   &hcloudToken,
 		HcloudNetwork: &hcloudNetwork,

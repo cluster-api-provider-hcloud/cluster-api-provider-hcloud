@@ -205,12 +205,9 @@ func (s *ClusterScope) ClientConfigWithAPIEndpoint(endpoint clusterv1.APIEndpoin
 func (s *ClusterScope) manifestParameters() (*parameters.ManifestParameters, error) {
 	var p parameters.ManifestParameters
 
-	for _, loadBalancer := range s.HcloudCluster.Status.ControlPlaneLoadBalancers {
-		p.HcloudLoadBalancerIPv4s = append(
-			p.HcloudLoadBalancerIPv4s,
-			loadBalancer.IPv4,
-		)
-	}
+	p.KubeAPIServerIPv4 = &s.HcloudCluster.Status.ControlPlaneLoadBalancers[0].IPv4
+
+	p.KubeAPIServerDomain = &s.HcloudCluster.Status.KubeAPIServerDomain
 
 	p.HcloudToken = &s.hcloudToken
 

@@ -107,6 +107,11 @@ func (in *HcloudClusterSpec) DeepCopyInto(out *HcloudClusterSpec) {
 			(*in)[i].DeepCopyInto(&(*out)[i])
 		}
 	}
+	if in.KubeAPIServerDomain != nil {
+		in, out := &in.KubeAPIServerDomain, &out.KubeAPIServerDomain
+		*out = new(string)
+		**out = **in
+	}
 	out.ControlPlaneEndpoint = in.ControlPlaneEndpoint
 	if in.Network != nil {
 		in, out := &in.Network, &out.Network
