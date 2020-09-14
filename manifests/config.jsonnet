@@ -48,17 +48,11 @@ local defaultConfig = {
   podsCIDRBlock: '192.168.0.0/16',
   hcloudToken: 'xx',
   hcloudNetwork: 'yy',
-  hcloudLoadBalancerIPv4s: ['1.1.1.1', '2.2.2.2'],
+  hcloudLoadBalancerIPv4: '1.1.1.1',
 };
 
-local newControlPlaneService(pos, ip) = {
-  apiVersion: 'v1',
-  kind: 'Service',
-  metadata: {
-    name: 'kube-apiserver-%d' % pos,
-    namespace: 'kube-system',
-  },
-  spec: {
+local specs(ip, domain) =
+  if (domain == "") then {
     selector: {
       component: 'kube-apiserver',
       tier: 'control-plane',
@@ -76,7 +70,36 @@ local newControlPlaneService(pos, ip) = {
     externalIPs: [
       ip,
     ],
+  } else {
+    selector: {
+      component: 'kube-apiserver',
+      tier: 'control-plane',
+    },
+    ports: [
+      {
+        protocol: 'TCP',
+        port: 6443,
+        targetPort: 6443,
+      },
+    ],
+    type: 'LoadBalancer',
+    loadBalancerIP: ip,
+    externalTrafficPolicy: 'Local',
+    externalName: domain,
+    externalIPs: [
+      ip,
+    ],
+};
+
+
+local newControlPlaneService(ip, domain) = {
+  apiVersion: 'v1',
+  kind: 'Service',
+  metadata: {
+    name: 'kube-apiserver',
+    namespace: 'kube-system',
   },
+  spec: specs(ip, domain),
 };
 
 local addons = {
@@ -94,7 +117,7 @@ local addons = {
     },
   },
 
-  controlPlaneServices: std.mapWithIndex(newControlPlaneService, $._config.hcloudLoadBalancerIPv4s),
+  controlPlaneServices: newControlPlaneService($._config.kubeAPIServerIPv4, $._config.kubeAPIServerDomain),
 
   workarounds: {
     // This fixes a problem join v1.18 node to a v1.17 control plane

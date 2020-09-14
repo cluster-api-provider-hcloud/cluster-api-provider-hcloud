@@ -77,6 +77,8 @@ spec:
                 maxItems: 10
                 minItems: 1
                 type: array
+              kubeAPIServerDomain:
+                type: string
               locations:
                 items:
                   type: string
@@ -142,6 +144,8 @@ spec:
                       type: string
                     ipv6:
                       type: string
+                    listenPort:
+                      type: integer
                     name:
                       type: string
                     type:
@@ -168,6 +172,8 @@ spec:
                 type: string
               failureReason:
                 description: "FailureReason will be set in the event that there is a terminal problem reconciling the Machine and will contain a succinct value suitable for machine interpretation. \n This field should not be set for transitive errors that a controller faces that are expected to be fixed automatically over time (like service outages), but instead indicate that something is fundamentally wrong with the Machine's spec or the configuration of the controller, and that manual intervention is required. Examples of terminal errors would be invalid combinations of settings in the spec, values that are unsupported by the controller, or the responsible controller itself being critically misconfigured. \n Any transient errors that occur during the reconciliation of Machines can be added as events to the Machine object and/or logged in the controller's output."
+                type: string
+              kubeAPIServerDomain:
                 type: string
               locations:
                 items:

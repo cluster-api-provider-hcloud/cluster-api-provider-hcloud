@@ -198,6 +198,10 @@ func (r *HcloudClusterReconciler) reconcileNormal(clusterScope *scope.ClusterSco
 		return reconcile.Result{}, errors.Wrapf(err, "failed to reconcile network for HcloudCluster %s/%s", hcloudCluster.Namespace, hcloudCluster.Name)
 	}
 
+	if hcloudCluster.Spec.KubeAPIServerDomain != nil {
+		hcloudCluster.Status.KubeAPIServerDomain = *hcloudCluster.Spec.KubeAPIServerDomain
+	}
+
 	// reconcile the load balancers
 	if err := loadbalancer.NewService(clusterScope).Reconcile(ctx); err != nil {
 		return reconcile.Result{}, errors.Wrapf(err, "failed to reconcile load balancers for HcloudCluster %s/%s", hcloudCluster.Namespace, hcloudCluster.Name)
@@ -208,8 +212,16 @@ func (r *HcloudClusterReconciler) reconcileNormal(clusterScope *scope.ClusterSco
 	if err != nil {
 		return reconcile.Result{}, err
 	}
+
+	var host string
+	if hcloudCluster.Status.KubeAPIServerDomain != "" {
+		host = hcloudCluster.Status.KubeAPIServerDomain
+	} else {
+		host = lb.PublicNet.IPv4.IP.String()
+	}
+
 	hcloudCluster.Spec.ControlPlaneEndpoint = clusterv1.APIEndpoint{
-		Host: lb.PublicNet.IPv4.IP.String(),
+		Host: host,
 		Port: clusterScope.ControlPlaneAPIEndpointPort(),
 	}
 

@@ -38,7 +38,7 @@ func (s intSlice) contains(e int) bool {
 }
 
 // gets the information of the Hetzner load balancer object and returns it in our status object
-func apiToStatus(lb *hcloud.LoadBalancer) (*infrav1.HcloudLoadBalancerStatus, error) {
+func (s *Service) apiToStatus(lb *hcloud.LoadBalancer) (*infrav1.HcloudLoadBalancerStatus, error) {
 
 	ipv4 := lb.PublicNet.IPv4.IP.String()
 	ipv6 := lb.PublicNet.IPv6.IP.String()
@@ -60,14 +60,15 @@ func apiToStatus(lb *hcloud.LoadBalancer) (*infrav1.HcloudLoadBalancerStatus, er
 	}
 
 	status := &infrav1.HcloudLoadBalancerStatus{
-		ID:        lb.ID,
-		Name:      lb.Name,
-		Type:      lb.LoadBalancerType.Name,
-		IPv4:      ipv4,
-		IPv6:      ipv6,
-		Labels:    lb.Labels,
-		Algorithm: algType,
-		Targets:   targetIDs,
+		ID:         lb.ID,
+		Name:       lb.Name,
+		Type:       lb.LoadBalancerType.Name,
+		IPv4:       ipv4,
+		IPv6:       ipv6,
+		Labels:     lb.Labels,
+		Algorithm:  algType,
+		Targets:    targetIDs,
+		ListenPort: lb.Services[0].ListenPort,
 	}
 	return status, nil
 }
@@ -209,7 +210,7 @@ func (s *Service) createLoadBalancer(ctx context.Context, spec infrav1.HcloudLoa
 		return nil, fmt.Errorf("error creating load balancer: %s", err)
 	}
 
-	status, err := apiToStatus(lb.LoadBalancer)
+	status, err := s.apiToStatus(lb.LoadBalancer)
 	if err != nil {
 		return nil, fmt.Errorf("error converting load balancer: %s", err)
 	}
@@ -350,7 +351,7 @@ func (s *Service) actualStatus(ctx context.Context) ([]infrav1.HcloudLoadBalance
 			continue
 		}
 
-		lbStatus, err := apiToStatus(lb)
+		lbStatus, err := s.apiToStatus(lb)
 		if err != nil {
 			return nil, fmt.Errorf("error converting LoadBalancer API to status: %w", err)
 		}
