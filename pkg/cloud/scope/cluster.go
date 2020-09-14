@@ -207,7 +207,7 @@ func (s *ClusterScope) manifestParameters() (*parameters.ManifestParameters, err
 	var p parameters.ManifestParameters
 
 	p.KubeAPIServerIPv4 = &s.HcloudCluster.Status.ControlPlaneLoadBalancers[0].IPv4
-	fmt.Printf("in cluster.go: IPv4: %s", *p.KubeAPIServerIPv4)
+
 	p.KubeAPIServerDomain = &s.HcloudCluster.Status.KubeAPIServerDomain
 
 	p.HcloudToken = &s.hcloudToken
