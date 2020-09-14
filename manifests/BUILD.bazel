@@ -8,19 +8,21 @@ filegroup(
     ],
 )
 
-jsonnet_library(
-    name = "config",
-    srcs = [
-        ":config_files",
-    ],
-    visibility = ["//visibility:public"],
-)
-
 filegroup(
     name = "utils_files",
     srcs = [
         "utils.libsonnet",
     ],
+)
+
+
+jsonnet_library(
+    name = "config",
+    srcs = [
+        ":config_files",
+        ":utils_files"
+    ],
+    visibility = ["//visibility:public"],
 )
 
 jsonnet_library(
@@ -44,7 +46,6 @@ pkg_tar(
     name = "manifests",
     srcs = [
         ":config",
-        ":utils"
     ],
     include_runfiles = True,
     mode = "0o644",
