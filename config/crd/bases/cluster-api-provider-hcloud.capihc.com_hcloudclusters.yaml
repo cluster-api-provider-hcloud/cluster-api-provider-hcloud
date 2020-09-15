@@ -58,25 +58,21 @@ spec:
                 - port
                 type: object
               controlPlaneLoadbalancer:
-                items:
-                  properties:
-                    algorithm:
-                      enum:
-                      - round_robin
-                      - least_connections
-                      type: string
-                    id:
-                      type: integer
-                    listenPort:
-                      type: integer
-                    name:
-                      type: string
-                    type:
-                      type: string
-                  type: object
-                maxItems: 10
-                minItems: 1
-                type: array
+                properties:
+                  algorithm:
+                    enum:
+                    - round_robin
+                    - least_connections
+                    type: string
+                  id:
+                    type: integer
+                  listenPort:
+                    type: integer
+                  name:
+                    type: string
+                  type:
+                    type: string
+                type: object
               kubeAPIServerDomain:
                 type: string
               locations:
@@ -126,28 +122,26 @@ spec:
           status:
             description: HcloudClusterStatus defines the observed state of HcloudCluster
             properties:
-              controlPlaneLoadBalancers:
-                items:
-                  properties:
-                    algorithm:
-                      enum:
-                      - round_robin
-                      - least_connections
-                      type: string
-                    id:
-                      type: integer
-                    ipv4:
-                      type: string
-                    ipv6:
-                      type: string
-                    listenPort:
-                      type: integer
-                    name:
-                      type: string
-                    type:
-                      type: string
-                  type: object
-                type: array
+              controlPlaneLoadBalancer:
+                properties:
+                  algorithm:
+                    enum:
+                    - round_robin
+                    - least_connections
+                    type: string
+                  id:
+                    type: integer
+                  ipv4:
+                    type: string
+                  ipv6:
+                    type: string
+                  listenPort:
+                    type: integer
+                  name:
+                    type: string
+                  type:
+                    type: string
+                type: object
               failureDomains:
                 additionalProperties:
                   description: FailureDomainSpec is the Schema for Cluster API failure domains. It allows controllers to understand how many failure domains a cluster can optionally span across.

@@ -208,7 +208,7 @@ func (r *HcloudClusterReconciler) reconcileNormal(clusterScope *scope.ClusterSco
 	}
 
 	// add the IPv4 of the the main load balancer as host of API endpoint as control plane endpoint
-	lb, err := loadbalancer.GetMainLoadBalancer(clusterScope, ctx)
+	lb, err := loadbalancer.GetLoadBalancer(clusterScope)
 	if err != nil {
 		return reconcile.Result{}, err
 	}

@@ -47,9 +47,7 @@ type HcloudClusterSpec struct {
 	// define cluster wide SSH keys
 	SSHKeys []HcloudSSHKeySpec `json:"sshKeys,omitempty"`
 
-	// +kubebuilder:validation:MinItems=1
-	// +kubebuilder:validation:MaxItems=10
-	ControlPlaneLoadBalancers []HcloudLoadBalancerSpec `json:"controlPlaneLoadbalancer,omitempty"`
+	ControlPlaneLoadBalancer HcloudLoadBalancerSpec `json:"controlPlaneLoadbalancer,omitempty"`
 
 	KubeAPIServerDomain *string `json:"kubeAPIServerDomain,omitempty"`
 
@@ -112,6 +110,7 @@ type HcloudLoadBalancerStatus struct {
 	Labels     map[string]string               `json:"-"`
 	Algorithm  HcloudLoadBalancerAlgorithmType `json:"algorithm,omitempty"`
 	Targets    []int                           `json:"-"`
+	HasNetwork bool                            `json:"hasNetwork"`
 }
 
 type HcloudClusterStatusManifests struct {
@@ -121,9 +120,9 @@ type HcloudClusterStatusManifests struct {
 
 // HcloudClusterStatus defines the observed state of HcloudCluster
 type HcloudClusterStatus struct {
-	Locations                 []HcloudLocation           `json:"locations,omitempty"`
-	NetworkZone               HcloudNetworkZone          `json:"networkZone,omitempty"`
-	ControlPlaneLoadBalancers []HcloudLoadBalancerStatus `json:"controlPlaneLoadBalancers,omitempty"`
+	Locations                []HcloudLocation         `json:"locations,omitempty"`
+	NetworkZone              HcloudNetworkZone        `json:"networkZone,omitempty"`
+	ControlPlaneLoadBalancer HcloudLoadBalancerStatus `json:"controlPlaneLoadBalancer,omitempty"`
 
 	KubeAPIServerDomain string `json:"kubeAPIServerDomain,omitempty"`
 	// +optional

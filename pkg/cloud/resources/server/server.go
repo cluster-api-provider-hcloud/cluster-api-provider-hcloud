@@ -257,10 +257,8 @@ func (s *Service) Reconcile(ctx context.Context) (_ *ctrl.Result, err error) {
 				if s.scope.HcloudCluster.Status.KubeAPIServerDomain != "" {
 					extraNames = append(extraNames, s.scope.HcloudCluster.Status.KubeAPIServerDomain)
 				} else {
-					for _, lb := range s.scope.HcloudCluster.Status.ControlPlaneLoadBalancers {
-						extraNames = append(extraNames, lb.IPv4)
-						extraNames = append(extraNames, lb.IPv6)
-					}
+					extraNames = append(extraNames, s.scope.HcloudCluster.Status.ControlPlaneLoadBalancer.IPv4)
+					extraNames = append(extraNames, s.scope.HcloudCluster.Status.ControlPlaneLoadBalancer.IPv6)
 				}
 
 				for _, name := range extraNames {
@@ -542,7 +540,7 @@ func (s *Service) addServerToLoadBalancer(ctx context.Context, server *hcloud.Se
 	myBool := true
 	loadBalancerAddServerTargetOpts := hcloud.LoadBalancerAddServerTargetOpts{Server: server, UsePrivateIP: &myBool}
 
-	lb, err := loadbalancer.GetMainLoadBalancer(&s.scope.ClusterScope, ctx)
+	lb, err := loadbalancer.GetLoadBalancer(&s.scope.ClusterScope)
 	if err != nil {
 		return err
 	}
@@ -567,7 +565,7 @@ func (s *Service) addServerToLoadBalancer(ctx context.Context, server *hcloud.Se
 
 func (s *Service) deleteServerOfLoadBalancer(ctx context.Context, server *hcloud.Server) error {
 
-	lb, err := loadbalancer.GetMainLoadBalancer(&s.scope.ClusterScope, ctx)
+	lb, err := loadbalancer.GetLoadBalancer(&s.scope.ClusterScope)
 	if err != nil {
 		return err
 	}
