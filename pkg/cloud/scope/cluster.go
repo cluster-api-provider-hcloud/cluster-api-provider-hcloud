@@ -3,6 +3,7 @@ package scope
 import (
 	"context"
 	"fmt"
+	"strconv"
 
 	"github.com/go-logr/logr"
 	"github.com/hetznercloud/hcloud-go/hcloud"
@@ -220,8 +221,9 @@ func (s *ClusterScope) manifestParameters() (*parameters.ManifestParameters, err
 		hcloudNetwork := intstr.FromInt(s.HcloudCluster.Status.Network.ID)
 		p.HcloudNetwork = &hcloudNetwork
 	}
-
-	var port = string(s.HcloudCluster.Spec.ControlPlaneEndpoint.Port)
+	var port = strconv.FormatInt(int64(s.HcloudCluster.Spec.ControlPlaneEndpoint.Port), 10)
+	fmt.Println("Port in cluster.go (as int): ", s.HcloudCluster.Spec.ControlPlaneEndpoint.Port)
+	fmt.Println("Port in cluster.go: ", port)
 	p.Port = &port
 	return &p, nil
 }

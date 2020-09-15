@@ -209,7 +209,7 @@ func (r *HcloudClusterReconciler) reconcileNormal(clusterScope *scope.ClusterSco
 	if hcloudCluster.Spec.ControlPlaneEndpoint == nil {
 		hcloudCluster.Spec.ControlPlaneEndpoint = &clusterv1.APIEndpoint{
 			Host: defaultHost,
-			Port: int32(defaultPort),
+			Port: defaultPort,
 		}
 	} else {
 		if hcloudCluster.Spec.ControlPlaneEndpoint.Host == "" {
@@ -219,7 +219,6 @@ func (r *HcloudClusterReconciler) reconcileNormal(clusterScope *scope.ClusterSco
 			hcloudCluster.Spec.ControlPlaneEndpoint.Port = defaultPort
 		}
 	}
-
 	// set cluster infrastructure as ready
 	hcloudCluster.Status.Ready = true
 
