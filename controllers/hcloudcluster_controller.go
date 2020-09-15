@@ -210,16 +210,18 @@ func (r *HcloudClusterReconciler) reconcileNormal(clusterScope *scope.ClusterSco
 		hcloudCluster.Status.ControlPlaneEndpointHost = defaultHost
 		hcloudCluster.Status.ControlPlaneEndpointPort = defaultPort
 	}
-	if hcloudCluster.Spec.ControlPlaneEndpoint.Host == "" {
-		hcloudCluster.Status.ControlPlaneEndpointHost = defaultHost
-	} else {
-		hcloudCluster.Status.ControlPlaneEndpointHost = hcloudCluster.Spec.ControlPlaneEndpoint.Host
-	}
+	if hcloudCluster.Spec.ControlPlaneEndpoint != nil {
+		if hcloudCluster.Spec.ControlPlaneEndpoint.Host == "" {
+			hcloudCluster.Status.ControlPlaneEndpointHost = defaultHost
+		} else {
+			hcloudCluster.Status.ControlPlaneEndpointHost = hcloudCluster.Spec.ControlPlaneEndpoint.Host
+		}
 
-	if hcloudCluster.Spec.ControlPlaneEndpoint.Port == 0 {
-		hcloudCluster.Status.ControlPlaneEndpointPort = defaultPort
-	} else {
-		hcloudCluster.Status.ControlPlaneEndpointPort = int(hcloudCluster.Spec.ControlPlaneEndpoint.Port)
+		if hcloudCluster.Spec.ControlPlaneEndpoint.Port == 0 {
+			hcloudCluster.Status.ControlPlaneEndpointPort = defaultPort
+		} else {
+			hcloudCluster.Status.ControlPlaneEndpointPort = int(hcloudCluster.Spec.ControlPlaneEndpoint.Port)
+		}
 	}
 
 	// set cluster infrastructure as ready

@@ -118,6 +118,12 @@ spec:
           status:
             description: HcloudClusterStatus defines the observed state of HcloudCluster
             properties:
+              controlPlaneEndpointHost:
+                description: ControlPlaneEndpointHost is either the public IPv4 of the load balancer or defined in the specs
+                type: string
+              controlPlaneEndpointPort:
+                description: ControlPlaneEndpointPort is either the public IPv4 of the load balancer or defined in the specs
+                type: integer
               controlPlaneLoadBalancer:
                 properties:
                   algorithm:

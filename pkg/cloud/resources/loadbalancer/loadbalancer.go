@@ -41,7 +41,11 @@ func (s *Service) apiToStatus(lb *hcloud.LoadBalancer) (*infrav1.HcloudLoadBalan
 
 	ipv4 := lb.PublicNet.IPv4.IP.String()
 	ipv6 := lb.PublicNet.IPv6.IP.String()
-	internalIP := lb.PrivateNet[0].IP.String()
+
+	var internalIP string
+	if len(lb.PrivateNet) > 0 {
+		internalIP = lb.PrivateNet[0].IP.String()
+	}
 
 	var algType infrav1.HcloudLoadBalancerAlgorithmType
 
@@ -280,6 +284,9 @@ func (s *Service) Delete(ctx context.Context) (err error) {
 	loadBalancerStatus, err := s.actualStatus(ctx)
 	if err != nil {
 		return errors.Wrap(err, "failed to refresh load balancer")
+	}
+	if loadBalancerStatus == nil {
+		return nil
 	}
 
 	if err := s.deleteLoadBalancer(ctx, *loadBalancerStatus); err != nil {
