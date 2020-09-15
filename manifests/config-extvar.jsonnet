@@ -6,6 +6,7 @@ local myConfig = {
   hcloudNetwork: std.extVar('hcloud-network'),
   kubeAPIServerIPv4: std.extVar('kube-apiserver-ip'),
   kubeAPIServerDomain: std.extVar('kube-apiserver-domain'),
+  port: std.extVar('port'),
 };
 
 local addLabelIfNotExists(key, value) =

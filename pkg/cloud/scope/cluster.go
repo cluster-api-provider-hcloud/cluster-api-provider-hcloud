@@ -221,6 +221,8 @@ func (s *ClusterScope) manifestParameters() (*parameters.ManifestParameters, err
 		p.HcloudNetwork = &hcloudNetwork
 	}
 
+	var port = string(s.HcloudCluster.Spec.ControlPlaneEndpoint.Port)
+	p.Port = &port
 	return &p, nil
 }
 

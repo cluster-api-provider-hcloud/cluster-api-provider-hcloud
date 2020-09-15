@@ -20,11 +20,13 @@ func sampleParameters() *parameters.ManifestParameters {
 	hcloudNetwork := intstr.FromString("cluster-dev")
 	hcloudToken := "my-token"
 	kubeAPIServerDomain := ""
+	port := "6443"
 
 	return &parameters.ManifestParameters{
 		HcloudToken:         &hcloudToken,
 		HcloudNetwork:       &hcloudNetwork,
 		KubeAPIServerDomain: &kubeAPIServerDomain,
+		Port:                &port,
 	}
 }
 

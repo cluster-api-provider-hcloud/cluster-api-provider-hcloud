@@ -1,4 +1,4 @@
-local specs(ip, domain) =
+local specs(ip, domain, port) =
   if (domain == "") then {
     selector: {
       component: 'kube-apiserver',
@@ -7,7 +7,7 @@ local specs(ip, domain) =
     ports: [
       {
         protocol: 'TCP',
-        port: 6443,
+        port: port,
         targetPort: 6443,
       },
     ],
@@ -25,7 +25,7 @@ local specs(ip, domain) =
     ports: [
       {
         protocol: 'TCP',
-        port: 6443,
+        port: port,
         targetPort: 6443,
       },
     ],
@@ -39,14 +39,14 @@ local specs(ip, domain) =
 };
 
 
-local newControlPlaneService(ip, domain) = {
+local newControlPlaneService(ip, domain, port) = {
   apiVersion: 'v1',
   kind: 'Service',
   metadata: {
     name: 'kube-apiserver',
     namespace: 'kube-system',
   },
-  spec: specs(ip, domain),
+  spec: specs(ip, domain, port),
 };
 
 local addons = {
@@ -64,7 +64,7 @@ local addons = {
     },
   },
 
-  controlPlaneServices: newControlPlaneService($._config.kubeAPIServerIPv4, $._config.kubeAPIServerDomain),
+  controlPlaneServices: newControlPlaneService($._config.kubeAPIServerIPv4, $._config.kubeAPIServerDomain, $._config.port),
 
   workarounds: {
     // This fixes a problem join v1.18 node to a v1.17 control plane
