@@ -198,31 +198,27 @@ func (r *HcloudClusterReconciler) reconcileNormal(clusterScope *scope.ClusterSco
 		return reconcile.Result{}, errors.Wrapf(err, "failed to reconcile network for HcloudCluster %s/%s", hcloudCluster.Namespace, hcloudCluster.Name)
 	}
 
-	if hcloudCluster.Spec.KubeAPIServerDomain != nil {
-		hcloudCluster.Status.KubeAPIServerDomain = *hcloudCluster.Spec.KubeAPIServerDomain
-	}
-
 	// reconcile the load balancers
 	if err := loadbalancer.NewService(clusterScope).Reconcile(ctx); err != nil {
 		return reconcile.Result{}, errors.Wrapf(err, "failed to reconcile load balancers for HcloudCluster %s/%s", hcloudCluster.Namespace, hcloudCluster.Name)
 	}
 
-	// add the IPv4 of the the main load balancer as host of API endpoint as control plane endpoint
-	lb, err := loadbalancer.GetLoadBalancer(clusterScope)
-	if err != nil {
-		return reconcile.Result{}, err
+	var defaultHost = hcloudCluster.Status.ControlPlaneLoadBalancer.IPv4
+	var defaultPort = clusterScope.ControlPlaneAPIEndpointPort()
+
+	if hcloudCluster.Spec.ControlPlaneEndpoint == nil {
+		hcloudCluster.Spec.ControlPlaneEndpoint = &clusterv1.APIEndpoint{
+			Host: defaultHost,
+			Port: defaultPort,
+		}
 	}
 
-	var host string
-	if hcloudCluster.Status.KubeAPIServerDomain != "" {
-		host = hcloudCluster.Status.KubeAPIServerDomain
-	} else {
-		host = lb.PublicNet.IPv4.IP.String()
+	if hcloudCluster.Spec.ControlPlaneEndpoint.Host == "" {
+		hcloudCluster.Spec.ControlPlaneEndpoint.Host = defaultHost
 	}
 
-	hcloudCluster.Spec.ControlPlaneEndpoint = clusterv1.APIEndpoint{
-		Host: host,
-		Port: clusterScope.ControlPlaneAPIEndpointPort(),
+	if hcloudCluster.Spec.ControlPlaneEndpoint.Port == 0 {
+		hcloudCluster.Spec.ControlPlaneEndpoint.Port = defaultPort
 	}
 
 	// set cluster infrastructure as ready

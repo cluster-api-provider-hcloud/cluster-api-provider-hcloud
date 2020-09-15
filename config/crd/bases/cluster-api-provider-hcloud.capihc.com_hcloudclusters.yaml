@@ -66,15 +66,11 @@ spec:
                     type: string
                   id:
                     type: integer
-                  listenPort:
-                    type: integer
                   name:
                     type: string
                   type:
                     type: string
                 type: object
-              kubeAPIServerDomain:
-                type: string
               locations:
                 items:
                   type: string
@@ -129,18 +125,20 @@ spec:
                     - round_robin
                     - least_connections
                     type: string
+                  hasNetwork:
+                    type: boolean
                   id:
                     type: integer
                   ipv4:
                     type: string
                   ipv6:
                     type: string
-                  listenPort:
-                    type: integer
                   name:
                     type: string
                   type:
                     type: string
+                required:
+                - hasNetwork
                 type: object
               failureDomains:
                 additionalProperties:

@@ -101,12 +101,11 @@ func (in *HcloudClusterSpec) DeepCopyInto(out *HcloudClusterSpec) {
 		}
 	}
 	in.ControlPlaneLoadBalancer.DeepCopyInto(&out.ControlPlaneLoadBalancer)
-	if in.KubeAPIServerDomain != nil {
-		in, out := &in.KubeAPIServerDomain, &out.KubeAPIServerDomain
-		*out = new(string)
+	if in.ControlPlaneEndpoint != nil {
+		in, out := &in.ControlPlaneEndpoint, &out.ControlPlaneEndpoint
+		*out = new(apiv1alpha3.APIEndpoint)
 		**out = **in
 	}
-	out.ControlPlaneEndpoint = in.ControlPlaneEndpoint
 	if in.Network != nil {
 		in, out := &in.Network, &out.Network
 		*out = new(HcloudNetworkSpec)
@@ -212,11 +211,6 @@ func (in *HcloudLoadBalancerSpec) DeepCopyInto(out *HcloudLoadBalancerSpec) {
 	}
 	if in.ID != nil {
 		in, out := &in.ID, &out.ID
-		*out = new(int)
-		**out = **in
-	}
-	if in.ListenPort != nil {
-		in, out := &in.ListenPort, &out.ListenPort
 		*out = new(int)
 		**out = **in
 	}

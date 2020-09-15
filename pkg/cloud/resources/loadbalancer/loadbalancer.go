@@ -69,7 +69,6 @@ func (s *Service) apiToStatus(lb *hcloud.LoadBalancer) (*infrav1.HcloudLoadBalan
 		Labels:     lb.Labels,
 		Algorithm:  algType,
 		Targets:    targetIDs,
-		ListenPort: lb.Services[0].ListenPort,
 		HasNetwork: hasNetwork,
 	}
 	return status, nil
@@ -160,21 +159,17 @@ func (s *Service) createLoadBalancer(ctx context.Context, spec infrav1.HcloudLoa
 	}
 
 	var mybool = false
-	var myDestPort = int(s.scope.ControlPlaneAPIEndpointPort())
-	var myListenPort *int
+	var port = int(s.scope.ControlPlaneAPIEndpointPort())
 
-	// If listen port is specified in the specs we use that, otherwise we choose the destination port
-	// as listen port
-	if spec.ListenPort != nil {
-		myListenPort = spec.ListenPort
-	} else {
-		myListenPort = &myDestPort
+	// If port is specified in the specs we use that, otherwise we choose the default port
+	if s.scope.HcloudCluster.Spec.ControlPlaneEndpoint != nil && s.scope.HcloudCluster.Spec.ControlPlaneEndpoint.Port != 0 {
+		port = int(s.scope.HcloudCluster.Spec.ControlPlaneEndpoint.Port)
 	}
 
 	kubeapiservice := hcloud.LoadBalancerCreateOptsService{
 		Protocol:        hcloud.LoadBalancerServiceProtocolTCP,
-		ListenPort:      myListenPort,
-		DestinationPort: &myDestPort,
+		ListenPort:      &port,
+		DestinationPort: &port,
 		Proxyprotocol:   &mybool,
 	}
 
