@@ -254,8 +254,8 @@ func (s *Service) Reconcile(ctx context.Context) (_ *ctrl.Result, err error) {
 
 				// configure APIserver serving certificate
 				extraNames := []string{"127.0.0.1", "localhost"}
-				if s.scope.HcloudCluster.Status.KubeAPIServerDomain != "" {
-					extraNames = append(extraNames, s.scope.HcloudCluster.Status.KubeAPIServerDomain)
+				if s.scope.HcloudCluster.Spec.ControlPlaneEndpoint != nil && s.scope.HcloudCluster.Spec.ControlPlaneEndpoint.Host != "" {
+					extraNames = append(extraNames, s.scope.HcloudCluster.Status.ControlPlaneEndpointHost)
 				} else {
 					extraNames = append(extraNames, s.scope.HcloudCluster.Status.ControlPlaneLoadBalancer.IPv4)
 					extraNames = append(extraNames, s.scope.HcloudCluster.Status.ControlPlaneLoadBalancer.IPv6)

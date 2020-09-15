@@ -90,6 +90,7 @@ func (s *Service) Reconcile(ctx context.Context) (err error) {
 		if loadBalancerStatus.HasNetwork == false {
 			s.attachLoadBalancerToNetwork(ctx)
 		}
+		// TODO: Check if targets are up-to-date and add/delete some if needed
 	}
 
 	if loadBalancerStatus == nil {

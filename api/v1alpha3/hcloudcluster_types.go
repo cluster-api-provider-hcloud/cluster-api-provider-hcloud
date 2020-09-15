@@ -121,7 +121,6 @@ type HcloudClusterStatus struct {
 	NetworkZone              HcloudNetworkZone        `json:"networkZone,omitempty"`
 	ControlPlaneLoadBalancer HcloudLoadBalancerStatus `json:"controlPlaneLoadBalancer,omitempty"`
 
-	KubeAPIServerDomain string `json:"kubeAPIServerDomain,omitempty"`
 	// +optional
 	Network *HcloudNetworkStatus `json:"network,omitempty"`
 
@@ -129,6 +128,14 @@ type HcloudClusterStatus struct {
 	// manifests
 	// +optional
 	Manifests *HcloudClusterStatusManifests `json:"manifests,omitempty"`
+
+	// ControlPlaneEndpointHost is either the public IPv4 of the load balancer or
+	// defined in the specs
+	ControlPlaneEndpointHost string `json:"controlPlaneEndpointHost,omitempty`
+
+	// ControlPlaneEndpointPort is either the public IPv4 of the load balancer or
+	// defined in the specs
+	ControlPlaneEndpointPort int `json:"controlPlaneEndpointPort,omitempty`
 
 	// Ready is true when the provider resource is ready.
 	// +optional
