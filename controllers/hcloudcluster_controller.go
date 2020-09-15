@@ -204,23 +204,19 @@ func (r *HcloudClusterReconciler) reconcileNormal(clusterScope *scope.ClusterSco
 	}
 
 	var defaultHost = hcloudCluster.Status.ControlPlaneLoadBalancer.IPv4
-	var defaultPort = int(clusterScope.ControlPlaneAPIEndpointPort())
+	var defaultPort = clusterScope.ControlPlaneAPIEndpointPort()
 
 	if hcloudCluster.Spec.ControlPlaneEndpoint == nil {
-		hcloudCluster.Status.ControlPlaneEndpointHost = defaultHost
-		hcloudCluster.Status.ControlPlaneEndpointPort = defaultPort
-	}
-	if hcloudCluster.Spec.ControlPlaneEndpoint != nil {
-		if hcloudCluster.Spec.ControlPlaneEndpoint.Host == "" {
-			hcloudCluster.Status.ControlPlaneEndpointHost = defaultHost
-		} else {
-			hcloudCluster.Status.ControlPlaneEndpointHost = hcloudCluster.Spec.ControlPlaneEndpoint.Host
+		hcloudCluster.Spec.ControlPlaneEndpoint = &clusterv1.APIEndpoint{
+			Host: defaultHost,
+			Port: int32(defaultPort),
 		}
-
+	} else {
+		if hcloudCluster.Spec.ControlPlaneEndpoint.Host == "" {
+			hcloudCluster.Spec.ControlPlaneEndpoint.Host = defaultHost
+		}
 		if hcloudCluster.Spec.ControlPlaneEndpoint.Port == 0 {
-			hcloudCluster.Status.ControlPlaneEndpointPort = defaultPort
-		} else {
-			hcloudCluster.Status.ControlPlaneEndpointPort = int(hcloudCluster.Spec.ControlPlaneEndpoint.Port)
+			hcloudCluster.Spec.ControlPlaneEndpoint.Port = defaultPort
 		}
 	}
 

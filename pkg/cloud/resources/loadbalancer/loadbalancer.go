@@ -166,17 +166,17 @@ func (s *Service) createLoadBalancer(ctx context.Context, spec infrav1.HcloudLoa
 	}
 
 	var mybool = false
-	var port = int(s.scope.ControlPlaneAPIEndpointPort())
-
-	// If port is specified in the specs we use that, otherwise we choose the default port
-	if s.scope.HcloudCluster.Spec.ControlPlaneEndpoint != nil && s.scope.HcloudCluster.Spec.ControlPlaneEndpoint.Port != 0 {
-		port = int(s.scope.HcloudCluster.Spec.ControlPlaneEndpoint.Port)
+	var defaultPort = int(s.scope.ControlPlaneAPIEndpointPort())
+	var listenPort = defaultPort
+	// If controlPlaneEndpoint has been specified (or set) then use it
+	if s.scope.HcloudCluster.Spec.ControlPlaneEndpoint != nil {
+		listenPort = int(s.scope.HcloudCluster.Spec.ControlPlaneEndpoint.Port)
 	}
 
 	kubeapiservice := hcloud.LoadBalancerCreateOptsService{
 		Protocol:        hcloud.LoadBalancerServiceProtocolTCP,
-		ListenPort:      &port,
-		DestinationPort: &port,
+		ListenPort:      &listenPort,
+		DestinationPort: &defaultPort,
 		Proxyprotocol:   &mybool,
 	}
 

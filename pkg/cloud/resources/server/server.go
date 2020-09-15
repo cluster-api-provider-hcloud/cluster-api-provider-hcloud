@@ -243,8 +243,8 @@ func (s *Service) Reconcile(ctx context.Context) (_ *ctrl.Result, err error) {
 						Scheme: "https",
 						Host: fmt.Sprintf(
 							"%s:%d",
-							s.scope.HcloudCluster.Status.ControlPlaneEndpointHost,
-							s.scope.HcloudCluster.Status.ControlPlaneEndpointPort,
+							s.scope.Cluster.Spec.ControlPlaneEndpoint.Host,
+							s.scope.Cluster.Spec.ControlPlaneEndpoint.Port,
 						),
 					}
 					c.APIServer.ExtraArgs[serviceAccountIssuerKey] = apiServerURL.String()
@@ -257,12 +257,8 @@ func (s *Service) Reconcile(ctx context.Context) (_ *ctrl.Result, err error) {
 
 				// configure APIserver serving certificate
 				extraNames := []string{"127.0.0.1", "localhost"}
-				if s.scope.HcloudCluster.Spec.ControlPlaneEndpoint != nil && s.scope.HcloudCluster.Spec.ControlPlaneEndpoint.Host != "" {
-					extraNames = append(extraNames, s.scope.HcloudCluster.Status.ControlPlaneEndpointHost)
-				} else {
-					extraNames = append(extraNames, s.scope.HcloudCluster.Status.ControlPlaneLoadBalancer.IPv4)
-					extraNames = append(extraNames, s.scope.HcloudCluster.Status.ControlPlaneLoadBalancer.IPv6)
-				}
+
+				extraNames = append(extraNames, s.scope.HcloudCluster.Spec.ControlPlaneEndpoint.Host)
 
 				for _, name := range extraNames {
 					if !stringSliceContains(c.APIServer.CertSANs, name) {
