@@ -85,6 +85,7 @@ func (s *Service) Reconcile(ctx context.Context) (_ *ctrl.Result, err error) {
 	if err != nil {
 		return nil, err
 	}
+
 	if imageID == nil {
 		return &ctrl.Result{RequeueAfter: 2 * time.Second}, nil
 	}
@@ -178,6 +179,7 @@ func (s *Service) Reconcile(ctx context.Context) (_ *ctrl.Result, err error) {
 			}
 
 			if i := kubeadmConfig.InitConfiguration; i != nil {
+
 				// set cloud provider external if nothing else is set
 				if i.NodeRegistration.KubeletExtraArgs == nil {
 					i.NodeRegistration.KubeletExtraArgs = make(map[string]string)
@@ -241,12 +243,13 @@ func (s *Service) Reconcile(ctx context.Context) (_ *ctrl.Result, err error) {
 						Scheme: "https",
 						Host: fmt.Sprintf(
 							"%s:%d",
-							s.scope.Cluster.Spec.ControlPlaneEndpoint.Host,
-							s.scope.Cluster.Spec.ControlPlaneEndpoint.Port,
+							s.scope.HcloudCluster.Status.ControlPlaneEndpointHost,
+							s.scope.HcloudCluster.Status.ControlPlaneEndpointPort,
 						),
 					}
 					c.APIServer.ExtraArgs[serviceAccountIssuerKey] = apiServerURL.String()
 				}
+
 				serviceAccountSigningKeyFileKey := "service-account-signing-key-file"
 				if _, ok := c.APIServer.ExtraArgs[serviceAccountSigningKeyFileKey]; !ok {
 					c.APIServer.ExtraArgs[serviceAccountSigningKeyFileKey] = "/etc/kubernetes/pki/sa.key"
