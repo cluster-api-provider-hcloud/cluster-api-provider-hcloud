@@ -131,11 +131,11 @@ type HcloudClusterStatus struct {
 
 	// ControlPlaneEndpointHost is either the public IPv4 of the load balancer or
 	// defined in the specs
-	ControlPlaneEndpointHost string `json:"controlPlaneEndpointHost,omitempty`
+	ControlPlaneEndpointHost string `json:"controlPlaneEndpointHost,omitempty"`
 
 	// ControlPlaneEndpointPort is either the public IPv4 of the load balancer or
 	// defined in the specs
-	ControlPlaneEndpointPort int `json:"controlPlaneEndpointPort,omitempty`
+	ControlPlaneEndpointPort int `json:"controlPlaneEndpointPort,omitempty"`
 
 	// Ready is true when the provider resource is ready.
 	// +optional
