@@ -85,6 +85,7 @@ func (s *Service) Reconcile(ctx context.Context) (_ *ctrl.Result, err error) {
 	if err != nil {
 		return nil, err
 	}
+
 	if imageID == nil {
 		return &ctrl.Result{RequeueAfter: 2 * time.Second}, nil
 	}
@@ -178,6 +179,7 @@ func (s *Service) Reconcile(ctx context.Context) (_ *ctrl.Result, err error) {
 			}
 
 			if i := kubeadmConfig.InitConfiguration; i != nil {
+
 				// set cloud provider external if nothing else is set
 				if i.NodeRegistration.KubeletExtraArgs == nil {
 					i.NodeRegistration.KubeletExtraArgs = make(map[string]string)
@@ -247,6 +249,7 @@ func (s *Service) Reconcile(ctx context.Context) (_ *ctrl.Result, err error) {
 					}
 					c.APIServer.ExtraArgs[serviceAccountIssuerKey] = apiServerURL.String()
 				}
+
 				serviceAccountSigningKeyFileKey := "service-account-signing-key-file"
 				if _, ok := c.APIServer.ExtraArgs[serviceAccountSigningKeyFileKey]; !ok {
 					c.APIServer.ExtraArgs[serviceAccountSigningKeyFileKey] = "/etc/kubernetes/pki/sa.key"
@@ -254,14 +257,8 @@ func (s *Service) Reconcile(ctx context.Context) (_ *ctrl.Result, err error) {
 
 				// configure APIserver serving certificate
 				extraNames := []string{"127.0.0.1", "localhost"}
-				if s.scope.HcloudCluster.Status.KubeAPIServerDomain != "" {
-					extraNames = append(extraNames, s.scope.HcloudCluster.Status.KubeAPIServerDomain)
-				} else {
-					for _, lb := range s.scope.HcloudCluster.Status.ControlPlaneLoadBalancers {
-						extraNames = append(extraNames, lb.IPv4)
-						extraNames = append(extraNames, lb.IPv6)
-					}
-				}
+
+				extraNames = append(extraNames, s.scope.HcloudCluster.Spec.ControlPlaneEndpoint.Host)
 
 				for _, name := range extraNames {
 					if !stringSliceContains(c.APIServer.CertSANs, name) {
@@ -542,7 +539,7 @@ func (s *Service) addServerToLoadBalancer(ctx context.Context, server *hcloud.Se
 	myBool := true
 	loadBalancerAddServerTargetOpts := hcloud.LoadBalancerAddServerTargetOpts{Server: server, UsePrivateIP: &myBool}
 
-	lb, err := loadbalancer.GetMainLoadBalancer(&s.scope.ClusterScope, ctx)
+	lb, err := loadbalancer.GetLoadBalancer(&s.scope.ClusterScope)
 	if err != nil {
 		return err
 	}
@@ -567,7 +564,7 @@ func (s *Service) addServerToLoadBalancer(ctx context.Context, server *hcloud.Se
 
 func (s *Service) deleteServerOfLoadBalancer(ctx context.Context, server *hcloud.Server) error {
 
-	lb, err := loadbalancer.GetMainLoadBalancer(&s.scope.ClusterScope, ctx)
+	lb, err := loadbalancer.GetLoadBalancer(&s.scope.ClusterScope)
 	if err != nil {
 		return err
 	}

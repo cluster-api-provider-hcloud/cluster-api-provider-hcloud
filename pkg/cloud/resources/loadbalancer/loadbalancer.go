@@ -3,7 +3,6 @@ package loadbalancer
 import (
 	"context"
 	"fmt"
-	"sort"
 
 	"github.com/hetznercloud/hcloud-go/hcloud"
 	"github.com/pkg/errors"
@@ -43,6 +42,11 @@ func (s *Service) apiToStatus(lb *hcloud.LoadBalancer) (*infrav1.HcloudLoadBalan
 	ipv4 := lb.PublicNet.IPv4.IP.String()
 	ipv6 := lb.PublicNet.IPv6.IP.String()
 
+	var internalIP string
+	if len(lb.PrivateNet) > 0 {
+		internalIP = lb.PrivateNet[0].IP.String()
+	}
+
 	var algType infrav1.HcloudLoadBalancerAlgorithmType
 
 	if lb.Algorithm.Type == hcloud.LoadBalancerAlgorithmTypeRoundRobin {
@@ -59,47 +63,43 @@ func (s *Service) apiToStatus(lb *hcloud.LoadBalancer) (*infrav1.HcloudLoadBalan
 		targetIDs = append(targetIDs, server.Server.Server.ID)
 	}
 
+	hasNetwork := len(lb.PrivateNet) > 0
+
 	status := &infrav1.HcloudLoadBalancerStatus{
 		ID:         lb.ID,
 		Name:       lb.Name,
 		Type:       lb.LoadBalancerType.Name,
 		IPv4:       ipv4,
 		IPv6:       ipv6,
+		InternalIP: internalIP,
 		Labels:     lb.Labels,
 		Algorithm:  algType,
 		Targets:    targetIDs,
-		ListenPort: lb.Services[0].ListenPort,
+		HasNetwork: hasNetwork,
 	}
 	return status, nil
 }
 
 func (s *Service) Reconcile(ctx context.Context) (err error) {
 
+	s.scope.V(3).Info("Reconcile load balancer")
+
 	// update current status
 	loadBalancerStatus, err := s.actualStatus(ctx)
 	if err != nil {
-		return errors.Wrap(err, "failed to refresh load balancers")
+		return errors.Wrap(err, "failed to refresh load balancer")
 	}
-	s.scope.HcloudCluster.Status.ControlPlaneLoadBalancers = loadBalancerStatus
-
-	s.scope.V(3).Info("Reconcile load balancers")
-
-	// Compares spec and actual status to find out if load balancers need to be created/deleted
-	needCreation, needDeletion := s.compare(loadBalancerStatus)
-
-	if len(needCreation) == 0 && len(needDeletion) == 0 {
-		return nil
-	}
-
-	for _, spec := range needCreation {
-		if _, err := s.createLoadBalancer(ctx, spec); err != nil {
-			return errors.Wrap(err, "failed to create load balancer")
+	if loadBalancerStatus != nil {
+		s.scope.HcloudCluster.Status.ControlPlaneLoadBalancer = *loadBalancerStatus
+		if loadBalancerStatus.HasNetwork == false {
+			s.attachLoadBalancerToNetwork(ctx)
 		}
+		// TODO: Check if targets are up-to-date and add/delete some if needed
 	}
 
-	for _, status := range needDeletion {
-		if err := s.deleteLoadBalancer(ctx, status); err != nil {
-			return errors.Wrap(err, "failed to delete load balancer")
+	if loadBalancerStatus == nil {
+		if _, err := s.createLoadBalancer(ctx, s.scope.HcloudCluster.Spec.ControlPlaneLoadBalancer); err != nil {
+			return errors.Wrap(err, "failed to create load balancer")
 		}
 	}
 
@@ -108,7 +108,7 @@ func (s *Service) Reconcile(ctx context.Context) (err error) {
 	if err != nil {
 		return errors.Wrap(err, "failed to refresh load balancers")
 	}
-	s.scope.HcloudCluster.Status.ControlPlaneLoadBalancers = loadBalancerStatus
+	s.scope.HcloudCluster.Status.ControlPlaneLoadBalancer = *loadBalancerStatus
 
 	return nil
 }
@@ -131,7 +131,7 @@ func (s *Service) createLoadBalancer(ctx context.Context, spec infrav1.HcloudLoa
 
 	hc := s.scope.HcloudCluster
 
-	name := names.SimpleNameGenerator.GenerateName(hc.Name + "-loadbalancer-")
+	name := names.SimpleNameGenerator.GenerateName(hc.Name + "-kube-apiserver-")
 
 	// Get the Hetzner cloud object of load balancer type
 	loadBalancerType, _, err := s.scope.HcloudClient().GetLoadBalancerTypeByName(ctx, spec.Type)
@@ -166,34 +166,23 @@ func (s *Service) createLoadBalancer(ctx context.Context, spec infrav1.HcloudLoa
 	}
 
 	var mybool = false
-	var myDestPort = int(s.scope.ControlPlaneAPIEndpointPort())
-	var myListenPort *int
-
-	// If listen port is specified in the specs we use that, otherwise we choose the destination port
-	// as listen port
-	if spec.ListenPort != nil {
-		myListenPort = spec.ListenPort
-	} else {
-		myListenPort = &myDestPort
+	var defaultPort = int(s.scope.ControlPlaneAPIEndpointPort())
+	var listenPort = defaultPort
+	// If controlPlaneEndpoint has been specified (or set) then use it
+	if s.scope.HcloudCluster.Spec.ControlPlaneEndpoint != nil {
+		listenPort = int(s.scope.HcloudCluster.Spec.ControlPlaneEndpoint.Port)
 	}
 
 	kubeapiservice := hcloud.LoadBalancerCreateOptsService{
 		Protocol:        hcloud.LoadBalancerServiceProtocolTCP,
-		ListenPort:      myListenPort,
-		DestinationPort: &myDestPort,
+		ListenPort:      &listenPort,
+		DestinationPort: &defaultPort,
 		Proxyprotocol:   &mybool,
 	}
 
 	clusterTagKey := infrav1.ClusterTagKey(hc.Name)
 
-	// The first load balancer automatically becomes the main one that has the control
-	// planes as targets.
 	labels := map[string]string{clusterTagKey: string(infrav1.ResourceLifecycleOwned)}
-	if len(s.scope.HcloudCluster.Status.ControlPlaneLoadBalancers) == 0 {
-		labels["type"] = "main"
-	} else {
-		labels["type"] = "other"
-	}
 
 	opts := hcloud.LoadBalancerCreateOpts{
 		LoadBalancerType: loadBalancerType,
@@ -218,12 +207,51 @@ func (s *Service) createLoadBalancer(ctx context.Context, spec infrav1.HcloudLoa
 	return status, nil
 }
 
+func (s *Service) attachLoadBalancerToNetwork(ctx context.Context) error {
+	lb, err := GetLoadBalancer(s.scope)
+	if err != nil {
+		errors.Wrap(err, "failed to get load balancer")
+	}
+
+	var network *hcloud.Network
+
+	if s.scope.HcloudCluster.Status.Network == nil {
+		return errors.New("no network set on the cluster")
+	}
+	networkID := s.scope.HcloudCluster.Status.Network.ID
+	networks, err := s.scope.HcloudClient().ListNetworks(ctx, hcloud.NetworkListOpts{})
+	if err != nil {
+		return errors.Wrap(err, "failed to list networks")
+	}
+	var i = false
+	for _, net := range networks {
+		if net.ID == networkID {
+			network = net
+			i = true
+		}
+	}
+	if i == false {
+		return fmt.Errorf("could not find network with ID %v", networkID)
+	}
+
+	opts := hcloud.LoadBalancerAttachToNetworkOpts{
+		Network: network,
+	}
+	_, _, err = s.scope.HcloudClient().AttachLoadBalancerToNetwork(ctx, lb, opts)
+
+	return errors.Wrap(err, "failed to attach load balancer to network")
+}
+
 func (s *Service) deleteLoadBalancer(ctx context.Context, status infrav1.HcloudLoadBalancerStatus) error {
 
 	// ensure deleted load balancer is actually owned by us
 	clusterTagKey := infrav1.ClusterTagKey(s.scope.HcloudCluster.Name)
+	labels := map[string]string{clusterTagKey: string(infrav1.ResourceLifecycleOwned)}
 
-	loadBalancers, err := s.scope.HcloudClient().ListLoadBalancers(ctx, hcloud.LoadBalancerListOpts{})
+	opts := hcloud.LoadBalancerListOpts{}
+	opts.LabelSelector = utils.LabelsToLabelSelector(labels)
+
+	loadBalancers, err := s.scope.HcloudClient().ListLoadBalancers(ctx, opts)
 	if err != nil {
 		return errors.Wrap(err, "Failed to list load balancers")
 	}
@@ -257,20 +285,21 @@ func (s *Service) Delete(ctx context.Context) (err error) {
 	if err != nil {
 		return errors.Wrap(err, "failed to refresh load balancer")
 	}
+	if loadBalancerStatus == nil {
+		return nil
+	}
 
-	for _, lbStatus := range loadBalancerStatus {
-		if err := s.deleteLoadBalancer(ctx, lbStatus); err != nil {
-			return errors.Wrap(err, "failed to delete load balancer")
-		}
+	if err := s.deleteLoadBalancer(ctx, *loadBalancerStatus); err != nil {
+		return errors.Wrap(err, "failed to delete load balancer")
 	}
 
 	return nil
 }
 
-func GetMainLoadBalancer(s *scope.ClusterScope, ctx context.Context) (*hcloud.LoadBalancer, error) {
-	labels := map[string]string{
-		"type": "main",
-	}
+func GetLoadBalancer(s *scope.ClusterScope) (*hcloud.LoadBalancer, error) {
+
+	clusterTagKey := infrav1.ClusterTagKey(s.HcloudCluster.Name)
+	labels := map[string]string{clusterTagKey: string(infrav1.ResourceLifecycleOwned)}
 
 	opts := hcloud.LoadBalancerListOpts{}
 	opts.LabelSelector = utils.LabelsToLabelSelector(labels)
@@ -289,90 +318,31 @@ func GetMainLoadBalancer(s *scope.ClusterScope, ctx context.Context) (*hcloud.Lo
 	}
 }
 
-func (s *Service) compare(actualStatus []infrav1.HcloudLoadBalancerStatus) (needCreation []infrav1.HcloudLoadBalancerSpec, needDeletion []infrav1.HcloudLoadBalancerStatus) {
-	var matchedSpecToStatusMap = make(map[int]*infrav1.HcloudLoadBalancerStatus)
-	var matchedStatusToSpecMap = make(map[int]*infrav1.HcloudLoadBalancerSpec)
+// actualStatus gathers the load balancer with
+// appropriate tag and converts it into the status object
+func (s *Service) actualStatus(ctx context.Context) (*infrav1.HcloudLoadBalancerStatus, error) {
 
-	for posSpec, lbSpec := range s.scope.HcloudCluster.Spec.ControlPlaneLoadBalancers {
-		for posStatus, lbStatus := range s.scope.HcloudCluster.Status.ControlPlaneLoadBalancers {
-			if _, ok := matchedStatusToSpecMap[posStatus]; ok {
-				continue
-			}
-			matchedStatusToSpecMap[posStatus] = &lbSpec
-			matchedSpecToStatusMap[posSpec] = &lbStatus
-		}
-	}
-
-	// load balancers to create
-	for pos, spec := range s.scope.HcloudCluster.Spec.ControlPlaneLoadBalancers {
-		if _, ok := matchedSpecToStatusMap[pos]; ok {
-			continue
-		}
-		needCreation = append(needCreation, spec)
-	}
-
-	// load balancers to delete
-	for pos, status := range s.scope.HcloudCluster.Status.ControlPlaneLoadBalancers {
-		if _, ok := matchedStatusToSpecMap[pos]; ok {
-			continue
-		}
-		needDeletion = append(needDeletion, status)
-	}
-
-	return needCreation, needDeletion
-}
-
-// actualStatus gathers all load balancers referenced by ID on object or a
-// appropriate tag and converts them into the status object
-func (s *Service) actualStatus(ctx context.Context) ([]infrav1.HcloudLoadBalancerStatus, error) {
-	// index existing status entries
-	var ids intSlice
-	lbStatusByID := make(map[int]*infrav1.HcloudLoadBalancerStatus)
-	for pos := range s.scope.HcloudCluster.Status.ControlPlaneLoadBalancers {
-		lbStatus := &s.scope.HcloudCluster.Status.ControlPlaneLoadBalancers[pos]
-		lbStatusByID[lbStatus.ID] = lbStatus
-		ids = append(ids, lbStatus.ID)
-	}
-	for _, lbSpec := range s.scope.HcloudCluster.Spec.ControlPlaneLoadBalancers {
-		if lbSpec.ID != nil {
-			ids = append(ids, *lbSpec.ID)
-		}
-	}
-
-	// refresh existing load balancers
 	clusterTagKey := infrav1.ClusterTagKey(s.scope.HcloudCluster.Name)
-	loadBalancers, err := s.scope.HcloudClient().ListLoadBalancers(ctx, hcloud.LoadBalancerListOpts{})
+	labels := map[string]string{clusterTagKey: string(infrav1.ResourceLifecycleOwned)}
+	opts := hcloud.LoadBalancerListOpts{}
+	opts.LabelSelector = utils.LabelsToLabelSelector(labels)
+
+	loadBalancers, err := s.scope.HcloudClient().ListLoadBalancers(ctx, opts)
 	if err != nil {
-		return nil, fmt.Errorf("error listing load balancers: %w", err)
-	}
-	for _, lb := range loadBalancers {
-		_, ok := lb.Labels[clusterTagKey]
-		if !ok && !ids.contains(lb.ID) {
-			continue
-		}
-
-		lbStatus, err := s.apiToStatus(lb)
-		if err != nil {
-			return nil, fmt.Errorf("error converting LoadBalancer API to status: %w", err)
-		}
-		lbStatusByID[lbStatus.ID] = lbStatus
+		return nil, errors.Wrap(err, "failed to list load balancers")
 	}
 
-	ids = []int{}
-	for id := range lbStatusByID {
-		ids = append(ids, id)
-	}
-	sort.Ints(ids)
-
-	var lbStatuses []infrav1.HcloudLoadBalancerStatus
-
-	for _, id := range ids {
-		status := lbStatusByID[id]
-		lbStatuses = append(
-			lbStatuses,
-			*status,
-		)
+	if len(loadBalancers) > 1 {
+		return nil, fmt.Errorf("Found %v loadbalancers in Hcloud", len(loadBalancers))
+	} else if len(loadBalancers) == 0 {
+		return nil, nil
 	}
 
-	return lbStatuses, nil
+	lbStatus, err := s.apiToStatus(loadBalancers[0])
+	if err != nil {
+		errors.Wrap(err, "failed to convert load balancer to status object")
+	}
+
+	return lbStatus, nil
+
 }

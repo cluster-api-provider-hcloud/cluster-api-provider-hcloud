@@ -27,7 +27,8 @@ manifests: ## Update generated manifests
 .PHONY: deploy_kind
 deploy_kind: ## Deploy latest image and manifests to a kind cluster
 	bazel run //cmd/cluster-api-provider-hcloud:deploy
-
+	kubectl wait -n capi-webhook-system deployment capi-controller-manager --for=condition=Available --timeout=120s
+	kubectl apply -f demo/ClusterResourceSets
 # Run go fmt against code
 fmt:
 	go fmt ./...

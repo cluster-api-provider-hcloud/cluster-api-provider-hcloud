@@ -47,15 +47,11 @@ type HcloudClusterSpec struct {
 	// define cluster wide SSH keys
 	SSHKeys []HcloudSSHKeySpec `json:"sshKeys,omitempty"`
 
-	// +kubebuilder:validation:MinItems=1
-	// +kubebuilder:validation:MaxItems=10
-	ControlPlaneLoadBalancers []HcloudLoadBalancerSpec `json:"controlPlaneLoadbalancer,omitempty"`
-
-	KubeAPIServerDomain *string `json:"kubeAPIServerDomain,omitempty"`
+	ControlPlaneLoadBalancer HcloudLoadBalancerSpec `json:"controlPlaneLoadbalancer,omitempty"`
 
 	// ControlPlaneEndpoint represents the endpoint used to communicate with the control plane.
 	// +optional
-	ControlPlaneEndpoint clusterv1.APIEndpoint `json:"controlPlaneEndpoint"`
+	ControlPlaneEndpoint *clusterv1.APIEndpoint `json:"controlPlaneEndpoint"`
 
 	Network *HcloudNetworkSpec `json:"network,omitempty"`
 
@@ -96,11 +92,10 @@ type HcloudNetworkStatus struct {
 }
 
 type HcloudLoadBalancerSpec struct {
-	Name       *string                         `json:"name,omitempty"`
-	ID         *int                            `json:"id,omitempty"`
-	Algorithm  HcloudLoadBalancerAlgorithmType `json:"algorithm,omitempty"`
-	Type       string                          `json:"type,omitempty"`
-	ListenPort *int                            `json:"listenPort,omitempty"`
+	Name      *string                         `json:"name,omitempty"`
+	ID        *int                            `json:"id,omitempty"`
+	Algorithm HcloudLoadBalancerAlgorithmType `json:"algorithm,omitempty"`
+	Type      string                          `json:"type,omitempty"`
 }
 type HcloudLoadBalancerStatus struct {
 	ID         int                             `json:"id,omitempty"`
@@ -108,10 +103,11 @@ type HcloudLoadBalancerStatus struct {
 	Type       string                          `json:"type,omitempty"`
 	IPv4       string                          `json:"ipv4,omitempty"`
 	IPv6       string                          `json:"ipv6,omitempty"`
-	ListenPort int                             `json:"listenPort,omitempty"`
+	InternalIP string                          `json:"internalIP,omitempty"`
 	Labels     map[string]string               `json:"-"`
 	Algorithm  HcloudLoadBalancerAlgorithmType `json:"algorithm,omitempty"`
 	Targets    []int                           `json:"-"`
+	HasNetwork bool                            `json:"hasNetwork"`
 }
 
 type HcloudClusterStatusManifests struct {
@@ -121,11 +117,10 @@ type HcloudClusterStatusManifests struct {
 
 // HcloudClusterStatus defines the observed state of HcloudCluster
 type HcloudClusterStatus struct {
-	Locations                 []HcloudLocation           `json:"locations,omitempty"`
-	NetworkZone               HcloudNetworkZone          `json:"networkZone,omitempty"`
-	ControlPlaneLoadBalancers []HcloudLoadBalancerStatus `json:"controlPlaneLoadBalancers,omitempty"`
+	Locations                []HcloudLocation         `json:"locations,omitempty"`
+	NetworkZone              HcloudNetworkZone        `json:"networkZone,omitempty"`
+	ControlPlaneLoadBalancer HcloudLoadBalancerStatus `json:"controlPlaneLoadBalancer,omitempty"`
 
-	KubeAPIServerDomain string `json:"kubeAPIServerDomain,omitempty"`
 	// +optional
 	Network *HcloudNetworkStatus `json:"network,omitempty"`
 

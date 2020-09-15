@@ -30,8 +30,11 @@ metadata:
   name: cluster-dev
   namespace: default
 spec:
+  controlPlaneEndpoint:
+    host: ""
+    port: 443
   controlPlaneLoadbalancer:
-  - type: lb11
+    type: lb11
     algorithm: round_robin
   locations:
   - fsn1  # first location is used for location of Loadbalancer

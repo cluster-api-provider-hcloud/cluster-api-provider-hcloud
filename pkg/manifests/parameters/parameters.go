@@ -9,6 +9,7 @@ type ManifestParameters struct {
 	HcloudNetwork       *intstr.IntOrString
 	KubeAPIServerIPv4   *string
 	KubeAPIServerDomain *string
+	Port                *string
 }
 
 func (m *ManifestParameters) ExtVar() map[string]string {
@@ -24,6 +25,12 @@ func (m *ManifestParameters) ExtVar() map[string]string {
 		extVar[key] = *val
 	} else {
 		extVar[key] = ""
+	}
+
+	if key, val := "port", m.Port; val != nil {
+		extVar[key] = *val
+	} else {
+		extVar[key] = "6443"
 	}
 
 	if key, val := "hcloud-token", m.HcloudToken; val != nil {

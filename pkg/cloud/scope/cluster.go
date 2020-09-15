@@ -3,6 +3,7 @@ package scope
 import (
 	"context"
 	"fmt"
+	"strconv"
 
 	"github.com/go-logr/logr"
 	"github.com/hetznercloud/hcloud-go/hcloud"
@@ -205,9 +206,13 @@ func (s *ClusterScope) ClientConfigWithAPIEndpoint(endpoint clusterv1.APIEndpoin
 func (s *ClusterScope) manifestParameters() (*parameters.ManifestParameters, error) {
 	var p parameters.ManifestParameters
 
-	p.KubeAPIServerIPv4 = &s.HcloudCluster.Status.ControlPlaneLoadBalancers[0].IPv4
-
-	p.KubeAPIServerDomain = &s.HcloudCluster.Status.KubeAPIServerDomain
+	p.KubeAPIServerIPv4 = &s.HcloudCluster.Status.ControlPlaneLoadBalancer.IPv4
+	var emptyString = ""
+	if s.HcloudCluster.Spec.ControlPlaneEndpoint != nil && s.HcloudCluster.Spec.ControlPlaneEndpoint.Host != "" {
+		p.KubeAPIServerDomain = &s.HcloudCluster.Spec.ControlPlaneEndpoint.Host
+	} else {
+		p.KubeAPIServerDomain = &emptyString
+	}
 
 	p.HcloudToken = &s.hcloudToken
 
@@ -215,7 +220,8 @@ func (s *ClusterScope) manifestParameters() (*parameters.ManifestParameters, err
 		hcloudNetwork := intstr.FromInt(s.HcloudCluster.Status.Network.ID)
 		p.HcloudNetwork = &hcloudNetwork
 	}
-
+	var port = strconv.FormatInt(int64(s.HcloudCluster.Spec.ControlPlaneEndpoint.Port), 10)
+	p.Port = &port
 	return &p, nil
 }
 
