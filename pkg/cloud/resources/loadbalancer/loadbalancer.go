@@ -41,6 +41,7 @@ func (s *Service) apiToStatus(lb *hcloud.LoadBalancer) (*infrav1.HcloudLoadBalan
 
 	ipv4 := lb.PublicNet.IPv4.IP.String()
 	ipv6 := lb.PublicNet.IPv6.IP.String()
+	internalIP := lb.PrivateNet[0].IP.String()
 
 	var algType infrav1.HcloudLoadBalancerAlgorithmType
 
@@ -66,6 +67,7 @@ func (s *Service) apiToStatus(lb *hcloud.LoadBalancer) (*infrav1.HcloudLoadBalan
 		Type:       lb.LoadBalancerType.Name,
 		IPv4:       ipv4,
 		IPv6:       ipv6,
+		InternalIP: internalIP,
 		Labels:     lb.Labels,
 		Algorithm:  algType,
 		Targets:    targetIDs,

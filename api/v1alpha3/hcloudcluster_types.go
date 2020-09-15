@@ -103,6 +103,7 @@ type HcloudLoadBalancerStatus struct {
 	Type       string                          `json:"type,omitempty"`
 	IPv4       string                          `json:"ipv4,omitempty"`
 	IPv6       string                          `json:"ipv6,omitempty"`
+	InternalIP string                          `json:"internalIP,omitempty"`
 	Labels     map[string]string               `json:"-"`
 	Algorithm  HcloudLoadBalancerAlgorithmType `json:"algorithm,omitempty"`
 	Targets    []int                           `json:"-"`
