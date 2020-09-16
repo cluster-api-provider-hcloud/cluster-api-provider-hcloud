@@ -8,6 +8,7 @@ go_library(
         "hcloudcluster_controller.go",
         "hcloudmachine_controller.go",
         "hcloudvolume_controller.go",
+        "bastion_host_controller.go"
     ],
     importpath = "github.com/cluster-api-provider-hcloud/cluster-api-provider-hcloud/controllers",
     visibility = ["//visibility:public"],
@@ -15,6 +16,7 @@ go_library(
         "//api/v1alpha3:go_default_library",
         "//pkg/cloud/resources/loadbalancer:go_default_library",
         "//pkg/cloud/resources/location:go_default_library",
+        "//pkg/cloud/resources/bastionhost:go_default_library",
         "//pkg/cloud/resources/network:go_default_library",
         "//pkg/cloud/resources/server:go_default_library",
         "//pkg/cloud/resources/volume:go_default_library",

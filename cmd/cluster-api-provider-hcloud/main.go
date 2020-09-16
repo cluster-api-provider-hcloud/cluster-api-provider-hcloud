@@ -117,6 +117,16 @@ var rootCmd = &cobra.Command{
 				setupLog.Error(err, "unable to create controller", "controller", "HcloudVolume")
 				os.Exit(1)
 			}
+			if err = (&controllers.BastionHostReconciler{
+				Client:    mgr.GetClient(),
+				Log:       ctrl.Log.WithName("controllers").WithName("BastionHost"),
+				Scheme:    mgr.GetScheme(),
+				Packer:    packerMgr,
+				Manifests: manifestsMgr,
+			}).SetupWithManager(mgr, controller.Options{}); err != nil {
+				setupLog.Error(err, "unable to create controller", "controller", "BastionHost")
+				os.Exit(1)
+			}
 			// +kubebuilder:scaffold:builder
 		} else {
 			// run in webhook mode

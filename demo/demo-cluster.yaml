@@ -48,6 +48,19 @@ spec:
     key: token
     name: hcloud-token
 ---
+apiVersion: cluster-api-provider-hcloud.capihc.com/v1alpha3
+kind: BastionHost
+metadata:
+  name: bastion-host
+  namespace: default
+spec:
+  location: nbg1
+  sshKeys:
+  - name: cluster
+  name: bastion-host
+  version: v1.19.0
+  imageName: centos-7_k8s-universal
+---
 apiVersion: controlplane.cluster.x-k8s.io/v1alpha3
 kind: KubeadmControlPlane
 metadata:
