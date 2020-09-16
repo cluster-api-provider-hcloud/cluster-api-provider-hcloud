@@ -208,7 +208,7 @@ func (s *ClusterScope) manifestParameters() (*parameters.ManifestParameters, err
 
 	p.KubeAPIServerIPv4 = &s.HcloudCluster.Status.ControlPlaneLoadBalancer.IPv4
 	var emptyString = ""
-	if s.HcloudCluster.Spec.ControlPlaneEndpoint != nil && s.HcloudCluster.Spec.ControlPlaneEndpoint.Host != "" {
+	if s.HcloudCluster.Spec.ControlPlaneEndpoint.Host != s.HcloudCluster.Status.ControlPlaneLoadBalancer.IPv4 {
 		p.KubeAPIServerDomain = &s.HcloudCluster.Spec.ControlPlaneEndpoint.Host
 	} else {
 		p.KubeAPIServerDomain = &emptyString
