@@ -41,9 +41,9 @@ spec:
   - nbg1
   - hel1
   network:
-    cidrBlock: 10.0.0.0/8
+    cidrBlock: 172.16.0.0/12
     subnets:
-    - cidrBlock: 10.0.0.0/16
+    - cidrBlock: 172.16.0.0/20
       networkZone: eu-central
   sshKeys:
   - name: cluster
@@ -91,7 +91,7 @@ spec:
   template:
     spec:
       type: cx21-ceph
-      image: centos-8_k8s-v1.19.0
+      image: centos-8_k8s-v1.19.0-privnet
 ---
 apiVersion: bootstrap.cluster.x-k8s.io/v1alpha3
 kind: KubeadmConfigTemplate
@@ -209,7 +209,7 @@ spec:
   template:
     spec:
       type: cpx11
-      image: centos-8_k8s-v1.19.0
+      image: centos-8_k8s-v1.19.0-privnet
 ---
 apiVersion: cluster-api-provider-hcloud.capihc.com/v1alpha3
 kind: HcloudMachineTemplate
@@ -220,7 +220,7 @@ spec:
   template:
     spec:
       type: cpx11
-      image: centos-8_k8s-v1.19.0
+      image: centos-8_k8s-v1.19.0-privnet
 ---
 apiVersion: cluster-api-provider-hcloud.capihc.com/v1alpha3
 kind: HcloudMachineTemplate
@@ -231,7 +231,7 @@ spec:
   template:
     spec:
       type: cpx11
-      image: centos-8_k8s-v1.19.0
+      image: centos-8_k8s-v1.19.0-privnet
 ---
 apiVersion: cluster.x-k8s.io/v1alpha3
 kind: MachineHealthCheck
