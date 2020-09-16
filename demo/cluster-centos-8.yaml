@@ -37,8 +37,8 @@ spec:
     type: lb11
     algorithm: round_robin
   locations:
-  - fsn1  # first location is used for location of Loadbalancer
-  - nbg1
+  - nbg1 # first location is used for location of Loadbalancer
+  - fsn1  
   - hel1
   network:
     cidrBlock: 172.16.0.0/12
