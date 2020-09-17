@@ -19,6 +19,7 @@ import (
 	"context"
 	"fmt"
 	"reflect"
+	"time"
 
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
@@ -67,8 +68,20 @@ func (r *BastionHostReconciler) Reconcile(req ctrl.Request) (_ ctrl.Result, rete
 		}
 		return reconcile.Result{}, err
 	}
+
+	// Fetch the Machine
+	machine, err := util.GetOwnerMachine(ctx, r.Client, bastionHost.ObjectMeta)
+	if err != nil {
+		return reconcile.Result{}, err
+	}
+	if machine == nil {
+		log.Info("Machine Controller has not yet set OwnerRef")
+		return reconcile.Result{RequeueAfter: 5 * time.Second}, nil
+	}
+	log = log.WithValues("machine", machine.Name)
+
 	// Fetch the Cluster.
-	cluster, err := util.GetClusterFromMetadata(ctx, r.Client, bastionHost.ObjectMeta)
+	cluster, err := util.GetClusterFromMetadata(ctx, r.Client, machine.ObjectMeta)
 	if err != nil {
 		fmt.Println(err)
 		log.Info("Bastion host is missing cluster label or cluster does not exist")
@@ -83,18 +96,17 @@ func (r *BastionHostReconciler) Reconcile(req ctrl.Request) (_ ctrl.Result, rete
 	}
 	if err := r.Client.Get(ctx, hcloudClusterName, hcloudCluster); err != nil {
 		log.Info("HcloudCluster is not available yet")
-		return reconcile.Result{ /*RequeueAfter: 2 * time.Second*/ }, nil
+		return reconcile.Result{}, nil
 	}
 
 	log = log.WithValues("hcloudCluster", hcloudCluster.Name)
-
 	// Create the scope.
 	bastionHostScope, err := scope.NewBastionHostScope(scope.BastionHostScopeParams{
 		ClusterScopeParams: scope.ClusterScopeParams{
-			Ctx:    ctx,
-			Client: r.Client,
-			Logger: log,
-			//Cluster:       cluster,
+			Ctx:           ctx,
+			Client:        r.Client,
+			Logger:        log,
+			Cluster:       cluster,
 			HcloudCluster: hcloudCluster,
 			Packer:        r.Packer,
 			Manifests:     r.Manifests,
