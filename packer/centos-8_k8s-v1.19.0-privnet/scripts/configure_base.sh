@@ -97,7 +97,11 @@ systemctl enable sys-fs-bpf.mount
 setenforce 1
 sed -i 's/^SELINUX=permissive\$/SELINUX=enforcing/' /etc/selinux/config
 
+# install hetzner cloud networks configuration package
+curl https://packages.hetzner.com/hcloud/rpm/hc-utils-0.0.3-1.el8.noarch.rpm -o /tmp/hc-utils-0.0.3-1.el7.noarch.rpm -s
+dnf -y install /tmp/hc-utils-0.0.3-1.el8.noarch.rpm
 
+# disable public interface
 cat > /etc/systemd/system/disable-public-interface.service <<EOF
 [Unit]
 Description=Disable Public Interface
