@@ -128,8 +128,15 @@ ssh-keygen -t ed25519 -C "your_email@example.com" -f ~/.ssh/cluster
 # Create a token on Hetzner Cloud and apply it as secret
 kubectl create secret generic hcloud-token --from-literal=token=$TOKEN
 
+#For automatic installation of manifests we use ClusterResourceSets
+kubectl apply -f demo/ClusterResourceSets
+
+## You can choose which manifests should be applyed by setting the value of the labels under kind: Cluster
+
 # Apply the manifest to your management cluster; cluster name is cluster-dev; use quickstart guide for getting access to the target cluster
 kubectl apply -f ./demo/demo-cluster.yaml
+or
+kubectl apply -f ./demo/cluster-centos-8.yaml
 
 ## Get Logs:
 kubectl logs -f deployment/capi-hcloud-controller-manager -c manager --v=4 -n capi-hcloud-system
