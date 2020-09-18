@@ -9,12 +9,14 @@ or under ./docs/src
 
 ## Quick start
 
+> At the moment please use the Developer Guide below. 
+
 *More information available in the [Cluster API - Quick Start guide]*
 
 - Make sure you have a Kubernetes management cluster available and your
   KUBECONFIG and context set correctly
 
-- Ensure you have a recent [clusterctl] release (tested with v0.3.6)
+- Ensure you have a recent [clusterctl] release (tested with v0.3.9)
 
 - Ensure your Hcloud API token is created as secret in the kubernetes API:
 
@@ -85,6 +87,8 @@ KUBECONFIG=$KUBECONFIG_GUEST kubectl get all,nodes -A
 
 
 ## For Developers or demo purpose
+> Please use this for testing!
+
 See ./docs/src/developers or https://docs.capihc.com/developer/developer.html
 
 ### Prerequisites
@@ -104,6 +108,7 @@ See ./docs/src/developers or https://docs.capihc.com/developer/developer.html
 
 - Running development version
 
+This creates the management cluster with all the controllers
 ```sh
 # Deploy kind cluster with cluster-api core componets
 ./demo/setup.sh
@@ -115,7 +120,7 @@ make deploy_kind
 - Applying the target cluster with demo-cluster
 
 ```sh
-# Create an SSH Key
+# Please create an SSH Key for later access on the nodes.
 ssh-keygen -t ed25519 -C "your_email@example.com" -f ~/.ssh/cluster
 
 # Create a Project on Hetzner Cloud and upload the public key. 
