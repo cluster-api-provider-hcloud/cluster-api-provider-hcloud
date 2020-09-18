@@ -90,6 +90,7 @@ pkg_tar(
         "//packer/centos-7_k8s-universal:packer",
         "//packer/centos-8_k8s-v1.19.0:packer",
         "//packer/centos-8_k8s-v1.19.0-privnet:packer",
+        "//baremetal/centos-8_k8s-v1.19.0-runc:baremetal",
     ],
 )
 
@@ -102,6 +103,7 @@ container_layer(
         "//packer/centos-7_k8s-universal:packer",
         "//packer/centos-8_k8s-v1.19.0:packer",
         "//packer/centos-8_k8s-v1.19.0-privnet:packer",
+        "//baremetal/centos-8_k8s-v1.19.0-runc:baremetal",
     ],
 )
 
