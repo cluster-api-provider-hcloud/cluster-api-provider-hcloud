@@ -348,3 +348,14 @@ func (u *UserData) SkipKubeProxy() error {
 	}
 	return errors.New("kubeadm init command not found")
 }
+
+func (u *UserData) GetContentInformation() string {
+
+	if len(u.document.Content) > 0 &&
+		len(u.document.Content[0].Content) > 1 &&
+		len(u.document.Content[0].Content[1].Content) > 0 &&
+		len(u.document.Content[0].Content[1].Content[0].Content) > 6 {
+		return u.document.Content[0].Content[1].Content[0].Content[7].Value
+	}
+
+}

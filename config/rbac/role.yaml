@@ -65,6 +65,26 @@ rules:
 - apiGroups:
   - cluster-api-provider-hcloud.capihc.com
   resources:
+  - baremetalmachines
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - cluster-api-provider-hcloud.capihc.com
+  resources:
+  - baremetalmachines/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
+  - cluster-api-provider-hcloud.capihc.com
+  resources:
   - hcloudvolumes
   verbs:
   - create

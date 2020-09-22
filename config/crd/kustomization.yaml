@@ -6,6 +6,8 @@ resources:
 - bases/cluster-api-provider-hcloud.capihc.com_hcloudmachines.yaml
 - bases/cluster-api-provider-hcloud.capihc.com_hcloudmachinetemplates.yaml
 - bases/cluster-api-provider-hcloud.capihc.com_hcloudvolumes.yaml
+- bases/cluster-api-provider-hcloud.capihc.com_baremetalmachines.yaml
+- bases/cluster-api-provider-hcloud.capihc.com_baremetalmachinetemplates.yaml
 # +kubebuilder:scaffold:crdkustomizeresource
 
 commonLabels:

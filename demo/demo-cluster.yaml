@@ -76,7 +76,7 @@ spec:
         kubeletExtraArgs:
           cloud-provider: external
           eviction-hard: nodefs.available<10%,nodefs.inodesFree<5%,imagefs.available<15%,imagefs.inodesFree<20%,memory.available<500Mi
-  replicas: 5
+  replicas: 3
   version: v1.19.0
 ---
 apiVersion: cluster-api-provider-hcloud.capihc.com/v1alpha3
