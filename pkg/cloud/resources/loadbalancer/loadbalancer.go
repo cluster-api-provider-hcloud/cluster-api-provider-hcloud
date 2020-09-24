@@ -237,9 +237,12 @@ func (s *Service) attachLoadBalancerToNetwork(ctx context.Context) error {
 	opts := hcloud.LoadBalancerAttachToNetworkOpts{
 		Network: network,
 	}
-	_, _, err = s.scope.HcloudClient().AttachLoadBalancerToNetwork(ctx, lb, opts)
 
-	return errors.Wrap(err, "failed to attach load balancer to network")
+	_, _, err = s.scope.HcloudClient().AttachLoadBalancerToNetwork(ctx, lb, opts)
+	if err != nil {
+		return errors.Wrap(err, "failed to attach load balancer to network")
+	}
+	return nil
 }
 
 func (s *Service) deleteLoadBalancer(ctx context.Context, status infrav1.HcloudLoadBalancerStatus) error {
