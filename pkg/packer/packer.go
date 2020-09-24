@@ -1,9 +1,15 @@
 package packer
 
 import (
+	"archive/tar"
 	"bytes"
+	"compress/gzip"
 	"context"
 	"fmt"
+	"io"
+	"log"
+	"net/http"
+	"os"
 	"os/exec"
 	"strings"
 	"sync"
@@ -58,7 +64,25 @@ func New(log logr.Logger) *Packer {
 
 func (m *Packer) Initialize(machine *infrav1.HcloudMachine) error {
 
-	m.packerConfigPath = fmt.Sprintf("/%s-packer-config/image.json", machine.Spec.ImageName)
+	if strings.HasPrefix(machine.Spec.ImageName, "http://") || strings.HasPrefix(machine.Spec.ImageName, "https://") {
+		err := DownloadFile("my-image.tar.gz", machine.Spec.ImageName)
+		if err != nil {
+			return fmt.Errorf("error while downloading tar.gz file from %s: %s", machine.Spec.ImageName, err)
+		}
+		r, err := os.Open("./image_dir/my-image.tar.gz")
+		if err != nil {
+			fmt.Println("error")
+		}
+		ExtractTarGz(r)
+		if err != nil {
+			return fmt.Errorf("error while getting and unzipping image from %s: %s", machine.Spec.ImageName, err)
+		}
+		splitStrings := strings.Split(machine.Spec.ImageName, "/")
+		folderName := strings.TrimSuffix(splitStrings[len(splitStrings)-1], ".tar.gz")
+		m.packerConfigPath = fmt.Sprintf("/%s/image.json", folderName)
+	} else {
+		m.packerConfigPath = fmt.Sprintf("/%s-packer-config/image.json", machine.Spec.ImageName)
+	}
 
 	if err := m.initializePacker(); err != nil {
 		return err
@@ -171,4 +195,70 @@ func (m *Packer) EnsureImage(ctx context.Context, log logr.Logger, hc api.Hcloud
 
 	m.builds[hash] = b
 	return nil, nil
+}
+
+func ExtractTarGz(gzipStream io.Reader) {
+	uncompressedStream, err := gzip.NewReader(gzipStream)
+	if err != nil {
+		log.Fatal("ExtractTarGz: NewReader failed")
+	}
+
+	tarReader := tar.NewReader(uncompressedStream)
+
+	for true {
+		header, err := tarReader.Next()
+
+		if err == io.EOF {
+			break
+		}
+
+		if err != nil {
+			log.Fatalf("ExtractTarGz: Next() failed: %s", err.Error())
+		}
+
+		switch header.Typeflag {
+		case tar.TypeDir:
+			if err := os.Mkdir(header.Name, 0755); err != nil {
+				log.Fatalf("ExtractTarGz: Mkdir() failed: %s", err.Error())
+			}
+		case tar.TypeReg:
+			outFile, err := os.Create(header.Name)
+			if err != nil {
+				log.Fatalf("ExtractTarGz: Create() failed: %s", err.Error())
+			}
+			if _, err := io.Copy(outFile, tarReader); err != nil {
+				log.Fatalf("ExtractTarGz: Copy() failed: %s", err.Error())
+			}
+			outFile.Close()
+
+		default:
+			log.Fatalf(
+				"ExtractTarGz: uknown type: %s in %s",
+				header.Typeflag,
+				header.Name)
+		}
+
+	}
+}
+
+func DownloadFile(filepath string, url string) error {
+
+	// Get the data
+	resp, err := http.Get(url)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+	dir := "./image_dir"
+	os.Mkdir(dir, 0777)
+	// Create the file
+	out, err := os.Create(dir + "/" + filepath)
+	if err != nil {
+		return err
+	}
+	defer out.Close()
+
+	// Write the body to file
+	_, err = io.Copy(out, resp.Body)
+	return err
 }

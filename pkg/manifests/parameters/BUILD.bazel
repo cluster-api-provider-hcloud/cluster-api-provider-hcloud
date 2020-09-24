@@ -5,10 +5,7 @@ go_library(
     srcs = ["parameters.go"],
     importpath = "github.com/cluster-api-provider-hcloud/cluster-api-provider-hcloud/pkg/manifests/parameters",
     visibility = ["//visibility:public"],
-    deps = [
-        "//api/v1alpha3:go_default_library",
-        "@io_k8s_apimachinery//pkg/util/intstr:go_default_library",
-    ],
+    deps = ["@io_k8s_apimachinery//pkg/util/intstr:go_default_library"],
 )
 
 filegroup(

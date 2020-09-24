@@ -88,7 +88,7 @@ spec:
   template:
     spec:
       type: cx21-ceph
-      image: centos-7_k8s-universal
+      image: https://u243385:vgN3C2fsiPklqBNF@u243385.your-storagebox.de/hcloud/centos-8_k8s-v1.19.0.tar.gz
 ---
 apiVersion: bootstrap.cluster.x-k8s.io/v1alpha3
 kind: KubeadmConfigTemplate
