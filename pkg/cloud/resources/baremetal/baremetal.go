@@ -1,30 +1,50 @@
-package server
+package baremetal
 
 import (
 	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
-	"net/http"
+	"sort"
+	"strconv"
 	"strings"
 	"time"
-
-	"github.com/hetznercloud/hcloud-go/hcloud"
-	"github.com/pkg/errors"
-	corev1 "k8s.io/api/core/v1"
-	errorutil "k8s.io/apimachinery/pkg/util/errors"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha3"
-	ctrl "sigs.k8s.io/controller-runtime"
-	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	infrav1 "github.com/cluster-api-provider-hcloud/cluster-api-provider-hcloud/api/v1alpha3"
 	"github.com/cluster-api-provider-hcloud/cluster-api-provider-hcloud/pkg/cloud/resources/server/userdata"
 	"github.com/cluster-api-provider-hcloud/cluster-api-provider-hcloud/pkg/cloud/scope"
-	"github.com/cluster-api-provider-hcloud/cluster-api-provider-hcloud/pkg/record"
+	"github.com/pkg/errors"
+	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/types"
+	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 )
+
+const delimiter = "--"
 
 type Service struct {
 	scope *scope.BareMetalMachineScope
+}
+
+type blockDeviceData struct {
+	Name     string `json:"name"`
+	Size     string `json:"size"`
+	Rotation bool   `json:"rota"`
+	Type     string `json:"fstype"`
+	Label    string `json:"label"`
+}
+
+type blockDevice struct {
+	Name     string            `json:"name"`
+	Size     string            `json:"size"`
+	Rotation bool              `json:"rota"`
+	Type     string            `json:"fstype"`
+	Label    string            `json:"label"`
+	Children []blockDeviceData `json:"children"`
+}
+
+type blockDevices struct {
+	Devices []blockDevice `json:"blockdevices"`
 }
 
 func NewService(scope *scope.BareMetalMachineScope) *Service {
@@ -47,6 +67,25 @@ func stringSliceContains(s []string, e string) bool {
 }
 
 func (s *Service) Reconcile(ctx context.Context) (_ *ctrl.Result, err error) {
+
+	port := 22
+	if s.scope.BareMetalMachine.Spec.Port != nil {
+		port = *s.scope.BareMetalMachine.Spec.Port
+	}
+
+	robotUserName, robotPassword, err := s.retrieveRobotSecret(ctx)
+	if err != nil {
+		return nil, errors.Errorf("Unable to retrieve robot secret: ", err)
+	}
+	sshKeyName, _, privateSSHKey, err := s.retrieveSSHSecret(ctx)
+	if err != nil {
+		return nil, errors.Errorf("Unable to retrieve SSH secret: ", err)
+	}
+
+	sshFingerprint, err := GetSSHFingerprintFromName(sshKeyName, robotUserName, robotPassword)
+	if err != nil {
+		return nil, errors.Errorf("Unable to get SSH fingerprint for the SSH key %s: %s ", sshKeyName, err)
+	}
 
 	userDataInitial, err := s.scope.GetRawBootstrapData(ctx)
 	if err == scope.ErrBootstrapDataNotReady {
@@ -82,9 +121,9 @@ func (s *Service) Reconcile(ctx context.Context) (_ *ctrl.Result, err error) {
 		return nil, err
 	}
 
-	userDataBytes := bytes.NewBuffer(nil)
-	if err := userData.WriteYAML(userDataBytes); err != nil {
-		return nil, err
+	kubeadmConfigString, err := userData.GetContentInformation()
+	if err != nil {
+		return nil, errors.Errorf("Error while obtaining the kubeadm config for the baremetal server", err)
 	}
 
 	// update current server
@@ -93,268 +132,516 @@ func (s *Service) Reconcile(ctx context.Context) (_ *ctrl.Result, err error) {
 		return nil, errors.Wrap(err, "failed to refresh server status")
 	}
 
-	var myTrue = true
-	var myFalse = false
-
-	name := s.scope.Name()
-	opts := hcloud.ServerCreateOpts{
-		Name:   name,
-		Labels: s.createLabels(),
-		Image: &hcloud.Image{
-			ID: int(*s.scope.HcloudMachine.Status.ImageID),
-		},
-		Location: &hcloud.Location{
-			Name: failureDomain,
-		},
-		ServerType: &hcloud.ServerType{
-			Name: string(s.scope.HcloudMachine.Spec.Type),
-		},
-		Automount:        &myFalse,
-		StartAfterCreate: &myTrue,
-		UserData:         userDataBytes.String(),
-		Volumes:          volumes,
-	}
-
-	// setup SSH keys
-	sshKeySpecs := s.scope.HcloudMachine.Spec.SSHKeys
-	if len(sshKeySpecs) == 0 {
-		sshKeySpecs = s.scope.HcloudCluster.Spec.SSHKeys
-	}
-	sshKeys, _, err := s.scope.HcloudClient().ListSSHKeys(ctx, hcloud.SSHKeyListOpts{})
-	if err != nil {
-	}
-	for _, sshKey := range sshKeys {
-		var match bool
-		for _, sshKeySpec := range sshKeySpecs {
-			if sshKeySpec.Name != nil && *sshKeySpec.Name == sshKey.Name {
-				match = true
-			}
-			if sshKeySpec.ID != nil && *sshKeySpec.ID == sshKey.ID {
-				match = true
-			}
-		}
-		if match {
-			opts.SSHKeys = append(opts.SSHKeys, sshKey)
-		}
-	}
-
-	// setup network if available
-	if net := s.scope.HcloudCluster.Status.Network; net != nil {
-		opts.Networks = []*hcloud.Network{{
-			ID: net.ID,
-		}}
-	}
-
-	var actualServer *hcloud.Server
+	var actualServerData GeneralServerData
+	// isAttached is true if actualServer has the prefix clusterName in its name. This meanse it is already attached
+	// to the cluster.
+	var isAttached bool
 
 	if len(actualServers) == 0 {
 
-		if res, _, err := s.scope.HcloudClient().CreateServer(s.scope.Ctx, opts); err != nil {
-			return nil, errors.Wrap(err, "failed to create server")
-		} else {
-			record.Eventf(
-				s.scope.HcloudMachine,
-				"SuccessfulCreate",
-				"Created new server with id %d",
-				res.Server.ID,
-			)
-			actualServer = res.Server
-		}
+		return nil, errors.Errorf("No bare metal server found with the name %s", s.scope.BareMetalMachine.Name)
+
 	} else if len(actualServers) == 1 {
-		actualServer = actualServers[0]
+
+		actualServerData = actualServers[0]
+		if s.isServerAttached(actualServerData.ServerName) {
+			isAttached = true
+		}
+	} else if len(actualServers) > 2 {
+
+		return nil, errors.New("found too many actual servers")
+
 	} else {
-		return nil, errors.New("found more than one actual servers")
+
+		// If two servers are in the list, then one has to be attached to the cluster already
+		// and have the prefix clusterName and the other has the same name without prefix
+		// No two servers should have the same name, but since one of them has a prefix and the other doesn't
+		// they have two different names for Hetzner, so we have to handle this case as well
+		var check bool
+		for _, serverData := range actualServers {
+			if s.isServerAttached(serverData.ServerName) {
+				actualServerData = serverData
+				check = true
+				isAttached = true
+			}
+		}
+		if check == false {
+			return nil, errors.Errorf("actualServer did not return the right servers with name %s", s.scope.BareMetalMachine.Name)
+		}
 	}
 
-	if err := setStatusFromAPI(&s.scope.HcloudMachine.Status, actualServer); err != nil {
-		return nil, errors.New("error setting status")
+	actualServer, err := GetBareMetalServer(actualServerData.ServerIP, robotUserName, robotPassword)
+	if err != nil {
+		return nil, errors.Errorf("An error occured while retrieving the status of the bare metal server %s with IP %s",
+			actualServerData.ServerName, actualServerData.ServerIP)
 	}
+
+	// check if server has been cancelled
+	if actualServer.Cancelled == true {
+		s.scope.V(1).Info("server has been cancelled", "server", actualServer.ServerName, "cancelled", actualServer.Cancelled)
+		return nil, errors.Errorf("Server %s has been cancelled", s.scope.BareMetalMachine.Name)
+	}
+
+	providerID := fmt.Sprintf("hetzner://%d", actualServer.ServerID)
+
+	s.scope.BareMetalMachine.Spec.ProviderID = &providerID
+
+	if isAttached == true {
+		return nil, nil
+	}
+
+	// If the server is not already attached, then we have to configure it
 
 	// wait for server being running
-	if actualServer.Status != hcloud.ServerStatusRunning {
-		s.scope.V(1).Info("server not in running state", "server", actualServer.Name, "status", actualServer.Status)
-		return &reconcile.Result{RequeueAfter: 2 * time.Second}, nil
+	if actualServer.Status != "ready" {
+		s.scope.V(1).Info("server not in running state", "server", actualServer.ServerName, "status", actualServer.Status)
+		return &reconcile.Result{RequeueAfter: 300 * time.Second}, nil
 	}
 
-	providerID := fmt.Sprintf("hcloud://%d", actualServer.ID)
+	err = ChangeBareMetalServerName(actualServer.IPv4, s.scope.Cluster.Name+delimiter+actualServer.ServerName, robotUserName, robotPassword)
 
-	if !s.scope.IsControlPlane() {
-		s.scope.HcloudMachine.Spec.ProviderID = &providerID
-		s.scope.HcloudMachine.Status.Ready = true
-		return nil, nil
+	err = ActivateRescue(actualServer.IPv4, sshFingerprint, robotUserName, robotPassword)
+	if err != nil {
+		return nil, errors.Errorf("Unable to activate rescue system: ", err)
 	}
 
-	// check if at least one of the adresses is ready
-	var errors []error
-	for _, address := range s.scope.HcloudMachine.Status.Addresses {
-		if address.Type != corev1.NodeExternalIP && address.Type != corev1.NodeExternalDNS {
-			continue
-		}
-
-		clientConfig, err := s.scope.ClientConfigWithAPIEndpoint(clusterv1.APIEndpoint{
-			Host: address.Address,
-			Port: s.scope.ControlPlaneAPIEndpointPort(),
-		})
-		if err != nil {
-			return nil, err
-		}
-
-		// Need to have a private network if added to load balancer
-		if len(actualServer.PrivateNet) == 0 {
-			return &ctrl.Result{RequeueAfter: 2 * time.Second}, nil
-		}
-
-		if err := s.addServerToLoadBalancer(ctx, actualServer); err != nil {
-			errors = append(errors, err)
-		}
-
-		if err := scope.IsControlPlaneReady(ctx, clientConfig); err != nil {
-			errors = append(errors, err)
-		}
-
-		s.scope.HcloudMachine.Spec.ProviderID = &providerID
-		s.scope.HcloudMachine.Status.Ready = true
-		return nil, nil
+	err = ResetServer(actualServer.IPv4, "hw", robotUserName, robotPassword)
+	if err != nil {
+		return nil, errors.Errorf("Unable to reset server: ", err)
 	}
 
-	if err := errorutil.NewAggregate(errors); err != nil {
-		record.Warnf(
-			s.scope.HcloudMachine,
-			"APIServerNotReady",
-			"Health check for API server failed: %s",
-			err,
-		)
+	maxTime := 300
+	stdout, stderr, err := runSSH("hostname", actualServer.IPv4, 22, privateSSHKey, maxTime)
+	if err != nil {
+		return nil, errors.Errorf("SSH command hostname returned the error %s. The output of stderr is %s", err, stderr)
 	}
-	return nil, fmt.Errorf("Not usable Address found")
+	if stdout != "rescue" {
+		return nil, errors.New("Rescue system not successfully started")
+	}
+
+	// TODO: Get blockdevices and find out which one we use
+	var blockDevices blockDevices
+	blockDeviceCommand := "lsblk -o name,size,rota,fstype,label -e1 -e7 --json"
+	stdout, stderr, err = runSSH(blockDeviceCommand, actualServer.IPv4, port, privateSSHKey, maxTime)
+	if err != nil {
+		return nil, errors.Errorf("Error running the ssh command %s: Error: %s, stderr: %s", blockDeviceCommand, err, stderr)
+	}
+
+	err = json.Unmarshal([]byte(stdout), &blockDevices)
+	if err != nil {
+		return nil, errors.Errorf("Error while unmarshaling: %s", err)
+	}
+
+	drive, err := findCorrectDevice(blockDevices)
+	if err != nil {
+		return nil, errors.Errorf("Error while finding correct device: %s", err)
+	}
+
+	//TODO: Configure autosetup file/string
+	partitionString := `PART /boot ext3 512M
+	PART / ext4 all`
+	if s.scope.BareMetalMachine.Spec.Partition != nil {
+		partitionString = *s.scope.BareMetalMachine.Spec.Partition
+	}
+	autoSetup := fmt.Sprintf(
+		`cat > /autosetup << EOF
+		DRIVE1 /dev/%s
+
+		BOOTLOADER grub
+
+		HOSTNAME %s
+
+		%s
+
+		IMAGE %s
+		EOF
+	`, drive, actualServer.ServerName, partitionString, *s.scope.BareMetalMachine.Spec.ImagePath)
+
+	// Send autosetup file to server
+	stdout, stderr, err = runSSH(autoSetup, actualServer.IPv4, 22, privateSSHKey, maxTime)
+	if err != nil {
+		return nil, errors.Errorf("SSH command autosetup returned the error %s. The output of stderr is %s", err, stderr)
+	}
+
+	// install image
+	stdout, stderr, err = runSSH("isntallimage", actualServer.IPv4, 22, privateSSHKey, maxTime)
+	if err != nil {
+		return nil, errors.Errorf("SSH command installimage returned the error %s. The output of stderr is %s", err, stderr)
+	}
+
+	// get again list of block devices and label children of our drive
+	stdout, stderr, err = runSSH(blockDeviceCommand, actualServer.IPv4, 22, privateSSHKey, maxTime)
+	if err != nil {
+		return nil, errors.Errorf("Error running the ssh command %s: Error: %s, stderr: %s", blockDeviceCommand, err, stderr)
+	}
+
+	err = json.Unmarshal([]byte(stdout), &blockDevices)
+	if err != nil {
+		return nil, errors.Errorf("Error while unmarshaling: %s", err)
+	}
+
+	command, err := labelChildrenCommand(blockDevices, drive)
+	if err != nil {
+		return nil, errors.Errorf("Error while constructing labeling children command of device %s: %s", drive, err)
+	}
+
+	// label children of our drive
+	stdout, stderr, err = runSSH(command, actualServer.IPv4, 22, privateSSHKey, maxTime)
+	if err != nil {
+		return nil, errors.Errorf("Error running the ssh command %s: Error: %s, stderr: %s", command, err, stderr)
+	}
+
+	// reboot system
+	stdout, stderr, err = runSSH("reboot", actualServer.IPv4, 22, privateSSHKey, maxTime)
+	if err != nil {
+		return nil, errors.Errorf("Error running the ssh command %s: Error: %s, stderr: %s", "reboot", err, stderr)
+	}
+
+	kubeadmCommand := fmt.Sprintf(
+		`cat > /tmp/kubeadm-join-config.yaml << EOF
+	%s
+	EOF
+	`, kubeadmConfigString)
+
+	// send kubeadmConfig to server
+	stdout, stderr, err = runSSH(kubeadmCommand, actualServer.IPv4, port, privateSSHKey, maxTime)
+	if err != nil {
+		return nil, errors.Errorf("Error running the ssh command %s: Error: %s, stderr: %s", kubeadmCommand, err, stderr)
+	}
+
+	command = "chmod 640 /tmp/kubeadm-join-config.yaml && chown root:root /tmp/kubeadm-join-config.yaml"
+
+	stdout, stderr, err = runSSH(command, actualServer.IPv4, port, privateSSHKey, maxTime)
+	if err != nil {
+		return nil, errors.Errorf("Error running the ssh command %s: Error: %s, stderr: %s", command, err, stderr)
+	}
+
+	command = "kubeadm join --config /tmp/kubeadm-join-config.yaml"
+
+	stdout, stderr, err = runSSH(command, actualServer.IPv4, port, privateSSHKey, maxTime)
+	if err != nil {
+		return nil, errors.Errorf("Error running the ssh command %s: Error: %s, stderr: %s", command, err, stderr)
+	}
+
+	return nil, nil
 }
 
 func (s *Service) Delete(ctx context.Context) (_ *ctrl.Result, err error) {
+
+	robotUserName, robotPassword, err := s.retrieveRobotSecret(ctx)
+	if err != nil {
+		return nil, errors.Errorf("Unable to retrieve robot secret: ", err)
+	}
+	sshKeyName, _, privateSSHKey, err := s.retrieveSSHSecret(ctx)
+	if err != nil {
+		return nil, errors.Errorf("Unable to retrieve SSH secret: ", err)
+	}
+
+	sshFingerprint, err := GetSSHFingerprintFromName(sshKeyName, robotUserName, robotPassword)
+	if err != nil {
+		return nil, errors.Errorf("Unable to get SSH fingerprint for the SSH key %s: %s ", sshKeyName, err)
+	}
+
+	maxTime := 300
+
 	// update current servers
 	actualServers, err := s.actualStatus(ctx)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to refresh server status")
 	}
 
-	var actionWait []*hcloud.Server
-	var actionShutdown []*hcloud.Server
-	var actionDelete []*hcloud.Server
+	var attachedGeneralServers []GeneralServerData
+	var attachedServers []*infrav1.BareMetalMachineStatus
 
-	for _, server := range actualServers {
-		switch status := server.Status; status {
-		case hcloud.ServerStatusRunning:
-			actionShutdown = append(actionShutdown, server)
-		case hcloud.ServerStatusOff:
-			actionDelete = append(actionDelete, server)
-		default:
-			actionWait = append(actionWait, server)
+	for _, serverData := range actualServers {
+		if s.isServerAttached(serverData.ServerName) {
+			attachedGeneralServers = append(attachedGeneralServers, serverData)
 		}
 	}
 
-	// shutdown servers
-	for _, server := range actionShutdown {
-		if _, _, err := s.scope.HcloudClient().ShutdownServer(ctx, server); err != nil {
-			return nil, errors.Wrap(err, "failed to shutdown server")
+	for _, serverData := range attachedGeneralServers {
+		server, err := GetBareMetalServer(serverData.ServerIP, robotUserName, robotPassword)
+		if err != nil {
+			return nil, errors.Errorf("Failed to get server %s with IP %s: %s", serverData.ServerName, serverData.ServerIP, err)
 		}
-		actionWait = append(actionWait, server)
+		attachedServers = append(attachedServers, server)
 	}
 
-	// delete servers that need delete
-	for _, server := range actionDelete {
-		if server.Labels["machine_type"] == "control_plane" {
-			s.deleteServerOfLoadBalancer(ctx, server)
+	for _, server := range attachedServers {
+
+		err = ActivateRescue(server.IPv4, sshFingerprint, robotUserName, robotPassword)
+		if err != nil {
+			return nil, errors.Errorf("Unable to activate rescue system: ", err)
 		}
 
-		if _, err := s.scope.HcloudClient().DeleteServer(ctx, server); err != nil {
-			return nil, errors.Wrap(err, "failed to delete server")
+		err = ResetServer(server.IPv4, "hw", robotUserName, robotPassword)
+		if err != nil {
+			return nil, errors.Errorf("Unable to reset server: ", err)
 		}
+
+		stdout, stderr, err := runSSH("hostname", server.IPv4, 22, privateSSHKey, maxTime)
+		if err != nil {
+			return nil, errors.Errorf("SSH command hostname returned the error %s. The output of stderr is %s", err, stderr)
+		}
+		if stdout != "rescue" {
+			return nil, errors.New("Rescue system not successfully started")
+		}
+
+		var blockDevices blockDevices
+		blockDeviceCommand := "lsblk -o name,size,rota,fstype,label -e1 -e7 --json"
+		stdout, stderr, err = runSSH(blockDeviceCommand, server.IPv4, 22, privateSSHKey, maxTime)
+		if err != nil {
+			return nil, errors.Errorf("Error running the ssh command %s: Error: %s, stderr: %s", blockDeviceCommand, err, stderr)
+		}
+
+		err = json.Unmarshal([]byte(stdout), &blockDevices)
+		if err != nil {
+			return nil, errors.Errorf("Error while unmarshaling: %s", err)
+		}
+		var command string
+		for _, device := range blockDevices.Devices {
+			str := fmt.Sprintf(`wipefs -a /dev/%s
+`, device.Name)
+			command = command + str
+		}
+		command = command[:len(command)-1]
+
+		stdout, stderr, err = runSSH(command, server.IPv4, 22, privateSSHKey, maxTime)
+		if err != nil {
+			return nil, errors.Errorf("Error running the ssh command %s: Error: %s, stderr: %s", command, err, stderr)
+		}
+
 	}
-
-	var result *ctrl.Result
-	if len(actionWait) > 0 {
-		result = &ctrl.Result{
-			RequeueAfter: 5 * time.Second,
-		}
-	}
-
-	return result, nil
+	return nil, nil
 }
 
-func setStatusFromAPI(status *infrav1.HcloudMachineStatus, server *hcloud.Server) error {
-	status.ServerState = infrav1.HcloudServerState(server.Status)
-	status.Addresses = []corev1.NodeAddress{}
-
-	if ip := server.PublicNet.IPv4.IP.String(); ip != "" {
-		status.Addresses = append(
-			status.Addresses,
-			corev1.NodeAddress{
-				Type:    corev1.NodeExternalIP,
-				Address: ip,
-			},
-		)
+func (s *Service) isServerAttached(name string) bool {
+	splitName := strings.Split(name, delimiter)
+	if splitName[0] == s.scope.Cluster.Name {
+		return true
+	} else {
+		return false
 	}
-
-	if ip := server.PublicNet.IPv6.IP; ip.IsGlobalUnicast() {
-		ip[15] += 1
-		status.Addresses = append(
-			status.Addresses,
-			corev1.NodeAddress{
-				Type:    corev1.NodeExternalIP,
-				Address: ip.String(),
-			},
-		)
-	}
-
-	for _, net := range server.PrivateNet {
-		status.Addresses = append(
-			status.Addresses,
-			corev1.NodeAddress{
-				Type:    corev1.NodeInternalIP,
-				Address: net.IP.String(),
-			},
-		)
-
-	}
-
-	return nil
-}
-
-type BareMetalServer struct {
-	ServerIP   string   `json:"server_ip"`
-	ServerID   int      `json:"server_number"`
-	ServerName string   `json:"server_name"`
-	Product    string   `json:"product"`
-	DataCenter string   `json:"dc"`
-	Traffic    string   `json:"traffic"`
-	Status     string   `json:"status"`
-	Cancelled  bool     `json:"cancelled"`
-	PaidUntil  string   `json:"paid_until"`
-	IPs        []string `json:"ip"`
-	Subnets    []string `json:"subnet"`
 }
 
 // actualStatus gathers all matching server instances, matched by tag
-func (s *Service) actualStatus(ctx context.Context) ([]BareMetalServer, error) {
+func (s *Service) actualStatus(ctx context.Context) ([]GeneralServerData, error) {
 
-	resp, err := http.Get("https://robot-ws.your-server.de/server")
+	userName, password, err := s.retrieveRobotSecret(ctx)
 	if err != nil {
-		return nil, err
+		return nil, errors.Errorf("unable to retrieve robot secret: %s", err)
 	}
 
-	var serverList []BareMetalServer
-
-	json.NewDecoder(resp.Body).Decode(&serverList)
+	serverList, err := ListBareMetalServers(userName, password)
 	if err != nil {
-		return nil, err
+		return nil, errors.Errorf("unable to list bare metal servers: %s", err)
 	}
 
-	var actualServers []BareMetalServer
+	var actualServers []GeneralServerData
 
 	for _, server := range serverList {
-		splitName := strings.Split(server.ServerName, "_")
+		splitName := strings.Split(server.ServerName, delimiter)
 		if splitName[0] == s.scope.Cluster.Name && splitName[1] == s.scope.BareMetalMachine.Name {
+			actualServers = append(actualServers, server)
+		} else if splitName[0] == s.scope.BareMetalMachine.Name {
 			actualServers = append(actualServers, server)
 		}
 	}
 
 	return actualServers, nil
+}
+
+func labelChildrenCommand(blockDevices blockDevices, drive string) (string, error) {
+
+	var device blockDevice
+	var check bool
+	for _, d := range blockDevices.Devices {
+		if drive == d.Name {
+			device = d
+			check = true
+		}
+	}
+
+	if check == false {
+		return "", errors.Errorf("no device with name %s found", drive)
+	}
+
+	if device.Children == nil {
+		return "", errors.Errorf("no children for device with name %s found, instalimage did not work properly", drive)
+	}
+
+	var command string
+	for _, child := range device.Children {
+		str := fmt.Sprintf(`e2label /dev/%s os
+`, child.Name)
+		command = command + str
+	}
+	command = command[:len(command)-1]
+	return command, nil
+}
+
+func findCorrectDevice(blockDevices blockDevices) (drive string, err error) {
+	// If no blockdevice has correctly labeled children, we follow a certain set of rules to find the right one
+	var numLabels int
+	var hasChildren int
+	for _, device := range blockDevices.Devices {
+		if device.Children != nil && strings.HasPrefix(device.Name, "sd") {
+			hasChildren++
+			for _, child := range device.Children {
+				if child.Label == "os" {
+					numLabels++
+					drive = device.Name
+					break
+				}
+			}
+		}
+	}
+
+	// if numLabels == 1 then finished (drive has been set already)
+	// if numLabels == 0 then start sorting
+	// if numLabels > 1 then throw error
+	var filteredDevices []blockDevice
+
+	if numLabels > 1 {
+		return "", errors.Errorf("Found %v devices with the correct labels", numLabels)
+	} else if numLabels == 0 {
+		// If every device has children, then there is none left for us
+		if hasChildren == len(blockDevices.Devices) {
+			return "", errors.New("No device is left for installing the operating system")
+		}
+
+		// Choose devices with no children, whose name starts with "sd" and which are SSDs (i.e. rota=false)
+		for _, device := range blockDevices.Devices {
+			if device.Children == nil && strings.HasPrefix(device.Name, "sd") && device.Rotation == false {
+				filteredDevices = append(filteredDevices, device)
+			}
+		}
+
+		// This means that there is no SSD available. Then we have to include HDD as well
+		if len(filteredDevices) == 0 {
+			for _, device := range blockDevices.Devices {
+				if device.Children == nil && strings.HasPrefix(device.Name, "sd") {
+					filteredDevices = append(filteredDevices, device)
+				}
+			}
+			// If there is only one device which satisfies the requirements then we choose it
+		} else if len(filteredDevices) == 1 {
+			drive = filteredDevices[0].Name
+			// If there are more devices then we need to sort them according to our specifications
+		} else {
+			// First change the data type of size, so that we can compare it
+			type reducedBlockDevice struct {
+				Name string
+				Size int
+			}
+			var reducedDevices []reducedBlockDevice
+			for _, device := range filteredDevices {
+				size, err := convertSizeToInt(device.Size)
+				if err != nil {
+					return "", errors.Errorf("Could not convert size %s to integer", device.Size)
+				}
+				reducedDevices = append(reducedDevices, reducedBlockDevice{
+					Name: device.Name,
+					Size: size,
+				})
+			}
+			// Sort the devices with respect to size
+			sort.SliceStable(reducedDevices, func(i, j int) bool {
+				return reducedDevices[i].Size < reducedDevices[j].Size
+			})
+
+			// Look whether there is more than one device with the same size
+			var filteredReducedDevices []reducedBlockDevice
+			if reducedDevices[0].Size < reducedDevices[1].Size {
+				drive = reducedDevices[0].Name
+			} else {
+				for _, device := range reducedDevices {
+					if device.Size == reducedDevices[0].Size {
+						filteredReducedDevices = append(filteredReducedDevices, device)
+					}
+				}
+				// Sort the devices with respect to name
+				sort.SliceStable(filteredReducedDevices, func(i, j int) bool {
+					return filteredReducedDevices[i].Name > filteredReducedDevices[j].Name
+				})
+				drive = filteredReducedDevices[0].Name
+			}
+		}
+	}
+	return drive, nil
+}
+
+// converts the size of Hetzner drives, e.g. 3,5T to an int, here 3,500,000 (MB)
+func convertSizeToInt(str string) (x int, err error) {
+	s := str
+	var m float64
+	var z float64
+	strings.ReplaceAll(s, ",", ".")
+	if strings.HasSuffix(s, "T") {
+		m = 1000000
+	} else if strings.HasSuffix(s, "G") {
+		m = 1000
+	} else if strings.HasSuffix(s, "M") {
+		m = 1
+	} else {
+		return 0, errors.Errorf("Unknown unit in size %s", s)
+	}
+
+	s = s[:len(s)-1]
+
+	z, err = strconv.ParseFloat(s, 32)
+
+	if err != nil {
+		return 0, errors.Errorf("Error while converting string %s to integer: %s", s, err)
+	}
+	x = int(z * m)
+	return x, nil
+}
+
+func (s *Service) retrieveRobotSecret(ctx context.Context) (userName string, password string, err error) {
+	// retrieve token secret
+	var tokenSecret corev1.Secret
+	tokenSecretName := types.NamespacedName{Namespace: s.scope.HcloudCluster.Namespace, Name: s.scope.BareMetalMachine.Spec.RobotTokenRef.TokenName}
+	if err := s.scope.Client.Get(ctx, tokenSecretName, &tokenSecret); err != nil {
+		return "", "", errors.Errorf("error getting referenced token secret/%s: %s", tokenSecretName, err)
+	}
+
+	passwordTokenBytes, keyExists := tokenSecret.Data[s.scope.BareMetalMachine.Spec.RobotTokenRef.PasswordKey]
+	if !keyExists {
+		return "", "", errors.Errorf("error key %s does not exist in secret/%s", s.scope.BareMetalMachine.Spec.RobotTokenRef.PasswordKey, tokenSecretName)
+	}
+	userNameTokenBytes, keyExists := tokenSecret.Data[s.scope.BareMetalMachine.Spec.RobotTokenRef.UserNameKey]
+	if !keyExists {
+		return "", "", errors.Errorf("error key %s does not exist in secret/%s", s.scope.BareMetalMachine.Spec.RobotTokenRef.UserNameKey, tokenSecretName)
+	}
+	userName = string(userNameTokenBytes)
+	password = string(passwordTokenBytes)
+	return userName, password, nil
+}
+
+func (s *Service) retrieveSSHSecret(ctx context.Context) (sshKeyName string, publicKey string, privateKey string, err error) {
+	// retrieve token secret
+	var tokenSecret corev1.Secret
+	tokenSecretName := types.NamespacedName{Namespace: s.scope.HcloudCluster.Namespace, Name: s.scope.BareMetalMachine.Spec.SSHTokenRef.TokenName}
+	if err := s.scope.Client.Get(ctx, tokenSecretName, &tokenSecret); err != nil {
+		return "", "", "", errors.Errorf("error getting referenced token secret/%s: %s", tokenSecretName, err)
+	}
+
+	publicKeyTokenBytes, keyExists := tokenSecret.Data[s.scope.BareMetalMachine.Spec.SSHTokenRef.PublicKey]
+	if !keyExists {
+		return "", "", "", errors.Errorf("error key %s does not exist in secret/%s", s.scope.BareMetalMachine.Spec.SSHTokenRef.PublicKey, tokenSecretName)
+	}
+	privateKeyTokenBytes, keyExists := tokenSecret.Data[s.scope.BareMetalMachine.Spec.SSHTokenRef.PrivateKey]
+	if !keyExists {
+		return "", "", "", errors.Errorf("error key %s does not exist in secret/%s", s.scope.BareMetalMachine.Spec.SSHTokenRef.PrivateKey, tokenSecretName)
+	}
+	sshKeyNameTokenBytes, keyExists := tokenSecret.Data[s.scope.BareMetalMachine.Spec.SSHTokenRef.SSHKeyName]
+	if !keyExists {
+		return "", "", "", errors.Errorf("error key %s does not exist in secret/%s", s.scope.BareMetalMachine.Spec.SSHTokenRef.SSHKeyName, tokenSecretName)
+	}
+
+	sshKeyName = string(sshKeyNameTokenBytes)
+	privateKey = string(privateKeyTokenBytes)
+	publicKey = string(publicKeyTokenBytes)
+	return sshKeyName, publicKey, privateKey, nil
 }

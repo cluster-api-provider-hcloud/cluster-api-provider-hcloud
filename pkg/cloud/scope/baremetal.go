@@ -19,9 +19,6 @@ type BareMetalMachineScopeParams struct {
 	BareMetalMachine *infrav1.BareMetalMachine
 }
 
-var ErrBootstrapDataNotReady = errors.New("error retrieving bootstrap data: linked Machine's bootstrap.dataSecretName is nil")
-var ErrFailureDomainNotFound = errors.New("error no failure domain available")
-
 // NewClusterScope creates a new Scope from the supplied parameters.
 // This is meant to be called for each reconcile iteration.
 func NewBareMetalMachineScope(params BareMetalMachineScopeParams) (*BareMetalMachineScope, error) {

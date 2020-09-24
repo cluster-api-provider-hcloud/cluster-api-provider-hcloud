@@ -29,27 +29,48 @@ const (
 
 // BareMetalMachineSpec defines the desired state of a BareMetalMachine
 type BareMetalMachineSpec struct {
-	// define Machine specific SSH keys, overrides cluster wide SSH keys
-	SSHKeys []HcloudSSHKeySpec `json:"sshKeys,omitempty"`
+	RobotTokenRef robotTokenRef `json:"robotTokenRef,omitempty"`
 
-	ImageName string `json:"image,omitempty"`
+	SSHTokenRef sshTokenRef `json:"sshTokenRef,omitempty"`
 
 	// ProviderID is the unique identifier as specified by the cloud provider.
 	// +optional
 	ProviderID *string `json:"providerID,omitempty"`
+
+	// +optional
+	Port *int `json:"port,omitempty"`
+
+	// +optional
+	Partition *string `json:"partition,omitempty"`
+
+	ImagePath *string `json:"imagePath,omitempty"`
 }
 
-type BareMetalServerState string
+type robotTokenRef struct {
+	PasswordKey string `json:"passwordKey,omitempty"`
+	UserNameKey string `json:"userNameKey,omitempty"`
+	TokenName   string `json:"tokenName,omitempty"`
+}
+
+type sshTokenRef struct {
+	PublicKey  string `json:"publicKey,omitempty"`
+	PrivateKey string `json:"privateKey,omitempty"`
+	SSHKeyName string `json:"sshKeyName,omitempty"`
+	TokenName  string `json:"tokenName,omitempty"`
+}
+
+//type BareMetalServerState string
 
 // BareMetalMachineStatus defines the observed state of BareMetalMachine
 type BareMetalMachineStatus struct {
-	// ServerState is the state of the server for this machine.
-	// +optional
-	ServerState BareMetalServerState `json:"serverState,omitempty"`
-
-	// Ready is true when the provider resource is ready.
-	// +optional
-	Ready bool `json:"ready"`
+	IPv4       string `json:"server_ip,omitempty"`
+	IPv6       string `json:"ipv6,omitempty"`
+	ServerID   int    `json:"server_number,omitempty"`
+	ServerName string `json:"server_name,omitempty"`
+	Status     string `json:"status,omitempty"`
+	Cancelled  bool   `json:"cancelled,omitempty"`
+	Reset      bool   `json:"reset,omitempty"`
+	Rescue     bool   `json:"rescue,omitempty"`
 
 	// FailureReason will be set in the event that there is a terminal problem
 	// reconciling the Machine and will contain a succinct value suitable

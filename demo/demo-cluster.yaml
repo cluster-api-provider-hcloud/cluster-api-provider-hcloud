@@ -90,6 +90,25 @@ spec:
       type: cx21-ceph
       image: centos-7_k8s-universal
 ---
+apiVersion: cluster-api-provider-hcloud.capihc.com/v1alpha3
+kind: BareMetalMachineTemplate
+metadata:
+  name: cluster-dev-bm-worker
+  namespace: default
+spec:
+  template:
+    spec:
+      imagePath: "https://some-test-path.com"
+      robotTokenRef:
+        passwordKey: robot-password
+        userNameKey: robot-user
+        tokenName: hetzner-token
+      sshTokenRef:
+        publicKey: public
+        privateKey: private
+        sshKeyName: name
+        tokenName: bm-sshkey
+---
 apiVersion: bootstrap.cluster.x-k8s.io/v1alpha3
 kind: KubeadmConfigTemplate
 metadata:
@@ -133,6 +152,37 @@ spec:
         apiVersion: cluster-api-provider-hcloud.capihc.com/v1alpha3
         kind: HcloudMachineTemplate
         name: cluster-dev-worker-fsn1-mt-0
+      failureDomain: fsn1
+---
+apiVersion: cluster.x-k8s.io/v1alpha3
+kind: BareMetalMachineDeployment
+metadata:
+  name: cluster-dev-bm-worker-fsn1
+  namespace: default
+  labels:
+    nodepool: bm-worker
+spec:
+  replicas: 1
+  clusterName: cluster-dev
+  selector:
+    matchLabels:
+      nodepool: bm-worker
+  template:
+    metadata:
+      labels:
+        nodepool: bm-worker
+    spec:
+      clusterName: cluster-dev
+      version: v1.19.0
+      bootstrap:
+        configRef:
+          apiVersion: bootstrap.cluster.x-k8s.io/v1alpha3
+          kind: KubeadmConfigTemplate
+          name: cluster-dev-worker-kubeadm-0
+      infrastructureRef:
+        apiVersion: cluster-api-provider-hcloud.capihc.com/v1alpha3
+        kind: BareMetalMachineTemplate
+        name: cluster-dev-bm-worker-mt-0
       failureDomain: fsn1
 ---
 apiVersion: cluster.x-k8s.io/v1alpha3

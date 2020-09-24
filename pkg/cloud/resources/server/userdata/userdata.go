@@ -349,13 +349,13 @@ func (u *UserData) SkipKubeProxy() error {
 	return errors.New("kubeadm init command not found")
 }
 
-func (u *UserData) GetContentInformation() string {
+func (u *UserData) GetContentInformation() (string, error) {
 
 	if len(u.document.Content) > 0 &&
 		len(u.document.Content[0].Content) > 1 &&
 		len(u.document.Content[0].Content[1].Content) > 0 &&
 		len(u.document.Content[0].Content[1].Content[0].Content) > 6 {
-		return u.document.Content[0].Content[1].Content[0].Content[7].Value
+		return u.document.Content[0].Content[1].Content[0].Content[7].Value, nil
 	}
-
+	return "", errors.New("Content of yaml node does not exist")
 }
