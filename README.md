@@ -63,7 +63,7 @@ watch -n 1 kubectl get hcloudclusters,cluster,hcloudmachines,machines,kubeadmcon
 The cluster need some time until it is ready:
 | Task | Time |
 | ---- | ---- |
-| Full cluster | ~20-25min
+| Full cluster | ~15-30min
 | For the packer | ~10-15min
 | Snapshot | ~2-3min 
 | First control-plane, worker-nodes are created | after ~4min
