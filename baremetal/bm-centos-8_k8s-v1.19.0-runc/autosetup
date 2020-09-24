@@ -1,0 +1,9 @@
+DRIVE1 /dev/sdd
+
+BOOTLOADER grub
+SWRAID 0
+HOSTNAME nodename-1
+
+PART /    ext4 all
+
+IMAGE /CentOS-82-64-minimal.tar.gz
