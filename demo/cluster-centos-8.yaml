@@ -6,7 +6,7 @@ metadata:
   labels:
     cni: calico-datastore-k8s
     csi: hcloud-csi
-    ccm: hcloud-controller-manager-privnet
+    ccm: hcloud-controller-manager
     metrics-server: metrics-server
 spec:
   clusterNetwork:
@@ -37,14 +37,14 @@ spec:
     type: lb11
     algorithm: round_robin
   locations:
-  - fsn1  # first location is used for location of Loadbalancer
-  - nbg1
+  - nbg1 # first location is used for location of Loadbalancer
+  - fsn1  
   - hel1
-  network:
-    cidrBlock: 10.0.0.0/8
-    subnets:
-    - cidrBlock: 10.0.0.0/16
-      networkZone: eu-central
+  # network:
+  #   cidrBlock: 172.16.0.0/12
+  #   subnets:
+  #   - cidrBlock: 172.16.0.0/20
+  #     networkZone: eu-central
   sshKeys:
   - name: cluster
   tokenRef:

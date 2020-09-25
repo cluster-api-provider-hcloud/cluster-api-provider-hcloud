@@ -59,7 +59,7 @@ dnf update -y
 # install basic tooling
 dnf -y install \
     git vim tmux at jq unzip htop wget\
-    socat ipvsadm iperf3 mtr\
+    socat ipvsadm iperf3 mtr \
     nfs-utils \
     iscsi-initiator-utils \
     firewalld
@@ -96,4 +96,25 @@ systemctl enable sys-fs-bpf.mount
 # Set SELinux in enforcing mode (effectively disabling it)
 setenforce 1
 sed -i 's/^SELINUX=permissive\$/SELINUX=enforcing/' /etc/selinux/config
+
+# install hetzner cloud networks configuration package
+curl https://packages.hetzner.com/hcloud/rpm/hc-utils-0.0.3-1.el8.noarch.rpm -o /tmp/hc-utils-0.0.3-1.el7.noarch.rpm -s
+dnf -y install /tmp/hc-utils-0.0.3-1.el8.noarch.rpm
+
+# disable public interface
+cat > /etc/systemd/system/disable-public-interface.service <<EOF
+[Unit]
+Description=Disable Public Interface
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+ExecStart=/bin/sh -c 'nmcli connection down "System eth0" && sed -i -e '/^ONBOOT/s/^.*$/ONBOOT=false/' /etc/sysconfig/network-scripts/ifcfg-eth0 '
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+systemctl enable disable-public-interface.service
+
 
