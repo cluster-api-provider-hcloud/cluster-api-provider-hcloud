@@ -38,10 +38,8 @@ spec:
   - nbg1
   - hel1
   network:
-    cidrBlock: 10.0.0.0/8
-    subnets:
-    - cidrBlock: 10.0.0.0/16
-      networkZone: eu-central
+    cidrBlock: ""
+    subnets: []
   sshKeys:
   - name: cluster
   tokenRef:
@@ -88,7 +86,7 @@ spec:
   template:
     spec:
       type: cx21-ceph
-      image: https://u243385:vgN3C2fsiPklqBNF@u243385.your-storagebox.de/hcloud/centos-8_k8s-v1.19.0.tar.gz
+      image: centos-7_k8s-universal
 ---
 apiVersion: bootstrap.cluster.x-k8s.io/v1alpha3
 kind: KubeadmConfigTemplate
@@ -205,7 +203,7 @@ metadata:
 spec:
   template:
     spec:
-      type: cx11
+      type: cpx11
       image: centos-7_k8s-universal
 ---
 apiVersion: cluster-api-provider-hcloud.capihc.com/v1alpha3
@@ -216,7 +214,7 @@ metadata:
 spec:
   template:
     spec:
-      type: cx11
+      type: cpx11
       image: centos-7_k8s-universal
 ---
 apiVersion: cluster-api-provider-hcloud.capihc.com/v1alpha3
@@ -227,7 +225,7 @@ metadata:
 spec:
   template:
     spec:
-      type: cx11
+      type: cpx11
       image: centos-7_k8s-universal
 ---
 apiVersion: cluster.x-k8s.io/v1alpha3

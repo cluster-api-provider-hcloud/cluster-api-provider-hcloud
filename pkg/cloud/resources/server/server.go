@@ -410,11 +410,6 @@ func (s *Service) Reconcile(ctx context.Context) (_ *ctrl.Result, err error) {
 			return nil, err
 		}
 
-		// Need to have a private network if added to load balancer
-		if len(actualServer.PrivateNet) == 0 {
-			return &ctrl.Result{RequeueAfter: 2 * time.Second}, nil
-		}
-
 		if err := s.addServerToLoadBalancer(ctx, actualServer); err != nil {
 			errors = append(errors, err)
 		}
@@ -531,23 +526,23 @@ func setStatusFromAPI(status *infrav1.HcloudMachineStatus, server *hcloud.Server
 
 func (s *Service) addServerToLoadBalancer(ctx context.Context, server *hcloud.Server) error {
 
-	// If server has not been added to the network yet, then the load balancer cannot add it
-	if len(server.PrivateNet) == 0 {
-		return nil
+	var hasPrivateIP bool
+	if len(server.PrivateNet) > 0 {
+		hasPrivateIP = true
 	}
 
-	myBool := true
-	loadBalancerAddServerTargetOpts := hcloud.LoadBalancerAddServerTargetOpts{Server: server, UsePrivateIP: &myBool}
+	loadBalancerAddServerTargetOpts := hcloud.LoadBalancerAddServerTargetOpts{Server: server, UsePrivateIP: &hasPrivateIP}
 
 	lb, err := loadbalancer.GetLoadBalancer(&s.scope.ClusterScope)
 	if err != nil {
 		return err
 	}
 
-	// If load balancer has not been attached to a network, then it cannot add a server
-	if len(lb.PrivateNet) == 0 {
+	// If load balancer has not been attached to a network, then it cannot add a server with private IP
+	if hasPrivateIP == true && len(lb.PrivateNet) == 0 {
 		return nil
 	}
+
 	_, _, err = s.scope.HcloudClient().AddTargetServerToLoadBalancer(ctx, loadBalancerAddServerTargetOpts, lb)
 	if err != nil {
 		s.scope.V(2).Info("Could not add server as target to load balancer", "Server", server.ID, "Load Balancer", lb.ID)
