@@ -203,25 +203,29 @@ func (r *HcloudClusterReconciler) reconcileNormal(clusterScope *scope.ClusterSco
 		return reconcile.Result{}, errors.Wrapf(err, "failed to reconcile load balancers for HcloudCluster %s/%s", hcloudCluster.Namespace, hcloudCluster.Name)
 	}
 
-	var defaultHost = hcloudCluster.Status.ControlPlaneLoadBalancer.IPv4
-	var defaultPort = clusterScope.ControlPlaneAPIEndpointPort()
+	if hcloudCluster.Status.ControlPlaneLoadBalancer.IPv4 != "<nil>" {
 
-	if hcloudCluster.Spec.ControlPlaneEndpoint == nil {
-		hcloudCluster.Spec.ControlPlaneEndpoint = &clusterv1.APIEndpoint{
-			Host: defaultHost,
-			Port: defaultPort,
+		var defaultHost = hcloudCluster.Status.ControlPlaneLoadBalancer.IPv4
+		var defaultPort = clusterScope.ControlPlaneAPIEndpointPort()
+
+		if hcloudCluster.Spec.ControlPlaneEndpoint == nil {
+			hcloudCluster.Spec.ControlPlaneEndpoint = &clusterv1.APIEndpoint{
+				Host: defaultHost,
+				Port: defaultPort,
+			}
+		} else {
+			if hcloudCluster.Spec.ControlPlaneEndpoint.Host == "" {
+				hcloudCluster.Spec.ControlPlaneEndpoint.Host = defaultHost
+			}
+			if hcloudCluster.Spec.ControlPlaneEndpoint.Port == 0 {
+				hcloudCluster.Spec.ControlPlaneEndpoint.Port = defaultPort
+			}
 		}
-	} else {
-		if hcloudCluster.Spec.ControlPlaneEndpoint.Host == "" {
-			hcloudCluster.Spec.ControlPlaneEndpoint.Host = defaultHost
-		}
-		if hcloudCluster.Spec.ControlPlaneEndpoint.Port == 0 {
-			hcloudCluster.Spec.ControlPlaneEndpoint.Port = defaultPort
-		}
+
+		// set cluster infrastructure as ready
+		hcloudCluster.Status.Ready = true
+
 	}
-	// set cluster infrastructure as ready
-	hcloudCluster.Status.Ready = true
-
 	// reconcile cluster manifests
 	if err := r.reconcileManifests(clusterScope); err == errNoReadyAPIServer {
 		r.recorder.Eventf(
