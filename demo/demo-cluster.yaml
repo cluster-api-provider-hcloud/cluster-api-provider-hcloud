@@ -155,7 +155,7 @@ spec:
       failureDomain: fsn1
 ---
 apiVersion: cluster.x-k8s.io/v1alpha3
-kind: BareMetalMachineDeployment
+kind: MachineDeployment
 metadata:
   name: cluster-dev-bm-worker-fsn1
   namespace: default
