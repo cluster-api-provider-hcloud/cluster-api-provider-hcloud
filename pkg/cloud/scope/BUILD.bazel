@@ -7,6 +7,7 @@ go_library(
         "cluster.go",
         "machine.go",
         "volume.go",
+        "baremetal.go"
     ],
     importpath = "github.com/cluster-api-provider-hcloud/cluster-api-provider-hcloud/pkg/cloud/scope",
     visibility = ["//visibility:public"],
