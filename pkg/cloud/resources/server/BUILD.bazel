@@ -9,7 +9,6 @@ go_library(
     importpath = "github.com/cluster-api-provider-hcloud/cluster-api-provider-hcloud/pkg/cloud/resources/server",
     visibility = ["//visibility:public"],
     deps = [
-        "//api/kubelet/v1beta1:go_default_library",
         "//api/v1alpha3:go_default_library",
         "//pkg/cloud/resources/loadbalancer:go_default_library",
         "//pkg/cloud/resources/server/userdata:go_default_library",

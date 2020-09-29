@@ -16,8 +16,6 @@ import (
 	bootstrapv1 "sigs.k8s.io/cluster-api/bootstrap/kubeadm/api/v1alpha3"
 	kubeadmv1beta1 "sigs.k8s.io/cluster-api/bootstrap/kubeadm/types/v1beta1"
 	kubeyaml "sigs.k8s.io/yaml"
-
-	kubeletv1beta1 "github.com/cluster-api-provider-hcloud/cluster-api-provider-hcloud/api/kubelet/v1beta1"
 )
 
 const kubeadmConfigurationPathInit = "/tmp/kubeadm.yaml"
@@ -31,7 +29,6 @@ type KubeadmConfig struct {
 	ClusterConfiguration *kubeadmv1beta1.ClusterConfiguration
 	InitConfiguration    *kubeadmv1beta1.InitConfiguration
 	JoinConfiguration    *kubeadmv1beta1.JoinConfiguration
-	KubeletConfiguration *kubeletv1beta1.KubeletConfiguration
 	isInit               bool
 }
 
@@ -45,10 +42,6 @@ func (k *KubeadmConfig) IsJoin() bool {
 
 func newScheme() *runtime.Scheme {
 	sch := runtime.NewScheme()
-	sch.AddKnownTypes(
-		kubeletv1beta1.GroupVersion,
-		&kubeletv1beta1.KubeletConfiguration{},
-	)
 	sch.AddKnownTypes(
 		kubeadmv1beta1.GroupVersion,
 		&kubeadmv1beta1.ClusterConfiguration{},
@@ -151,8 +144,6 @@ func parseKubeadmConfig(data []byte) (*KubeadmConfig, error) {
 			k.InitConfiguration = o
 		case *kubeadmv1beta1.JoinConfiguration:
 			k.JoinConfiguration = o
-		case *kubeletv1beta1.KubeletConfiguration:
-			k.KubeletConfiguration = o
 		default:
 			return nil, fmt.Errorf("unknown type during parse: %v", o)
 		}
@@ -231,16 +222,6 @@ func (u *UserData) SetKubeadmConfig(k *KubeadmConfig) error {
 	if obj := k.JoinConfiguration; obj != nil {
 		b := bytes.NewBuffer(nil)
 		if err := kubeadmEncoder.Encode(obj, b); err != nil {
-			return fmt.Errorf("error serializing %T: %w", obj, err)
-		}
-		addObj(b.String())
-	}
-
-	kubeletEncoder := codecs.EncoderForVersion(info.Serializer, kubeletv1beta1.GroupVersion)
-
-	if obj := k.KubeletConfiguration; obj != nil {
-		b := bytes.NewBuffer(nil)
-		if err := kubeletEncoder.Encode(obj, b); err != nil {
 			return fmt.Errorf("error serializing %T: %w", obj, err)
 		}
 		addObj(b.String())

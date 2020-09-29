@@ -18,7 +18,6 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
-	kubeletv1beta1 "github.com/cluster-api-provider-hcloud/cluster-api-provider-hcloud/api/kubelet/v1beta1"
 	infrav1 "github.com/cluster-api-provider-hcloud/cluster-api-provider-hcloud/api/v1alpha3"
 	loadbalancer "github.com/cluster-api-provider-hcloud/cluster-api-provider-hcloud/pkg/cloud/resources/loadbalancer"
 	"github.com/cluster-api-provider-hcloud/cluster-api-provider-hcloud/pkg/cloud/resources/server/userdata"
@@ -148,52 +147,6 @@ func (s *Service) Reconcile(ctx context.Context) (_ *ctrl.Result, err error) {
 			if err := userData.SetOrUpdateFile(iptablesProxy); err != nil {
 				return nil, err
 			}
-			/*
-				myFalse := false
-				myTrue := true
-				kubeAuthn := &kubeletv1beta1.KubeletAuthentication{
-					X509: kubeletv1beta1.KubeletX509Authentication{
-						ClientCAFile: "",
-					},
-					Anonymous: kubeletv1beta1.KubeletAnonymousAuthentication{Enabled: &myFalse},
-				}
-
-				kubeAuthz := &kubeletv1beta1.KubeletAuthorization{
-					//Mode: kubeletv1beta1.KubeletAuthorizationModeAlwaysAllow,
-				}
-			*/
-			// enable TLS bootstrapping and rollover
-			kubeadmConfig.KubeletConfiguration = &kubeletv1beta1.KubeletConfiguration{
-				ServerTLSBootstrap: true,
-				RotateCertificates: true,
-				//Authentication:     kubeAuthn,
-				//Authorization:      kubeAuthz,
-				//ReadOnlyPort: ,
-				// StreamingConnectionIdleTimeout: ,
-				//ProtectKernelDefaults:  true,
-				//MakeIPTablesUtilChains: &myTrue,
-				// EventRecordQPS: ,
-				// TLSCertFile: ,
-				// TLSPrivateKeyFile: ,
-
-			}
-
-			if i := kubeadmConfig.InitConfiguration; i != nil {
-
-				// set cloud provider external if nothing else is set
-				if i.NodeRegistration.KubeletExtraArgs == nil {
-					i.NodeRegistration.KubeletExtraArgs = make(map[string]string)
-				}
-				if _, ok := i.NodeRegistration.KubeletExtraArgs[cloudProviderKey]; !ok {
-					i.NodeRegistration.KubeletExtraArgs[cloudProviderKey] = cloudProviderValue
-				}
-			} else {
-				record.Warnf(
-					s.scope.HcloudMachine,
-					"UnexpectedUserData",
-					"UserData for a control plane comes without a InitConfiguration",
-				)
-			}
 
 			if c := kubeadmConfig.ClusterConfiguration; c != nil {
 				if c.APIServer.ExtraArgs == nil {
@@ -210,31 +163,7 @@ func (s *Service) Reconcile(ctx context.Context) (_ *ctrl.Result, err error) {
 				if _, ok := c.ControllerManager.ExtraArgs[cloudProviderKey]; !ok {
 					c.ControllerManager.ExtraArgs[cloudProviderKey] = cloudProviderValue
 				}
-				/*
-					c.APIServer.ExtraArgs["anonymous-auth"] = "false"
-					//c.APIServer.ExtraArgs["kubelet-client-certificate"] =
-					//c.APIServer.ExtraArgs["kubelet-client-key"] =
-					//c.APIServer.ExtraArgs["kubelet-certificate-authority"] =
-					// Is this how we can specify a slice? Alternatively just "AlwaysAllow", or it doesn't work at all
-					c.APIServer.ExtraArgs["authorization-mode"] = "[AlwaysAllow]"
-					// c.APIServer.ExtraArgs["secure-port"] =
-					c.APIServer.ExtraArgs["profiling"] = "false"
-					// c.APIServer.ExtraArgs["audit-log-path"] =
-					// Is this how we can specify ints?
-					c.APIServer.ExtraArgs["audit-log-maxage"] = "30"
-					c.APIServer.ExtraArgs["audit-log-maxbackup"] = "10"
-					c.APIServer.ExtraArgs["audit-log-maxsize"] = "100"
-					// c.APIServer.ExtraArgs["request-timeout"] =
-					c.APIServer.ExtraArgs["service-account-lookup"] = "true"
-					// c.APIServer.ExtraArgs["service-account-key-file"] =
-					// c.APIServer.ExtraArgs["etcd-certfile"] =
-					// c.APIServer.ExtraArgs["etcd-keyfile"] =
-					// c.APIServer.ExtraArgs["tls-cert-file"] =
-					// c.APIServer.ExtraArgs["tls-private-key-file"] =
-					// c.APIServer.ExtraArgs["client-ca-file"] =
-					// c.APIServer.ExtraArgs["etcd-cafile"] =
-					// c.APIServer.ExtraArgs["encryption-provider-config"] =
-				*/
+
 				// ensure projected token endpoints are enabled by configuring
 				// issuer and signing key
 				serviceAccountIssuerKey := "service-account-issuer"
@@ -275,15 +204,6 @@ func (s *Service) Reconcile(ctx context.Context) (_ *ctrl.Result, err error) {
 					"UserData for a control plane comes without a ClusterConfiguration",
 				)
 			}
-		}
-	}
-
-	if j := kubeadmConfig.JoinConfiguration; j != nil {
-		if j.NodeRegistration.KubeletExtraArgs == nil {
-			j.NodeRegistration.KubeletExtraArgs = make(map[string]string)
-		}
-		if _, ok := j.NodeRegistration.KubeletExtraArgs[cloudProviderKey]; !ok {
-			j.NodeRegistration.KubeletExtraArgs[cloudProviderKey] = cloudProviderValue
 		}
 	}
 
