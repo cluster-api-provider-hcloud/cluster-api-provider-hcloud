@@ -25,7 +25,6 @@ filegroup(
     name = "all-srcs",
     srcs = [
         ":package-srcs",
-        "//api/kubelet/v1beta1:all-srcs",
         "//api/v1alpha3:all-srcs",
         "//cmd/cluster-api-provider-hcloud:all-srcs",
         "//config:all-srcs",
