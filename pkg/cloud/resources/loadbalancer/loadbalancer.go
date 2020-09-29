@@ -43,7 +43,7 @@ func (s *Service) apiToStatus(lb *hcloud.LoadBalancer) (*infrav1.HcloudLoadBalan
 	ipv6 := lb.PublicNet.IPv6.IP.String()
 
 	var internalIP string
-	if len(lb.PrivateNet) > 0 {
+	if s.scope.HcloudCluster.Status.Network != nil && len(lb.PrivateNet) > 0 {
 		internalIP = lb.PrivateNet[0].IP.String()
 	}
 
@@ -63,8 +63,6 @@ func (s *Service) apiToStatus(lb *hcloud.LoadBalancer) (*infrav1.HcloudLoadBalan
 		targetIDs = append(targetIDs, server.Server.Server.ID)
 	}
 
-	hasNetwork := len(lb.PrivateNet) > 0
-
 	status := &infrav1.HcloudLoadBalancerStatus{
 		ID:         lb.ID,
 		Name:       lb.Name,
@@ -75,7 +73,6 @@ func (s *Service) apiToStatus(lb *hcloud.LoadBalancer) (*infrav1.HcloudLoadBalan
 		Labels:     lb.Labels,
 		Algorithm:  algType,
 		Targets:    targetIDs,
-		HasNetwork: hasNetwork,
 	}
 	return status, nil
 }
@@ -91,7 +88,7 @@ func (s *Service) Reconcile(ctx context.Context) (err error) {
 	}
 	if loadBalancerStatus != nil {
 		s.scope.HcloudCluster.Status.ControlPlaneLoadBalancer = *loadBalancerStatus
-		if loadBalancerStatus.HasNetwork == false {
+		if s.scope.HcloudCluster.Status.Network != nil && loadBalancerStatus.InternalIP == "" {
 			s.attachLoadBalancerToNetwork(ctx)
 		}
 		// TODO: Check if targets are up-to-date and add/delete some if needed
@@ -146,23 +143,22 @@ func (s *Service) createLoadBalancer(ctx context.Context, spec infrav1.HcloudLoa
 
 	var network *hcloud.Network
 
-	if hc.Status.Network == nil {
-		return nil, errors.New("no network set on the cluster")
-	}
-	networkID := s.scope.HcloudCluster.Status.Network.ID
-	networks, err := s.scope.HcloudClient().ListNetworks(ctx, hcloud.NetworkListOpts{})
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to list networks")
-	}
-	var i = false
-	for _, net := range networks {
-		if net.ID == networkID {
-			network = net
-			i = true
+	if hc.Status.Network != nil {
+		networkID := s.scope.HcloudCluster.Status.Network.ID
+		networks, err := s.scope.HcloudClient().ListNetworks(ctx, hcloud.NetworkListOpts{})
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to list networks")
 		}
-	}
-	if i == false {
-		return nil, fmt.Errorf("could not find network with ID %v", networkID)
+		var i = false
+		for _, net := range networks {
+			if net.ID == networkID {
+				network = net
+				i = true
+			}
+		}
+		if i == false {
+			return nil, fmt.Errorf("could not find network with ID %v", networkID)
+		}
 	}
 
 	var mybool = false
@@ -237,9 +233,12 @@ func (s *Service) attachLoadBalancerToNetwork(ctx context.Context) error {
 	opts := hcloud.LoadBalancerAttachToNetworkOpts{
 		Network: network,
 	}
-	_, _, err = s.scope.HcloudClient().AttachLoadBalancerToNetwork(ctx, lb, opts)
 
-	return errors.Wrap(err, "failed to attach load balancer to network")
+	_, _, err = s.scope.HcloudClient().AttachLoadBalancerToNetwork(ctx, lb, opts)
+	if err != nil {
+		return errors.Wrap(err, "failed to attach load balancer to network")
+	}
+	return nil
 }
 
 func (s *Service) deleteLoadBalancer(ctx context.Context, status infrav1.HcloudLoadBalancerStatus) error {

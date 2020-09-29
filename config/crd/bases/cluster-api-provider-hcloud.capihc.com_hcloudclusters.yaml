@@ -125,8 +125,6 @@ spec:
                     - round_robin
                     - least_connections
                     type: string
-                  hasNetwork:
-                    type: boolean
                   id:
                     type: integer
                   internalIP:
@@ -139,8 +137,6 @@ spec:
                     type: string
                   type:
                     type: string
-                required:
-                - hasNetwork
                 type: object
               failureDomains:
                 additionalProperties:
