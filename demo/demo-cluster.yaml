@@ -46,7 +46,7 @@ spec:
   - name: cluster
   tokenRef:
     key: token
-    name: hcloud-token
+    name: hetzner-token
 ---
 apiVersion: controlplane.cluster.x-k8s.io/v1alpha3
 kind: KubeadmControlPlane
@@ -93,12 +93,12 @@ spec:
 apiVersion: cluster-api-provider-hcloud.capihc.com/v1alpha3
 kind: BareMetalMachineTemplate
 metadata:
-  name: cluster-dev-bm-worker
+  name: cluster-dev-worker-bm-mt-0
   namespace: default
 spec:
   template:
     spec:
-      imagePath: "https://some-test-path.com"
+      imagePath: "http://some-test-path.com"
       robotTokenRef:
         passwordKey: robot-password
         userNameKey: robot-user
@@ -157,20 +157,20 @@ spec:
 apiVersion: cluster.x-k8s.io/v1alpha3
 kind: MachineDeployment
 metadata:
-  name: cluster-dev-bm-worker-fsn1
+  name: cluster-dev-worker-bm
   namespace: default
   labels:
-    nodepool: bm-worker
+    nodepool: worker-bm
 spec:
   replicas: 1
   clusterName: cluster-dev
   selector:
     matchLabels:
-      nodepool: bm-worker
+      nodepool: worker-bm
   template:
     metadata:
       labels:
-        nodepool: bm-worker
+        nodepool: worker-bm
     spec:
       clusterName: cluster-dev
       version: v1.19.0
@@ -182,8 +182,7 @@ spec:
       infrastructureRef:
         apiVersion: cluster-api-provider-hcloud.capihc.com/v1alpha3
         kind: BareMetalMachineTemplate
-        name: cluster-dev-bm-worker-mt-0
-      failureDomain: fsn1
+        name: cluster-dev-worker-bm-mt-0
 ---
 apiVersion: cluster.x-k8s.io/v1alpha3
 kind: MachineDeployment

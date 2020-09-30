@@ -35,5 +35,17 @@ patchesJson6902:
     group: apiextensions.k8s.io
     version: v1
     kind: CustomResourceDefinition
+    name: baremetalmachines.cluster-api-provider-hcloud.capihc.com
+  path: patch_crd_webhook_namespace.yaml
+- target:
+    group: apiextensions.k8s.io
+    version: v1
+    kind: CustomResourceDefinition
+    name: baremetalmachinetemplates.cluster-api-provider-hcloud.capihc.com
+  path: patch_crd_webhook_namespace.yaml
+- target:
+    group: apiextensions.k8s.io
+    version: v1
+    kind: CustomResourceDefinition
     name: hcloudvolumes.cluster-api-provider-hcloud.capihc.com
   path: patch_crd_webhook_namespace.yaml
