@@ -7,8 +7,6 @@ import (
 
 	"gotest.tools/assert"
 	bootstrapv1 "sigs.k8s.io/cluster-api/bootstrap/kubeadm/api/v1alpha3"
-
-	kubeletv1beta1 "github.com/cluster-api-provider-hcloud/cluster-api-provider-hcloud/api/kubelet/v1beta1"
 )
 
 var userdataControlPlaneInit = `## template: jinja
@@ -464,11 +462,6 @@ func TestUserData_UpdateKubeadmConfig_Init(t *testing.T) {
 		t.Errorf("unexpected error: %w", err)
 	}
 
-	k.KubeletConfiguration = &kubeletv1beta1.KubeletConfiguration{
-		ServerTLSBootstrap: true,
-		RotateCertificates: true,
-	}
-
 	k.ClusterConfiguration.ControlPlaneEndpoint = ""
 
 	err = u.SetKubeadmConfig(k)
@@ -508,11 +501,6 @@ func TestUserData_UpdateKubeadmConfig_Join(t *testing.T) {
 	if err != nil {
 		t.Errorf("unexpected error: %w", err)
 	}
-
-	if m := k.JoinConfiguration.NodeRegistration.KubeletExtraArgs; m == nil {
-		k.JoinConfiguration.NodeRegistration.KubeletExtraArgs = make(map[string]string)
-	}
-	k.JoinConfiguration.NodeRegistration.KubeletExtraArgs["test"] = "value"
 
 	err = u.SetKubeadmConfig(k)
 	if err != nil {

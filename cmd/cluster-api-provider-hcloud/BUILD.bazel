@@ -89,6 +89,7 @@ pkg_tar(
         "//manifests",
         "//packer/centos-7_k8s-universal:packer",
         "//packer/centos-8_k8s-v1.19.0:packer",
+        "//packer/centos-8_k8s-v1.19.0-privnet:packer",
     ],
 )
 
@@ -100,6 +101,7 @@ container_layer(
         "//manifests",
         "//packer/centos-7_k8s-universal:packer",
         "//packer/centos-8_k8s-v1.19.0:packer",
+        "//packer/centos-8_k8s-v1.19.0-privnet:packer",
     ],
 )
 

@@ -25,7 +25,6 @@ filegroup(
     name = "all-srcs",
     srcs = [
         ":package-srcs",
-        "//api/kubelet/v1beta1:all-srcs",
         "//api/v1alpha3:all-srcs",
         "//cmd/cluster-api-provider-hcloud:all-srcs",
         "//config:all-srcs",
@@ -34,6 +33,7 @@ filegroup(
         "//manifests:all-srcs",
         "//packer/centos-7_k8s-universal:all-srcs",
         "//packer/centos-8_k8s-v1.19.0:all-srcs",
+        "//packer/centos-8_k8s-v1.19.0-privnet:all-srcs",
         "//pkg/cloud/resources/loadbalancer:all-srcs",
         "//pkg/cloud/resources/location:all-srcs",
         "//pkg/cloud/resources/network:all-srcs",

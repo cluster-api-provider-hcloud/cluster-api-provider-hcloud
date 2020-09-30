@@ -107,7 +107,6 @@ type HcloudLoadBalancerStatus struct {
 	Labels     map[string]string               `json:"-"`
 	Algorithm  HcloudLoadBalancerAlgorithmType `json:"algorithm,omitempty"`
 	Targets    []int                           `json:"-"`
-	HasNetwork bool                            `json:"hasNetwork"`
 }
 
 type HcloudClusterStatusManifests struct {

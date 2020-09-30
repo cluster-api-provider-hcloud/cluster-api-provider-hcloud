@@ -6,7 +6,7 @@ metadata:
   labels:
     cni: calico-datastore-k8s
     csi: hcloud-csi
-    ccm: hcloud-controller-manager-privnet
+    ccm: hcloud-controller-manager
     metrics-server: metrics-server
 spec:
   clusterNetwork:
@@ -30,6 +30,9 @@ metadata:
   name: cluster-dev
   namespace: default
 spec:
+  controlPlaneEndpoint:
+    host: ""
+    port: 443
   controlPlaneLoadbalancer:
     type: lb11
     algorithm: round_robin
@@ -38,10 +41,8 @@ spec:
   - nbg1
   - hel1
   network:
-    cidrBlock: 10.0.0.0/8
-    subnets:
-    - cidrBlock: 10.0.0.0/16
-      networkZone: eu-central
+    cidrBlock: ""
+    subnets: []
   sshKeys:
   - name: cluster
   tokenRef:
@@ -88,7 +89,7 @@ spec:
   template:
     spec:
       type: cx21-ceph
-      image: centos-7_k8s-universal
+      image: centos-8_k8s-v1.19.0
 ---
 apiVersion: cluster-api-provider-hcloud.capihc.com/v1alpha3
 kind: BareMetalMachineTemplate
@@ -254,8 +255,8 @@ metadata:
 spec:
   template:
     spec:
-      type: cx11
-      image: centos-7_k8s-universal
+      type: cpx11
+      image: centos-8_k8s-v1.19.0
 ---
 apiVersion: cluster-api-provider-hcloud.capihc.com/v1alpha3
 kind: HcloudMachineTemplate
@@ -265,8 +266,8 @@ metadata:
 spec:
   template:
     spec:
-      type: cx11
-      image: centos-7_k8s-universal
+      type: cpx11
+      image: centos-8_k8s-v1.19.0
 ---
 apiVersion: cluster-api-provider-hcloud.capihc.com/v1alpha3
 kind: HcloudMachineTemplate
@@ -276,8 +277,8 @@ metadata:
 spec:
   template:
     spec:
-      type: cx11
-      image: centos-7_k8s-universal
+      type: cpx11
+      image: centos-8_k8s-v1.19.0
 ---
 apiVersion: cluster.x-k8s.io/v1alpha3
 kind: MachineHealthCheck

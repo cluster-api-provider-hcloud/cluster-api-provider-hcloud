@@ -44,9 +44,6 @@ enabled=1
 gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-centosofficial
 EOF
 
-
-
-
 # Add Extra Packages for Enterprise Linux (EPEL) 8
 dnf install -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-8.noarch.rpm
 
@@ -58,8 +55,8 @@ dnf update -y
 
 # install basic tooling
 dnf -y install \
-    git vim tmux at jq unzip htop wget\
-    socat ipvsadm iperf3 mtr\
+    git vim tmux at jq unzip htop wget tar \
+    socat ipvsadm iperf3 mtr \
     nfs-utils \
     iscsi-initiator-utils \
     firewalld
@@ -92,8 +89,4 @@ Options=rw,nosuid,nodev,noexec,relatime,mode=700
 WantedBy=multi-user.target
 EOF
 systemctl enable sys-fs-bpf.mount
-
-# Set SELinux in enforcing mode (effectively disabling it)
-setenforce 1
-sed -i 's/^SELINUX=permissive\$/SELINUX=enforcing/' /etc/selinux/config
 

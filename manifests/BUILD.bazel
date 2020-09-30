@@ -15,12 +15,11 @@ filegroup(
     ],
 )
 
-
 jsonnet_library(
     name = "config",
     srcs = [
         ":config_files",
-        ":utils_files"
+        ":utils_files",
     ],
     visibility = ["//visibility:public"],
 )
