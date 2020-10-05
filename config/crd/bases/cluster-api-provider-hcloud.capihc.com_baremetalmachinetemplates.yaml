@@ -58,6 +58,8 @@ spec:
                           userNameKey:
                             type: string
                         type: object
+                      serverType:
+                        type: string
                       sshTokenRef:
                         properties:
                           privateKey:

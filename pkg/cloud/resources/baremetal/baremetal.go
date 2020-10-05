@@ -67,7 +67,6 @@ func stringSliceContains(s []string, e string) bool {
 }
 
 func (s *Service) Reconcile(ctx context.Context) (_ *ctrl.Result, err error) {
-
 	port := 22
 	if s.scope.BareMetalMachine.Spec.Port != nil {
 		port = *s.scope.BareMetalMachine.Spec.Port
@@ -94,7 +93,6 @@ func (s *Service) Reconcile(ctx context.Context) (_ *ctrl.Result, err error) {
 	} else if err != nil {
 		return nil, err
 	}
-
 	userData, err := userdata.NewFromReader(bytes.NewReader(userDataInitial))
 	if err != nil {
 		return nil, err
@@ -136,37 +134,58 @@ func (s *Service) Reconcile(ctx context.Context) (_ *ctrl.Result, err error) {
 	// isAttached is true if actualServer has the prefix clusterName in its name. This meanse it is already attached
 	// to the cluster.
 	var isAttached bool
-
 	if len(actualServers) == 0 {
 
-		return nil, errors.Errorf("No bare metal server found with the name %s", s.scope.BareMetalMachine.Name)
+		return nil, errors.Errorf("No bare metal server found with type %s", *s.scope.BareMetalMachine.Spec.ServerType)
 
 	} else if len(actualServers) == 1 {
-
 		actualServerData = actualServers[0]
-		if s.isServerAttached(actualServerData.ServerName) {
-			isAttached = true
+		splitName := strings.Split(actualServerData.ServerName, delimiter)
+
+		if splitName[0] == s.scope.Cluster.Name {
+			if len(splitName) == 3 && splitName[2] == s.scope.BareMetalMachine.Name {
+				isAttached = true
+			} else {
+				return nil, errors.Errorf(
+					"Found one bare metal server with type %s, but it is already attached with name %s",
+					*s.scope.BareMetalMachine.Spec.ServerType, actualServerData.ServerName,
+				)
+			}
 		}
+
 	} else if len(actualServers) > 2 {
-
-		return nil, errors.New("found too many actual servers")
-
-	} else {
 
 		// If two servers are in the list, then one has to be attached to the cluster already
 		// and have the prefix clusterName and the other has the same name without prefix
 		// No two servers should have the same name, but since one of them has a prefix and the other doesn't
 		// they have two different names for Hetzner, so we have to handle this case as well
-		var check bool
+		var check int
+		var newServer GeneralServerData
 		for _, serverData := range actualServers {
-			if s.isServerAttached(serverData.ServerName) {
-				actualServerData = serverData
-				check = true
-				isAttached = true
+			splitName := strings.Split(serverData.ServerName, delimiter)
+
+			// If server is attached to some cluster
+			if len(splitName) == 3 {
+				// If server is attached to current cluster
+				if splitName[0] == s.scope.Cluster.Name {
+					// If server is the one we are looking for
+					if splitName[2] == s.scope.BareMetalMachine.Name {
+						isAttached = true
+						actualServerData = serverData
+						check++
+					}
+				}
+			} else {
+				// If server is not attached, then take it
+				newServer = serverData
 			}
 		}
-		if check == false {
-			return nil, errors.Errorf("actualServer did not return the right servers with name %s", s.scope.BareMetalMachine.Name)
+
+		if check > 1 {
+			return nil, errors.Errorf(" There are %s servers which are attached to the cluster with name %s", actualServerData.ServerName)
+		} else if check == 0 {
+			// No attached server with the correct name found, so we have to take a new one
+			actualServerData = newServer
 		}
 	}
 
@@ -175,7 +194,6 @@ func (s *Service) Reconcile(ctx context.Context) (_ *ctrl.Result, err error) {
 		return nil, errors.Errorf("An error occured while retrieving the status of the bare metal server %s with IP %s",
 			actualServerData.ServerName, actualServerData.ServerIP)
 	}
-
 	// check if server has been cancelled
 	if actualServer.Cancelled == true {
 		s.scope.V(1).Info("server has been cancelled", "server", actualServer.ServerName, "cancelled", actualServer.Cancelled)
@@ -198,8 +216,6 @@ func (s *Service) Reconcile(ctx context.Context) (_ *ctrl.Result, err error) {
 		return &reconcile.Result{RequeueAfter: 300 * time.Second}, nil
 	}
 
-	err = ChangeBareMetalServerName(actualServer.IPv4, s.scope.Cluster.Name+delimiter+actualServer.ServerName, robotUserName, robotPassword)
-
 	err = ActivateRescue(actualServer.IPv4, sshFingerprint, robotUserName, robotPassword)
 	if err != nil {
 		return nil, errors.Errorf("Unable to activate rescue system: ", err)
@@ -215,11 +231,10 @@ func (s *Service) Reconcile(ctx context.Context) (_ *ctrl.Result, err error) {
 	if err != nil {
 		return nil, errors.Errorf("SSH command hostname returned the error %s. The output of stderr is %s", err, stderr)
 	}
-	if stdout != "rescue" {
+	if !strings.Contains(stdout, "rescue") {
 		return nil, errors.New("Rescue system not successfully started")
 	}
 
-	// TODO: Get blockdevices and find out which one we use
 	var blockDevices blockDevices
 	blockDeviceCommand := "lsblk -o name,size,rota,fstype,label -e1 -e7 --json"
 	stdout, stderr, err = runSSH(blockDeviceCommand, actualServer.IPv4, port, privateSSHKey, maxTime)
@@ -237,25 +252,20 @@ func (s *Service) Reconcile(ctx context.Context) (_ *ctrl.Result, err error) {
 		return nil, errors.Errorf("Error while finding correct device: %s", err)
 	}
 
-	//TODO: Configure autosetup file/string
 	partitionString := `PART /boot ext3 512M
-	PART / ext4 all`
+PART / ext4 all`
 	if s.scope.BareMetalMachine.Spec.Partition != nil {
 		partitionString = *s.scope.BareMetalMachine.Spec.Partition
 	}
 	autoSetup := fmt.Sprintf(
 		`cat > /autosetup << EOF
-		DRIVE1 /dev/%s
-
-		BOOTLOADER grub
-
-		HOSTNAME %s
-
-		%s
-
-		IMAGE %s
-		EOF
-	`, drive, actualServer.ServerName, partitionString, *s.scope.BareMetalMachine.Spec.ImagePath)
+DRIVE1 /dev/%s
+BOOTLOADER grub
+HOSTNAME %s
+%s
+IMAGE %s
+EOF`,
+		drive, actualServer.ServerName, partitionString, *s.scope.BareMetalMachine.Spec.ImagePath)
 
 	// Send autosetup file to server
 	stdout, stderr, err = runSSH(autoSetup, actualServer.IPv4, 22, privateSSHKey, maxTime)
@@ -264,11 +274,13 @@ func (s *Service) Reconcile(ctx context.Context) (_ *ctrl.Result, err error) {
 	}
 
 	// install image
-	stdout, stderr, err = runSSH("isntallimage", actualServer.IPv4, 22, privateSSHKey, maxTime)
-	if err != nil {
-		return nil, errors.Errorf("SSH command installimage returned the error %s. The output of stderr is %s", err, stderr)
-	}
-
+	stdout, stderr, err = runSSH("bash /root/.oldroot/nfs/install/installimage", actualServer.IPv4, 22, privateSSHKey, maxTime)
+	// TODO: Ask specifically for the error that no exit status was set and exclude it
+	/*
+		if err != nil {
+			return nil, errors.Errorf("SSH command installimage returned the error %s. The output of stderr is %s", err, stderr)
+		}
+	*/
 	// get again list of block devices and label children of our drive
 	stdout, stderr, err = runSSH(blockDeviceCommand, actualServer.IPv4, 22, privateSSHKey, maxTime)
 	if err != nil {
@@ -293,15 +305,16 @@ func (s *Service) Reconcile(ctx context.Context) (_ *ctrl.Result, err error) {
 
 	// reboot system
 	stdout, stderr, err = runSSH("reboot", actualServer.IPv4, 22, privateSSHKey, maxTime)
-	if err != nil {
-		return nil, errors.Errorf("Error running the ssh command %s: Error: %s, stderr: %s", "reboot", err, stderr)
-	}
+	/*
+		if err != nil {
+			return nil, errors.Errorf("Error running the ssh command %s: Error: %s, stderr: %s", "reboot", err, stderr)
+		}
+	*/
 
 	kubeadmCommand := fmt.Sprintf(
 		`cat > /tmp/kubeadm-join-config.yaml << EOF
-	%s
-	EOF
-	`, kubeadmConfigString)
+%s
+EOF`, kubeadmConfigString)
 
 	// send kubeadmConfig to server
 	stdout, stderr, err = runSSH(kubeadmCommand, actualServer.IPv4, port, privateSSHKey, maxTime)
@@ -323,11 +336,16 @@ func (s *Service) Reconcile(ctx context.Context) (_ *ctrl.Result, err error) {
 		return nil, errors.Errorf("Error running the ssh command %s: Error: %s, stderr: %s", command, err, stderr)
 	}
 
+	err = ChangeBareMetalServerName(actualServer.IPv4, s.scope.Cluster.Name+delimiter+*s.scope.BareMetalMachine.Spec.ServerType+delimiter+s.scope.BareMetalMachine.Name, robotUserName, robotPassword)
+	if err != nil {
+		return nil, errors.Errorf("Unable to change bare metal server name: ", err)
+	}
+
 	return nil, nil
 }
 
 func (s *Service) Delete(ctx context.Context) (_ *ctrl.Result, err error) {
-
+	// TODO: Update delete so that data is kept after deletion
 	robotUserName, robotPassword, err := s.retrieveRobotSecret(ctx)
 	if err != nil {
 		return nil, errors.Errorf("Unable to retrieve robot secret: ", err)
@@ -354,8 +372,12 @@ func (s *Service) Delete(ctx context.Context) (_ *ctrl.Result, err error) {
 	var attachedServers []*infrav1.BareMetalMachineStatus
 
 	for _, serverData := range actualServers {
-		if s.isServerAttached(serverData.ServerName) {
-			attachedGeneralServers = append(attachedGeneralServers, serverData)
+
+		splitName := strings.Split(serverData.ServerName, delimiter)
+		if splitName[0] == s.scope.Cluster.Name {
+			if len(splitName) == 3 && splitName[2] == s.scope.BareMetalMachine.Name {
+				attachedGeneralServers = append(attachedGeneralServers, serverData)
+			}
 		}
 	}
 
@@ -368,10 +390,11 @@ func (s *Service) Delete(ctx context.Context) (_ *ctrl.Result, err error) {
 	}
 
 	for _, server := range attachedServers {
-
 		err = ActivateRescue(server.IPv4, sshFingerprint, robotUserName, robotPassword)
 		if err != nil {
-			return nil, errors.Errorf("Unable to activate rescue system: ", err)
+			if !strings.Contains(err.Error(), "409 Conflict") {
+				return nil, errors.Errorf("Unable to activate rescue system: ", err)
+			}
 		}
 
 		err = ResetServer(server.IPv4, "hw", robotUserName, robotPassword)
@@ -383,7 +406,7 @@ func (s *Service) Delete(ctx context.Context) (_ *ctrl.Result, err error) {
 		if err != nil {
 			return nil, errors.Errorf("SSH command hostname returned the error %s. The output of stderr is %s", err, stderr)
 		}
-		if stdout != "rescue" {
+		if !strings.Contains(stdout, "rescue") {
 			return nil, errors.New("Rescue system not successfully started")
 		}
 
@@ -409,6 +432,11 @@ func (s *Service) Delete(ctx context.Context) (_ *ctrl.Result, err error) {
 		stdout, stderr, err = runSSH(command, server.IPv4, 22, privateSSHKey, maxTime)
 		if err != nil {
 			return nil, errors.Errorf("Error running the ssh command %s: Error: %s, stderr: %s", command, err, stderr)
+		}
+
+		err = ChangeBareMetalServerName(server.IPv4, *s.scope.BareMetalMachine.Spec.ServerType+delimiter+"unused_"+s.scope.BareMetalMachine.Name, robotUserName, robotPassword)
+		if err != nil {
+			return nil, errors.Errorf("Unable to change bare metal server name: ", err)
 		}
 
 	}
@@ -441,9 +469,10 @@ func (s *Service) actualStatus(ctx context.Context) ([]GeneralServerData, error)
 
 	for _, server := range serverList {
 		splitName := strings.Split(server.ServerName, delimiter)
-		if splitName[0] == s.scope.Cluster.Name && splitName[1] == s.scope.BareMetalMachine.Name {
+		if len(splitName) == 2 && splitName[0] == *s.scope.BareMetalMachine.Spec.ServerType {
 			actualServers = append(actualServers, server)
-		} else if splitName[0] == s.scope.BareMetalMachine.Name {
+		}
+		if len(splitName) == 3 && splitName[0] == s.scope.Cluster.Name && splitName[1] == *s.scope.BareMetalMachine.Spec.ServerType {
 			actualServers = append(actualServers, server)
 		}
 	}

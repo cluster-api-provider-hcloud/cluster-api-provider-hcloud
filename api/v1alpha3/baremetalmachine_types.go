@@ -44,6 +44,8 @@ type BareMetalMachineSpec struct {
 	Partition *string `json:"partition,omitempty"`
 
 	ImagePath *string `json:"imagePath,omitempty"`
+
+	ServerType *string `json:"serverType,omitempty"`
 }
 
 type robotTokenRef struct {

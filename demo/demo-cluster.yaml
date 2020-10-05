@@ -99,11 +99,12 @@ metadata:
 spec:
   template:
     spec:
-      imagePath: "http://some-test-path.com"
+      serverType: mytype
+      imagePath: "https://test-path.com"
       robotTokenRef:
         passwordKey: robot-password
         userNameKey: robot-user
-        tokenName: hetzner-token
+        tokenName: bm-token
       sshTokenRef:
         publicKey: public
         privateKey: private
