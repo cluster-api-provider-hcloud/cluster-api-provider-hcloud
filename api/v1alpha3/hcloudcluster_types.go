@@ -55,7 +55,15 @@ type HcloudClusterSpec struct {
 
 	Network *HcloudNetworkSpec `json:"network,omitempty"`
 
-	TokenRef *corev1.SecretKeySelector `json:"tokenRef,omitempty"`
+	HcloudTokenRef *corev1.SecretKeySelector `json:"hcloudTokenRef,omitempty"`
+
+	HrobotTokenRef hrobotTokenRef `json:"hrobotTokenRef,omitempty"`
+}
+
+type hrobotTokenRef struct {
+	PasswordKey string `json:"passwordKey,omitempty"`
+	UserNameKey string `json:"userNameKey,omitempty"`
+	TokenName   string `json:"tokenName,omitempty"`
 }
 
 type HcloudNetwork struct {

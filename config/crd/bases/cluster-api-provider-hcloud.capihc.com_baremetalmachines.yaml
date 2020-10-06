@@ -60,15 +60,6 @@ spec:
               providerID:
                 description: ProviderID is the unique identifier as specified by the cloud provider.
                 type: string
-              robotTokenRef:
-                properties:
-                  passwordKey:
-                    type: string
-                  tokenName:
-                    type: string
-                  userNameKey:
-                    type: string
-                type: object
               serverType:
                 type: string
               sshTokenRef:

@@ -10,10 +10,11 @@ import (
 	"strings"
 	"time"
 
-	infrav1 "github.com/cluster-api-provider-hcloud/cluster-api-provider-hcloud/api/v1alpha3"
 	"github.com/cluster-api-provider-hcloud/cluster-api-provider-hcloud/pkg/cloud/resources/server/userdata"
 	"github.com/cluster-api-provider-hcloud/cluster-api-provider-hcloud/pkg/cloud/scope"
+	"github.com/nl2go/hrobot-go/models"
 	"github.com/pkg/errors"
+	"golang.org/x/crypto/ssh"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -72,16 +73,12 @@ func (s *Service) Reconcile(ctx context.Context) (_ *ctrl.Result, err error) {
 		port = *s.scope.BareMetalMachine.Spec.Port
 	}
 
-	robotUserName, robotPassword, err := s.retrieveRobotSecret(ctx)
-	if err != nil {
-		return nil, errors.Errorf("Unable to retrieve robot secret: ", err)
-	}
 	sshKeyName, _, privateSSHKey, err := s.retrieveSSHSecret(ctx)
 	if err != nil {
 		return nil, errors.Errorf("Unable to retrieve SSH secret: ", err)
 	}
 
-	sshFingerprint, err := GetSSHFingerprintFromName(sshKeyName, robotUserName, robotPassword)
+	sshFingerprint, err := s.getSSHFingerprintFromName(sshKeyName)
 	if err != nil {
 		return nil, errors.Errorf("Unable to get SSH fingerprint for the SSH key %s: %s ", sshKeyName, err)
 	}
@@ -130,7 +127,7 @@ func (s *Service) Reconcile(ctx context.Context) (_ *ctrl.Result, err error) {
 		return nil, errors.Wrap(err, "failed to refresh server status")
 	}
 
-	var actualServerData GeneralServerData
+	var actualServer models.Server
 	// isAttached is true if actualServer has the prefix clusterName in its name. This meanse it is already attached
 	// to the cluster.
 	var isAttached bool
@@ -139,8 +136,8 @@ func (s *Service) Reconcile(ctx context.Context) (_ *ctrl.Result, err error) {
 		return nil, errors.Errorf("No bare metal server found with type %s", *s.scope.BareMetalMachine.Spec.ServerType)
 
 	} else if len(actualServers) == 1 {
-		actualServerData = actualServers[0]
-		splitName := strings.Split(actualServerData.ServerName, delimiter)
+		actualServer = actualServers[0]
+		splitName := strings.Split(actualServer.ServerName, delimiter)
 
 		if splitName[0] == s.scope.Cluster.Name {
 			if len(splitName) == 3 && splitName[2] == s.scope.BareMetalMachine.Name {
@@ -148,7 +145,7 @@ func (s *Service) Reconcile(ctx context.Context) (_ *ctrl.Result, err error) {
 			} else {
 				return nil, errors.Errorf(
 					"Found one bare metal server with type %s, but it is already attached with name %s",
-					*s.scope.BareMetalMachine.Spec.ServerType, actualServerData.ServerName,
+					*s.scope.BareMetalMachine.Spec.ServerType, actualServer.ServerName,
 				)
 			}
 		}
@@ -160,9 +157,9 @@ func (s *Service) Reconcile(ctx context.Context) (_ *ctrl.Result, err error) {
 		// No two servers should have the same name, but since one of them has a prefix and the other doesn't
 		// they have two different names for Hetzner, so we have to handle this case as well
 		var check int
-		var newServer GeneralServerData
-		for _, serverData := range actualServers {
-			splitName := strings.Split(serverData.ServerName, delimiter)
+		var newServer models.Server
+		for _, server := range actualServers {
+			splitName := strings.Split(server.ServerName, delimiter)
 
 			// If server is attached to some cluster
 			if len(splitName) == 3 {
@@ -171,36 +168,31 @@ func (s *Service) Reconcile(ctx context.Context) (_ *ctrl.Result, err error) {
 					// If server is the one we are looking for
 					if splitName[2] == s.scope.BareMetalMachine.Name {
 						isAttached = true
-						actualServerData = serverData
+						actualServer = server
 						check++
 					}
 				}
 			} else {
 				// If server is not attached, then take it
-				newServer = serverData
+				newServer = server
 			}
 		}
 
 		if check > 1 {
-			return nil, errors.Errorf(" There are %s servers which are attached to the cluster with name %s", actualServerData.ServerName)
+			return nil, errors.Errorf(" There are %s servers which are attached to the cluster with name %s", actualServer.ServerName)
 		} else if check == 0 {
 			// No attached server with the correct name found, so we have to take a new one
-			actualServerData = newServer
+			actualServer = newServer
 		}
 	}
 
-	actualServer, err := GetBareMetalServer(actualServerData.ServerIP, robotUserName, robotPassword)
-	if err != nil {
-		return nil, errors.Errorf("An error occured while retrieving the status of the bare metal server %s with IP %s",
-			actualServerData.ServerName, actualServerData.ServerIP)
-	}
 	// check if server has been cancelled
 	if actualServer.Cancelled == true {
 		s.scope.V(1).Info("server has been cancelled", "server", actualServer.ServerName, "cancelled", actualServer.Cancelled)
 		return nil, errors.Errorf("Server %s has been cancelled", s.scope.BareMetalMachine.Name)
 	}
 
-	providerID := fmt.Sprintf("hetzner://%d", actualServer.ServerID)
+	providerID := fmt.Sprintf("hetzner://%d", actualServer.ServerNumber)
 
 	s.scope.BareMetalMachine.Spec.ProviderID = &providerID
 
@@ -216,18 +208,18 @@ func (s *Service) Reconcile(ctx context.Context) (_ *ctrl.Result, err error) {
 		return &reconcile.Result{RequeueAfter: 300 * time.Second}, nil
 	}
 
-	err = ActivateRescue(actualServer.IPv4, sshFingerprint, robotUserName, robotPassword)
+	_, err = s.scope.HrobotClient().ActivateRescue(actualServer.ServerIP, sshFingerprint)
 	if err != nil {
 		return nil, errors.Errorf("Unable to activate rescue system: ", err)
 	}
 
-	err = ResetServer(actualServer.IPv4, "hw", robotUserName, robotPassword)
+	_, err = s.scope.HrobotClient().ResetBMServer(actualServer.ServerIP, "hw")
 	if err != nil {
 		return nil, errors.Errorf("Unable to reset server: ", err)
 	}
 
 	maxTime := 300
-	stdout, stderr, err := runSSH("hostname", actualServer.IPv4, 22, privateSSHKey, maxTime)
+	stdout, stderr, err := runSSH("hostname", actualServer.ServerIP, 22, privateSSHKey, maxTime)
 	if err != nil {
 		return nil, errors.Errorf("SSH command hostname returned the error %s. The output of stderr is %s", err, stderr)
 	}
@@ -237,7 +229,7 @@ func (s *Service) Reconcile(ctx context.Context) (_ *ctrl.Result, err error) {
 
 	var blockDevices blockDevices
 	blockDeviceCommand := "lsblk -o name,size,rota,fstype,label -e1 -e7 --json"
-	stdout, stderr, err = runSSH(blockDeviceCommand, actualServer.IPv4, port, privateSSHKey, maxTime)
+	stdout, stderr, err = runSSH(blockDeviceCommand, actualServer.ServerIP, port, privateSSHKey, maxTime)
 	if err != nil {
 		return nil, errors.Errorf("Error running the ssh command %s: Error: %s, stderr: %s", blockDeviceCommand, err, stderr)
 	}
@@ -268,13 +260,13 @@ EOF`,
 		drive, actualServer.ServerName, partitionString, *s.scope.BareMetalMachine.Spec.ImagePath)
 
 	// Send autosetup file to server
-	stdout, stderr, err = runSSH(autoSetup, actualServer.IPv4, 22, privateSSHKey, maxTime)
+	stdout, stderr, err = runSSH(autoSetup, actualServer.ServerIP, 22, privateSSHKey, maxTime)
 	if err != nil {
 		return nil, errors.Errorf("SSH command autosetup returned the error %s. The output of stderr is %s", err, stderr)
 	}
 
 	// install image
-	stdout, stderr, err = runSSH("bash /root/.oldroot/nfs/install/installimage", actualServer.IPv4, 22, privateSSHKey, maxTime)
+	stdout, stderr, err = runSSH("bash /root/.oldroot/nfs/install/installimage", actualServer.ServerIP, 22, privateSSHKey, maxTime)
 	// TODO: Ask specifically for the error that no exit status was set and exclude it
 	/*
 		if err != nil {
@@ -282,7 +274,7 @@ EOF`,
 		}
 	*/
 	// get again list of block devices and label children of our drive
-	stdout, stderr, err = runSSH(blockDeviceCommand, actualServer.IPv4, 22, privateSSHKey, maxTime)
+	stdout, stderr, err = runSSH(blockDeviceCommand, actualServer.ServerIP, 22, privateSSHKey, maxTime)
 	if err != nil {
 		return nil, errors.Errorf("Error running the ssh command %s: Error: %s, stderr: %s", blockDeviceCommand, err, stderr)
 	}
@@ -298,64 +290,61 @@ EOF`,
 	}
 
 	// label children of our drive
-	stdout, stderr, err = runSSH(command, actualServer.IPv4, 22, privateSSHKey, maxTime)
+	stdout, stderr, err = runSSH(command, actualServer.ServerIP, 22, privateSSHKey, maxTime)
 	if err != nil {
 		return nil, errors.Errorf("Error running the ssh command %s: Error: %s, stderr: %s", command, err, stderr)
 	}
 
 	// reboot system
-	stdout, stderr, err = runSSH("reboot", actualServer.IPv4, 22, privateSSHKey, maxTime)
+	stdout, stderr, err = runSSH("reboot", actualServer.ServerIP, 22, privateSSHKey, maxTime)
 	/*
 		if err != nil {
 			return nil, errors.Errorf("Error running the ssh command %s: Error: %s, stderr: %s", "reboot", err, stderr)
 		}
 	*/
-
+	fmt.Println("Rebooted server")
 	kubeadmCommand := fmt.Sprintf(
 		`cat > /tmp/kubeadm-join-config.yaml << EOF
 %s
 EOF`, kubeadmConfigString)
 
 	// send kubeadmConfig to server
-	stdout, stderr, err = runSSH(kubeadmCommand, actualServer.IPv4, port, privateSSHKey, maxTime)
+	stdout, stderr, err = runSSH(kubeadmCommand, actualServer.ServerIP, port, privateSSHKey, maxTime)
 	if err != nil {
 		return nil, errors.Errorf("Error running the ssh command %s: Error: %s, stderr: %s", kubeadmCommand, err, stderr)
 	}
 
 	command = "chmod 640 /tmp/kubeadm-join-config.yaml && chown root:root /tmp/kubeadm-join-config.yaml"
 
-	stdout, stderr, err = runSSH(command, actualServer.IPv4, port, privateSSHKey, maxTime)
+	stdout, stderr, err = runSSH(command, actualServer.ServerIP, port, privateSSHKey, maxTime)
 	if err != nil {
 		return nil, errors.Errorf("Error running the ssh command %s: Error: %s, stderr: %s", command, err, stderr)
 	}
 
 	command = "kubeadm join --config /tmp/kubeadm-join-config.yaml"
 
-	stdout, stderr, err = runSSH(command, actualServer.IPv4, port, privateSSHKey, maxTime)
+	stdout, stderr, err = runSSH(command, actualServer.ServerIP, port, privateSSHKey, maxTime)
 	if err != nil {
 		return nil, errors.Errorf("Error running the ssh command %s: Error: %s, stderr: %s", command, err, stderr)
 	}
 
-	err = ChangeBareMetalServerName(actualServer.IPv4, s.scope.Cluster.Name+delimiter+*s.scope.BareMetalMachine.Spec.ServerType+delimiter+s.scope.BareMetalMachine.Name, robotUserName, robotPassword)
+	_, err = s.scope.HrobotClient().SetBMServerName(actualServer.ServerIP,
+		s.scope.Cluster.Name+delimiter+*s.scope.BareMetalMachine.Spec.ServerType+delimiter+s.scope.BareMetalMachine.Name)
 	if err != nil {
 		return nil, errors.Errorf("Unable to change bare metal server name: ", err)
 	}
-
+	fmt.Println("Finished setup of bare metal server")
 	return nil, nil
 }
 
 func (s *Service) Delete(ctx context.Context) (_ *ctrl.Result, err error) {
 	// TODO: Update delete so that data is kept after deletion
-	robotUserName, robotPassword, err := s.retrieveRobotSecret(ctx)
-	if err != nil {
-		return nil, errors.Errorf("Unable to retrieve robot secret: ", err)
-	}
 	sshKeyName, _, privateSSHKey, err := s.retrieveSSHSecret(ctx)
 	if err != nil {
 		return nil, errors.Errorf("Unable to retrieve SSH secret: ", err)
 	}
 
-	sshFingerprint, err := GetSSHFingerprintFromName(sshKeyName, robotUserName, robotPassword)
+	sshFingerprint, err := s.getSSHFingerprintFromName(sshKeyName)
 	if err != nil {
 		return nil, errors.Errorf("Unable to get SSH fingerprint for the SSH key %s: %s ", sshKeyName, err)
 	}
@@ -368,41 +357,32 @@ func (s *Service) Delete(ctx context.Context) (_ *ctrl.Result, err error) {
 		return nil, errors.Wrap(err, "failed to refresh server status")
 	}
 
-	var attachedGeneralServers []GeneralServerData
-	var attachedServers []*infrav1.BareMetalMachineStatus
+	var attachedServers []models.Server
 
 	for _, serverData := range actualServers {
 
 		splitName := strings.Split(serverData.ServerName, delimiter)
 		if splitName[0] == s.scope.Cluster.Name {
 			if len(splitName) == 3 && splitName[2] == s.scope.BareMetalMachine.Name {
-				attachedGeneralServers = append(attachedGeneralServers, serverData)
+				attachedServers = append(attachedServers, serverData)
 			}
 		}
 	}
 
-	for _, serverData := range attachedGeneralServers {
-		server, err := GetBareMetalServer(serverData.ServerIP, robotUserName, robotPassword)
-		if err != nil {
-			return nil, errors.Errorf("Failed to get server %s with IP %s: %s", serverData.ServerName, serverData.ServerIP, err)
-		}
-		attachedServers = append(attachedServers, server)
-	}
-
 	for _, server := range attachedServers {
-		err = ActivateRescue(server.IPv4, sshFingerprint, robotUserName, robotPassword)
+		_, err = s.scope.HrobotClient().ActivateRescue(server.ServerIP, sshFingerprint)
 		if err != nil {
 			if !strings.Contains(err.Error(), "409 Conflict") {
 				return nil, errors.Errorf("Unable to activate rescue system: ", err)
 			}
 		}
 
-		err = ResetServer(server.IPv4, "hw", robotUserName, robotPassword)
+		_, err = s.scope.HrobotClient().ResetBMServer(server.ServerIP, "hw")
 		if err != nil {
 			return nil, errors.Errorf("Unable to reset server: ", err)
 		}
 
-		stdout, stderr, err := runSSH("hostname", server.IPv4, 22, privateSSHKey, maxTime)
+		stdout, stderr, err := runSSH("hostname", server.ServerIP, 22, privateSSHKey, maxTime)
 		if err != nil {
 			return nil, errors.Errorf("SSH command hostname returned the error %s. The output of stderr is %s", err, stderr)
 		}
@@ -412,7 +392,7 @@ func (s *Service) Delete(ctx context.Context) (_ *ctrl.Result, err error) {
 
 		var blockDevices blockDevices
 		blockDeviceCommand := "lsblk -o name,size,rota,fstype,label -e1 -e7 --json"
-		stdout, stderr, err = runSSH(blockDeviceCommand, server.IPv4, 22, privateSSHKey, maxTime)
+		stdout, stderr, err = runSSH(blockDeviceCommand, server.ServerIP, 22, privateSSHKey, maxTime)
 		if err != nil {
 			return nil, errors.Errorf("Error running the ssh command %s: Error: %s, stderr: %s", blockDeviceCommand, err, stderr)
 		}
@@ -429,12 +409,13 @@ func (s *Service) Delete(ctx context.Context) (_ *ctrl.Result, err error) {
 		}
 		command = command[:len(command)-1]
 
-		stdout, stderr, err = runSSH(command, server.IPv4, 22, privateSSHKey, maxTime)
+		stdout, stderr, err = runSSH(command, server.ServerIP, 22, privateSSHKey, maxTime)
 		if err != nil {
 			return nil, errors.Errorf("Error running the ssh command %s: Error: %s, stderr: %s", command, err, stderr)
 		}
 
-		err = ChangeBareMetalServerName(server.IPv4, *s.scope.BareMetalMachine.Spec.ServerType+delimiter+"unused_"+s.scope.BareMetalMachine.Name, robotUserName, robotPassword)
+		_, err = s.scope.HrobotClient().SetBMServerName(server.ServerIP,
+			*s.scope.BareMetalMachine.Spec.ServerType+delimiter+"unused_"+s.scope.BareMetalMachine.Name)
 		if err != nil {
 			return nil, errors.Errorf("Unable to change bare metal server name: ", err)
 		}
@@ -443,29 +424,37 @@ func (s *Service) Delete(ctx context.Context) (_ *ctrl.Result, err error) {
 	return nil, nil
 }
 
-func (s *Service) isServerAttached(name string) bool {
-	splitName := strings.Split(name, delimiter)
-	if splitName[0] == s.scope.Cluster.Name {
-		return true
-	} else {
-		return false
+func (s *Service) getSSHFingerprintFromName(name string) (fingerprint string, err error) {
+
+	sshKeys, err := s.scope.HrobotClient().ListBMKeys()
+	if len(sshKeys) == 0 {
+		return "", errors.New("No SSH Keys given")
 	}
+
+	var found bool
+	for _, key := range sshKeys {
+		if name == key.Name {
+			fingerprint = key.Fingerprint
+			found = true
+		}
+	}
+
+	if found == false {
+		return "", errors.Errorf("No SSH key with name %s found", name)
+	}
+
+	return fingerprint, nil
 }
 
 // actualStatus gathers all matching server instances, matched by tag
-func (s *Service) actualStatus(ctx context.Context) ([]GeneralServerData, error) {
+func (s *Service) actualStatus(ctx context.Context) ([]models.Server, error) {
 
-	userName, password, err := s.retrieveRobotSecret(ctx)
-	if err != nil {
-		return nil, errors.Errorf("unable to retrieve robot secret: %s", err)
-	}
-
-	serverList, err := ListBareMetalServers(userName, password)
+	serverList, err := s.scope.HrobotClient().ListBMServers()
 	if err != nil {
 		return nil, errors.Errorf("unable to list bare metal servers: %s", err)
 	}
 
-	var actualServers []GeneralServerData
+	var actualServers []models.Server
 
 	for _, server := range serverList {
 		splitName := strings.Split(server.ServerName, delimiter)
@@ -627,27 +616,6 @@ func convertSizeToInt(str string) (x int, err error) {
 	return x, nil
 }
 
-func (s *Service) retrieveRobotSecret(ctx context.Context) (userName string, password string, err error) {
-	// retrieve token secret
-	var tokenSecret corev1.Secret
-	tokenSecretName := types.NamespacedName{Namespace: s.scope.HcloudCluster.Namespace, Name: s.scope.BareMetalMachine.Spec.RobotTokenRef.TokenName}
-	if err := s.scope.Client.Get(ctx, tokenSecretName, &tokenSecret); err != nil {
-		return "", "", errors.Errorf("error getting referenced token secret/%s: %s", tokenSecretName, err)
-	}
-
-	passwordTokenBytes, keyExists := tokenSecret.Data[s.scope.BareMetalMachine.Spec.RobotTokenRef.PasswordKey]
-	if !keyExists {
-		return "", "", errors.Errorf("error key %s does not exist in secret/%s", s.scope.BareMetalMachine.Spec.RobotTokenRef.PasswordKey, tokenSecretName)
-	}
-	userNameTokenBytes, keyExists := tokenSecret.Data[s.scope.BareMetalMachine.Spec.RobotTokenRef.UserNameKey]
-	if !keyExists {
-		return "", "", errors.Errorf("error key %s does not exist in secret/%s", s.scope.BareMetalMachine.Spec.RobotTokenRef.UserNameKey, tokenSecretName)
-	}
-	userName = string(userNameTokenBytes)
-	password = string(passwordTokenBytes)
-	return userName, password, nil
-}
-
 func (s *Service) retrieveSSHSecret(ctx context.Context) (sshKeyName string, publicKey string, privateKey string, err error) {
 	// retrieve token secret
 	var tokenSecret corev1.Secret
@@ -673,4 +641,59 @@ func (s *Service) retrieveSSHSecret(ctx context.Context) (sshKeyName string, pub
 	privateKey = string(privateKeyTokenBytes)
 	publicKey = string(publicKeyTokenBytes)
 	return sshKeyName, publicKey, privateKey, nil
+}
+
+func runSSH(command, ip string, port int, privateSSHKey string, maxTime int) (stdout string, stderr string, err error) {
+
+	// Create the Signer for this private key.
+	signer, err := ssh.ParsePrivateKey([]byte(privateSSHKey))
+	if err != nil {
+		return "", "", errors.Errorf("unable to parse private key: %v", err)
+	}
+
+	config := &ssh.ClientConfig{
+		User: "root",
+		Auth: []ssh.AuthMethod{
+			// Use the PublicKeys method for remote authentication.
+			ssh.PublicKeys(signer),
+		},
+		HostKeyCallback: ssh.InsecureIgnoreHostKey(), // ssh.FixedHostKey(hostKey),
+	}
+
+	// Connect to the remote server and perform the SSH handshake.
+	var client *ssh.Client
+	var check bool
+	for i := 0; i < (maxTime / 15); i++ {
+		client, err = ssh.Dial("tcp", ip+":"+strconv.Itoa(port), config)
+		if err != nil {
+			// If the SSH connection could not be established, then retry 15 sec later
+			time.Sleep(15 * time.Second)
+			continue
+		}
+		check = true
+		break
+	}
+
+	if check == false {
+		return "", "", errors.Errorf("Unable to establish connection to remote server: %s", err)
+	}
+
+	defer client.Close()
+
+	sess, err := client.NewSession()
+	if err != nil {
+		panic(err)
+	}
+	defer sess.Close()
+
+	var stdoutBuffer bytes.Buffer
+	var stderrBuffer bytes.Buffer
+
+	sess.Stdout = &stdoutBuffer
+	sess.Stderr = &stderrBuffer
+	err = sess.Run(command)
+
+	stdout = stdoutBuffer.String()
+	stderr = stderrBuffer.String()
+	return stdout, stderr, err
 }

@@ -45,9 +45,13 @@ spec:
     subnets: []
   sshKeys:
   - name: cluster
-  tokenRef:
+  hcloudTokenRef:
     key: token
     name: hetzner-token
+  hrobotTokenRef:
+    passwordKey: robot-password
+    userNameKey: robot-user
+    tokenName: bm-token
 ---
 apiVersion: controlplane.cluster.x-k8s.io/v1alpha3
 kind: KubeadmControlPlane
@@ -100,11 +104,7 @@ spec:
   template:
     spec:
       serverType: mytype
-      imagePath: "https://test-path.com"
-      robotTokenRef:
-        passwordKey: robot-password
-        userNameKey: robot-user
-        tokenName: bm-token
+      imagePath: "https://u243385:vgN3C2fsiPklqBNF@u243385.your-storagebox.de/baremetal/CentOS-82-64-crio-newer-kernel.tar.gz"
       sshTokenRef:
         publicKey: public
         privateKey: private

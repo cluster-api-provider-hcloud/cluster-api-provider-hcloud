@@ -5,8 +5,12 @@ import (
 	"fmt"
 	"strconv"
 
+	infrav1 "github.com/cluster-api-provider-hcloud/cluster-api-provider-hcloud/api/v1alpha3"
+	"github.com/cluster-api-provider-hcloud/cluster-api-provider-hcloud/pkg/manifests/parameters"
+	packerapi "github.com/cluster-api-provider-hcloud/cluster-api-provider-hcloud/pkg/packer/api"
 	"github.com/go-logr/logr"
 	"github.com/hetznercloud/hcloud-go/hcloud"
+	hrobot "github.com/nl2go/hrobot-go"
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -18,10 +22,6 @@ import (
 	"sigs.k8s.io/cluster-api/util/kubeconfig"
 	"sigs.k8s.io/cluster-api/util/patch"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-
-	infrav1 "github.com/cluster-api-provider-hcloud/cluster-api-provider-hcloud/api/v1alpha3"
-	"github.com/cluster-api-provider-hcloud/cluster-api-provider-hcloud/pkg/manifests/parameters"
-	packerapi "github.com/cluster-api-provider-hcloud/cluster-api-provider-hcloud/pkg/packer/api"
 )
 
 const defaultControlPlaneAPIEndpointPort = 6443
@@ -38,8 +38,10 @@ type Manifests interface {
 // ClusterScopeParams defines the input parameters used to create a new Scope.
 type ClusterScopeParams struct {
 	HcloudClient
+	HrobotClient
 	Ctx                 context.Context
 	HcloudClientFactory HcloudClientFactory
+	HrobotClientFactory HrobotClientFactory
 	Client              client.Client
 	Logger              logr.Logger
 	Cluster             *clusterv1.Cluster
@@ -78,22 +80,53 @@ func NewClusterScope(params ClusterScopeParams) (*ClusterScope, error) {
 		params.HcloudClientFactory = func(ctx context.Context) (HcloudClient, error) {
 			// retrieve token secret
 			var tokenSecret corev1.Secret
-			tokenSecretName := types.NamespacedName{Namespace: params.HcloudCluster.Namespace, Name: params.HcloudCluster.Spec.TokenRef.Name}
+			tokenSecretName := types.NamespacedName{Namespace: params.HcloudCluster.Namespace, Name: params.HcloudCluster.Spec.HcloudTokenRef.Name}
 			if err := params.Client.Get(ctx, tokenSecretName, &tokenSecret); err != nil {
 				return nil, errors.Errorf("error getting referenced token secret/%s: %s", tokenSecretName, err)
 			}
 
-			tokenBytes, keyExists := tokenSecret.Data[params.HcloudCluster.Spec.TokenRef.Key]
+			tokenBytes, keyExists := tokenSecret.Data[params.HcloudCluster.Spec.HcloudTokenRef.Key]
 			if !keyExists {
-				return nil, errors.Errorf("error key %s does not exist in secret/%s", params.HcloudCluster.Spec.TokenRef.Key, tokenSecretName)
+				return nil, errors.Errorf("error key %s does not exist in secret/%s", params.HcloudCluster.Spec.HcloudTokenRef.Key, tokenSecretName)
 			}
 			hcloudToken = string(tokenBytes)
 
-			return &realClient{client: hcloud.NewClient(hcloud.WithToken(hcloudToken)), token: hcloudToken}, nil
+			return &realHcloudClient{client: hcloud.NewClient(hcloud.WithToken(hcloudToken)), token: hcloudToken}, nil
 		}
 	}
 
-	hc, err := params.HcloudClientFactory(params.Ctx)
+	var robotUserName string
+	var robotPassword string
+	if params.HrobotClientFactory == nil {
+		params.HrobotClientFactory = func(ctx context.Context) (HrobotClient, error) {
+			// retrieve token secret
+			var tokenSecret corev1.Secret
+			tokenSecretName := types.NamespacedName{Namespace: params.HcloudCluster.Namespace, Name: params.HcloudCluster.Spec.HrobotTokenRef.TokenName}
+			if err := params.Client.Get(ctx, tokenSecretName, &tokenSecret); err != nil {
+				return nil, errors.Errorf("error getting referenced token secret/%s: %s", tokenSecretName, err)
+			}
+
+			passwordTokenBytes, keyExists := tokenSecret.Data[params.HcloudCluster.Spec.HrobotTokenRef.PasswordKey]
+			if !keyExists {
+				return nil, errors.Errorf("error key %s does not exist in secret/%s", params.HcloudCluster.Spec.HrobotTokenRef.PasswordKey, tokenSecretName)
+			}
+			userNameTokenBytes, keyExists := tokenSecret.Data[params.HcloudCluster.Spec.HrobotTokenRef.UserNameKey]
+			if !keyExists {
+				return nil, errors.Errorf("error key %s does not exist in secret/%s", params.HcloudCluster.Spec.HrobotTokenRef.UserNameKey, tokenSecretName)
+			}
+			robotUserName = string(userNameTokenBytes)
+			robotPassword = string(passwordTokenBytes)
+
+			return &realHrobotClient{client: hrobot.NewBasicAuthClient(robotUserName, robotPassword)}, nil
+		}
+	}
+
+	hcc, err := params.HcloudClientFactory(params.Ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	hrc, err := params.HrobotClientFactory(params.Ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -109,7 +142,8 @@ func NewClusterScope(params ClusterScopeParams) (*ClusterScope, error) {
 		Client:        params.Client,
 		Cluster:       params.Cluster,
 		HcloudCluster: params.HcloudCluster,
-		hcloudClient:  hc,
+		hcloudClient:  hcc,
+		hrobotClient:  hrc,
 		hcloudToken:   hcloudToken,
 		patchHelper:   helper,
 		packer:        params.Packer,
@@ -124,6 +158,7 @@ type ClusterScope struct {
 	Client       client.Client
 	patchHelper  *patch.Helper
 	hcloudClient HcloudClient
+	hrobotClient HrobotClient
 	hcloudToken  string
 	packer       Packer
 	manifests    Manifests
@@ -149,6 +184,10 @@ func (s *ClusterScope) Close() error {
 
 func (s *ClusterScope) HcloudClient() HcloudClient {
 	return s.hcloudClient
+}
+
+func (s *ClusterScope) HrobotClient() HrobotClient {
+	return s.hrobotClient
 }
 
 func (s *ClusterScope) GetSpecLocations() []infrav1.HcloudLocation {

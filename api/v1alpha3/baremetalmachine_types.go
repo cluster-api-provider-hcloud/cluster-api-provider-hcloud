@@ -29,8 +29,6 @@ const (
 
 // BareMetalMachineSpec defines the desired state of a BareMetalMachine
 type BareMetalMachineSpec struct {
-	RobotTokenRef robotTokenRef `json:"robotTokenRef,omitempty"`
-
 	SSHTokenRef sshTokenRef `json:"sshTokenRef,omitempty"`
 
 	// ProviderID is the unique identifier as specified by the cloud provider.
@@ -46,12 +44,6 @@ type BareMetalMachineSpec struct {
 	ImagePath *string `json:"imagePath,omitempty"`
 
 	ServerType *string `json:"serverType,omitempty"`
-}
-
-type robotTokenRef struct {
-	PasswordKey string `json:"passwordKey,omitempty"`
-	UserNameKey string `json:"userNameKey,omitempty"`
-	TokenName   string `json:"tokenName,omitempty"`
 }
 
 type sshTokenRef struct {

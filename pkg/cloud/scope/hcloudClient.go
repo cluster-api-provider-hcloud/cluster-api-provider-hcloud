@@ -34,98 +34,98 @@ type HcloudClient interface {
 
 type HcloudClientFactory func(context.Context) (HcloudClient, error)
 
-var _ HcloudClient = &realClient{}
+var _ HcloudClient = &realHcloudClient{}
 
-type realClient struct {
+type realHcloudClient struct {
 	client *hcloud.Client
 	token  string
 }
 
-func (c *realClient) Token() string {
+func (c *realHcloudClient) Token() string {
 	return c.token
 }
 
-func (c *realClient) ListLocation(ctx context.Context) ([]*hcloud.Location, error) {
+func (c *realHcloudClient) ListLocation(ctx context.Context) ([]*hcloud.Location, error) {
 	return c.client.Location.All(ctx)
 }
 
-func (c *realClient) CreateLoadBalancer(ctx context.Context, opts hcloud.LoadBalancerCreateOpts) (hcloud.LoadBalancerCreateResult, *hcloud.Response, error) {
+func (c *realHcloudClient) CreateLoadBalancer(ctx context.Context, opts hcloud.LoadBalancerCreateOpts) (hcloud.LoadBalancerCreateResult, *hcloud.Response, error) {
 	return c.client.LoadBalancer.Create(ctx, opts)
 }
 
-func (c *realClient) DeleteLoadBalancer(ctx context.Context, loadBalancer *hcloud.LoadBalancer) (*hcloud.Response, error) {
+func (c *realHcloudClient) DeleteLoadBalancer(ctx context.Context, loadBalancer *hcloud.LoadBalancer) (*hcloud.Response, error) {
 	return c.client.LoadBalancer.Delete(ctx, loadBalancer)
 }
 
-func (c *realClient) ListLoadBalancers(ctx context.Context, opts hcloud.LoadBalancerListOpts) ([]*hcloud.LoadBalancer, error) {
+func (c *realHcloudClient) ListLoadBalancers(ctx context.Context, opts hcloud.LoadBalancerListOpts) ([]*hcloud.LoadBalancer, error) {
 	return c.client.LoadBalancer.AllWithOpts(ctx, opts)
 }
 
-func (c *realClient) AttachLoadBalancerToNetwork(ctx context.Context, lb *hcloud.LoadBalancer, opts hcloud.LoadBalancerAttachToNetworkOpts) (*hcloud.Action, *hcloud.Response, error) {
+func (c *realHcloudClient) AttachLoadBalancerToNetwork(ctx context.Context, lb *hcloud.LoadBalancer, opts hcloud.LoadBalancerAttachToNetworkOpts) (*hcloud.Action, *hcloud.Response, error) {
 	return c.client.LoadBalancer.AttachToNetwork(ctx, lb, opts)
 }
 
-func (c *realClient) GetLoadBalancerTypeByName(ctx context.Context, name string) (*hcloud.LoadBalancerType, *hcloud.Response, error) {
+func (c *realHcloudClient) GetLoadBalancerTypeByName(ctx context.Context, name string) (*hcloud.LoadBalancerType, *hcloud.Response, error) {
 	return c.client.LoadBalancerType.GetByName(ctx, name)
 }
 
-func (c *realClient) AddTargetServerToLoadBalancer(ctx context.Context, opts hcloud.LoadBalancerAddServerTargetOpts, lb *hcloud.LoadBalancer) (*hcloud.Action, *hcloud.Response, error) {
+func (c *realHcloudClient) AddTargetServerToLoadBalancer(ctx context.Context, opts hcloud.LoadBalancerAddServerTargetOpts, lb *hcloud.LoadBalancer) (*hcloud.Action, *hcloud.Response, error) {
 	return c.client.LoadBalancer.AddServerTarget(ctx, lb, opts)
 }
 
-func (c *realClient) DeleteTargetServerOfLoadBalancer(ctx context.Context, lb *hcloud.LoadBalancer, server *hcloud.Server) (*hcloud.Action, *hcloud.Response, error) {
+func (c *realHcloudClient) DeleteTargetServerOfLoadBalancer(ctx context.Context, lb *hcloud.LoadBalancer, server *hcloud.Server) (*hcloud.Action, *hcloud.Response, error) {
 	return c.client.LoadBalancer.RemoveServerTarget(ctx, lb, server)
 }
 
-func (c *realClient) ListImages(ctx context.Context, opts hcloud.ImageListOpts) ([]*hcloud.Image, error) {
+func (c *realHcloudClient) ListImages(ctx context.Context, opts hcloud.ImageListOpts) ([]*hcloud.Image, error) {
 	return c.client.Image.AllWithOpts(ctx, opts)
 }
 
-func (c *realClient) CreateServer(ctx context.Context, opts hcloud.ServerCreateOpts) (hcloud.ServerCreateResult, *hcloud.Response, error) {
+func (c *realHcloudClient) CreateServer(ctx context.Context, opts hcloud.ServerCreateOpts) (hcloud.ServerCreateResult, *hcloud.Response, error) {
 	return c.client.Server.Create(ctx, opts)
 }
 
-func (c *realClient) ListServers(ctx context.Context, opts hcloud.ServerListOpts) ([]*hcloud.Server, error) {
+func (c *realHcloudClient) ListServers(ctx context.Context, opts hcloud.ServerListOpts) ([]*hcloud.Server, error) {
 	return c.client.Server.AllWithOpts(ctx, opts)
 }
 
-func (c *realClient) GetServerByID(ctx context.Context, id int) (*hcloud.Server, *hcloud.Response, error) {
+func (c *realHcloudClient) GetServerByID(ctx context.Context, id int) (*hcloud.Server, *hcloud.Response, error) {
 	return c.client.Server.GetByID(ctx, id)
 }
 
-func (c *realClient) ShutdownServer(ctx context.Context, server *hcloud.Server) (*hcloud.Action, *hcloud.Response, error) {
+func (c *realHcloudClient) ShutdownServer(ctx context.Context, server *hcloud.Server) (*hcloud.Action, *hcloud.Response, error) {
 
 	return c.client.Server.Shutdown(ctx, server)
 }
 
-func (c *realClient) DeleteServer(ctx context.Context, server *hcloud.Server) (*hcloud.Response, error) {
+func (c *realHcloudClient) DeleteServer(ctx context.Context, server *hcloud.Server) (*hcloud.Response, error) {
 	return c.client.Server.Delete(ctx, server)
 }
 
-func (c *realClient) CreateVolume(ctx context.Context, opts hcloud.VolumeCreateOpts) (hcloud.VolumeCreateResult, *hcloud.Response, error) {
+func (c *realHcloudClient) CreateVolume(ctx context.Context, opts hcloud.VolumeCreateOpts) (hcloud.VolumeCreateResult, *hcloud.Response, error) {
 	return c.client.Volume.Create(ctx, opts)
 }
 
-func (c *realClient) ListVolumes(ctx context.Context, opts hcloud.VolumeListOpts) ([]*hcloud.Volume, error) {
+func (c *realHcloudClient) ListVolumes(ctx context.Context, opts hcloud.VolumeListOpts) ([]*hcloud.Volume, error) {
 	return c.client.Volume.AllWithOpts(ctx, opts)
 }
 
-func (c *realClient) DeleteVolume(ctx context.Context, server *hcloud.Volume) (*hcloud.Response, error) {
+func (c *realHcloudClient) DeleteVolume(ctx context.Context, server *hcloud.Volume) (*hcloud.Response, error) {
 	return c.client.Volume.Delete(ctx, server)
 }
 
-func (c *realClient) CreateNetwork(ctx context.Context, opts hcloud.NetworkCreateOpts) (*hcloud.Network, *hcloud.Response, error) {
+func (c *realHcloudClient) CreateNetwork(ctx context.Context, opts hcloud.NetworkCreateOpts) (*hcloud.Network, *hcloud.Response, error) {
 	return c.client.Network.Create(ctx, opts)
 }
 
-func (c *realClient) ListNetworks(ctx context.Context, opts hcloud.NetworkListOpts) ([]*hcloud.Network, error) {
+func (c *realHcloudClient) ListNetworks(ctx context.Context, opts hcloud.NetworkListOpts) ([]*hcloud.Network, error) {
 	return c.client.Network.AllWithOpts(ctx, opts)
 }
 
-func (c *realClient) DeleteNetwork(ctx context.Context, server *hcloud.Network) (*hcloud.Response, error) {
+func (c *realHcloudClient) DeleteNetwork(ctx context.Context, server *hcloud.Network) (*hcloud.Response, error) {
 	return c.client.Network.Delete(ctx, server)
 }
 
-func (c *realClient) ListSSHKeys(ctx context.Context, opts hcloud.SSHKeyListOpts) ([]*hcloud.SSHKey, *hcloud.Response, error) {
+func (c *realHcloudClient) ListSSHKeys(ctx context.Context, opts hcloud.SSHKeyListOpts) ([]*hcloud.SSHKey, *hcloud.Response, error) {
 	return c.client.SSHKey.List(ctx, opts)
 }

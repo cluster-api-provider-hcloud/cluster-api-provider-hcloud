@@ -4,7 +4,6 @@ go_library(
     name = "go_default_library",
     srcs = [
         "baremetal.go",
-        "client.go",
     ],
     importpath = "github.com/cluster-api-provider-hcloud/cluster-api-provider-hcloud/pkg/cloud/resources/baremetal",
     visibility = ["//visibility:public"],
@@ -14,7 +13,7 @@ go_library(
         "//pkg/cloud/resources/server/userdata:go_default_library",
         "//pkg/record:go_default_library",
 
-        
+        "@com_github_nl2go_hrobot_go//:go_default_library",
         "@com_github_pkg_errors//:go_default_library",
         "@org_golang_x_crypto//ssh:go_default_library",
         "@io_k8s_api//core/v1:go_default_library",

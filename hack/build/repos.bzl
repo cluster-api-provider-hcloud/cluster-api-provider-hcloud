@@ -1942,8 +1942,8 @@ def go_repositories():
         build_file_generation = "on",
         build_file_proto_mode = "disable_global",
         importpath = "golang.org/x/sys",
-        sum = "h1:/h0vtH0PyU0xAoZJVcRw1k0Ng+U0JAy3QDiFmppIlIE=",
-        version = "v0.0.0-20200929083018-4d22bbb62b3c",
+        sum = "h1:fihtqzYxy4E31W1yUlyRGveTZT1JIP0bmKaDZ2ceKAw=",
+        version = "v0.0.0-20201005172224-997123666555",
     )
     go_repository(
         name = "org_golang_x_text",
