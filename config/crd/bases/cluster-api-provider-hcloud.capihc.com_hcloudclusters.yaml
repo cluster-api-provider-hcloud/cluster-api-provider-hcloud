@@ -64,12 +64,13 @@ spec:
                     - round_robin
                     - least_connections
                     type: string
-                  id:
-                    type: integer
                   name:
                     type: string
                   type:
                     type: string
+                required:
+                - algorithm
+                - type
                 type: object
               hcloudTokenRef:
                 description: SecretKeySelector selects a key of a Secret.
@@ -87,6 +88,7 @@ spec:
                 - key
                 type: object
               hrobotTokenRef:
+                description: If no token is provided then it is assumed that the bare metal controller is unused
                 properties:
                   passwordKey:
                     type: string
@@ -94,6 +96,10 @@ spec:
                     type: string
                   userNameKey:
                     type: string
+                required:
+                - passwordKey
+                - tokenName
+                - userNameKey
                 type: object
               locations:
                 items:
@@ -123,6 +129,10 @@ spec:
                       type: string
                   type: object
                 type: array
+            required:
+            - controlPlaneLoadbalancer
+            - hcloudTokenRef
+            - sshKeys
             type: object
           status:
             description: HcloudClusterStatus defines the observed state of HcloudCluster

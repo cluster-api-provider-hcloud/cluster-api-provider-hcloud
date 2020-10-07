@@ -72,7 +72,16 @@ spec:
                     type: string
                   tokenName:
                     type: string
+                required:
+                - privateKey
+                - publicKey
+                - sshKeyName
+                - tokenName
                 type: object
+            required:
+            - imagePath
+            - serverType
+            - sshTokenRef
             type: object
           status:
             description: BareMetalMachineStatus defines the observed state of BareMetalMachine

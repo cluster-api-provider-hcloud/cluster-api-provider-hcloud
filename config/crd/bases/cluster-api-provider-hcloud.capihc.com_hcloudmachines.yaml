@@ -80,6 +80,9 @@ spec:
                       type: string
                   type: object
                 type: array
+            required:
+            - image
+            - type
             type: object
           status:
             description: HcloudMachineStatus defines the observed state of HcloudMachine

@@ -97,27 +97,35 @@ func NewClusterScope(params ClusterScopeParams) (*ClusterScope, error) {
 
 	var robotUserName string
 	var robotPassword string
-	if params.HrobotClientFactory == nil {
-		params.HrobotClientFactory = func(ctx context.Context) (HrobotClient, error) {
-			// retrieve token secret
-			var tokenSecret corev1.Secret
-			tokenSecretName := types.NamespacedName{Namespace: params.HcloudCluster.Namespace, Name: params.HcloudCluster.Spec.HrobotTokenRef.TokenName}
-			if err := params.Client.Get(ctx, tokenSecretName, &tokenSecret); err != nil {
-				return nil, errors.Errorf("error getting referenced token secret/%s: %s", tokenSecretName, err)
-			}
+	var hrc HrobotClient
+	if params.HcloudCluster.Spec.HrobotTokenRef != nil {
+		if params.HrobotClientFactory == nil {
+			params.HrobotClientFactory = func(ctx context.Context) (HrobotClient, error) {
+				// retrieve token secret
+				var tokenSecret corev1.Secret
+				tokenSecretName := types.NamespacedName{Namespace: params.HcloudCluster.Namespace, Name: params.HcloudCluster.Spec.HrobotTokenRef.TokenName}
+				if err := params.Client.Get(ctx, tokenSecretName, &tokenSecret); err != nil {
+					return nil, errors.Errorf("error getting referenced token secret/%s: %s", tokenSecretName, err)
+				}
 
-			passwordTokenBytes, keyExists := tokenSecret.Data[params.HcloudCluster.Spec.HrobotTokenRef.PasswordKey]
-			if !keyExists {
-				return nil, errors.Errorf("error key %s does not exist in secret/%s", params.HcloudCluster.Spec.HrobotTokenRef.PasswordKey, tokenSecretName)
-			}
-			userNameTokenBytes, keyExists := tokenSecret.Data[params.HcloudCluster.Spec.HrobotTokenRef.UserNameKey]
-			if !keyExists {
-				return nil, errors.Errorf("error key %s does not exist in secret/%s", params.HcloudCluster.Spec.HrobotTokenRef.UserNameKey, tokenSecretName)
-			}
-			robotUserName = string(userNameTokenBytes)
-			robotPassword = string(passwordTokenBytes)
+				passwordTokenBytes, keyExists := tokenSecret.Data[params.HcloudCluster.Spec.HrobotTokenRef.PasswordKey]
+				if !keyExists {
+					return nil, errors.Errorf("error key %s does not exist in secret/%s", params.HcloudCluster.Spec.HrobotTokenRef.PasswordKey, tokenSecretName)
+				}
+				userNameTokenBytes, keyExists := tokenSecret.Data[params.HcloudCluster.Spec.HrobotTokenRef.UserNameKey]
+				if !keyExists {
+					return nil, errors.Errorf("error key %s does not exist in secret/%s", params.HcloudCluster.Spec.HrobotTokenRef.UserNameKey, tokenSecretName)
+				}
+				robotUserName = string(userNameTokenBytes)
+				robotPassword = string(passwordTokenBytes)
 
-			return &realHrobotClient{client: hrobot.NewBasicAuthClient(robotUserName, robotPassword)}, nil
+				return &realHrobotClient{client: hrobot.NewBasicAuthClient(robotUserName, robotPassword)}, nil
+			}
+		}
+		var err error
+		hrc, err = params.HrobotClientFactory(params.Ctx)
+		if err != nil {
+			return nil, err
 		}
 	}
 
@@ -125,12 +133,6 @@ func NewClusterScope(params ClusterScopeParams) (*ClusterScope, error) {
 	if err != nil {
 		return nil, err
 	}
-
-	hrc, err := params.HrobotClientFactory(params.Ctx)
-	if err != nil {
-		return nil, err
-	}
-
 	helper, err := patch.NewHelper(params.HcloudCluster, params.Client)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to init patch helper")

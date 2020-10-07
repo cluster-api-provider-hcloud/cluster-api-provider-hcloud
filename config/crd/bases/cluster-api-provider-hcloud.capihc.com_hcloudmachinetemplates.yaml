@@ -69,6 +69,9 @@ spec:
                               type: string
                           type: object
                         type: array
+                    required:
+                    - image
+                    - type
                     type: object
                 required:
                 - spec

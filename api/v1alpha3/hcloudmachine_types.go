@@ -31,17 +31,19 @@ const (
 // HcloudMachineSpec defines the desired state of HcloudMachine
 type HcloudMachineSpec struct {
 	// define Machine specific SSH keys, overrides cluster wide SSH keys
-	SSHKeys []HcloudSSHKeySpec `json:"sshKeys,omitempty"`
+	// +optional
+	SSHKeys []HcloudSSHKeySpec `json:"sshKeys"`
 
-	Type HcloudMachineTypeSpec `json:"type,omitempty"`
+	Type HcloudMachineTypeSpec `json:"type"`
 
-	Volumes []HcloudMachineVolume `json:"volumes,omitempty"`
+	// +optional
+	Volumes []HcloudMachineVolume `json:"volumes"`
 
-	ImageName string `json:"image,omitempty"`
+	ImageName string `json:"image"`
 
 	// ProviderID is the unique identifier as specified by the cloud provider.
 	// +optional
-	ProviderID *string `json:"providerID,omitempty"`
+	ProviderID *string `json:"providerID"`
 }
 
 type HcloudMachineTypeSpec string

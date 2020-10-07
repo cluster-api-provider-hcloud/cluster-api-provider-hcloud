@@ -68,6 +68,12 @@ func stringSliceContains(s []string, e string) bool {
 }
 
 func (s *Service) Reconcile(ctx context.Context) (_ *ctrl.Result, err error) {
+
+	if s.scope.HcloudCluster.Spec.HrobotTokenRef == nil {
+		return nil, errors.Errorf("ERROR: No token for Hetzner Robot provided: Cannot reconcile server %s", s.scope.BareMetalMachine.Name)
+	}
+
+	// Default port is 22
 	port := 22
 	if s.scope.BareMetalMachine.Spec.Port != nil {
 		port = *s.scope.BareMetalMachine.Spec.Port

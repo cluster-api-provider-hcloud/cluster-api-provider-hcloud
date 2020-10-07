@@ -42,28 +42,32 @@ const (
 
 // HcloudClusterSpec defines the desired state of HcloudCluster
 type HcloudClusterSpec struct {
-	Locations []HcloudLocation `json:"locations,omitempty"`
+	// +optional
+	Locations []HcloudLocation `json:"locations"`
 
 	// define cluster wide SSH keys
-	SSHKeys []HcloudSSHKeySpec `json:"sshKeys,omitempty"`
+	SSHKeys []HcloudSSHKeySpec `json:"sshKeys"`
 
-	ControlPlaneLoadBalancer HcloudLoadBalancerSpec `json:"controlPlaneLoadbalancer,omitempty"`
+	ControlPlaneLoadBalancer HcloudLoadBalancerSpec `json:"controlPlaneLoadbalancer"`
 
 	// ControlPlaneEndpoint represents the endpoint used to communicate with the control plane.
 	// +optional
 	ControlPlaneEndpoint *clusterv1.APIEndpoint `json:"controlPlaneEndpoint"`
 
-	Network *HcloudNetworkSpec `json:"network,omitempty"`
+	// +optional
+	Network *HcloudNetworkSpec `json:"network"`
 
-	HcloudTokenRef *corev1.SecretKeySelector `json:"hcloudTokenRef,omitempty"`
+	HcloudTokenRef *corev1.SecretKeySelector `json:"hcloudTokenRef"`
 
-	HrobotTokenRef hrobotTokenRef `json:"hrobotTokenRef,omitempty"`
+	// If no token is provided then it is assumed that the bare metal controller is unused
+	// +optional
+	HrobotTokenRef *hrobotTokenRef `json:"hrobotTokenRef"`
 }
 
 type hrobotTokenRef struct {
-	PasswordKey string `json:"passwordKey,omitempty"`
-	UserNameKey string `json:"userNameKey,omitempty"`
-	TokenName   string `json:"tokenName,omitempty"`
+	PasswordKey string `json:"passwordKey"`
+	UserNameKey string `json:"userNameKey"`
+	TokenName   string `json:"tokenName"`
 }
 
 type HcloudNetwork struct {
@@ -100,10 +104,11 @@ type HcloudNetworkStatus struct {
 }
 
 type HcloudLoadBalancerSpec struct {
-	Name      *string                         `json:"name,omitempty"`
-	ID        *int                            `json:"id,omitempty"`
-	Algorithm HcloudLoadBalancerAlgorithmType `json:"algorithm,omitempty"`
-	Type      string                          `json:"type,omitempty"`
+	// +optional
+	Name *string `json:"name"`
+
+	Algorithm HcloudLoadBalancerAlgorithmType `json:"algorithm"`
+	Type      string                          `json:"type"`
 }
 type HcloudLoadBalancerStatus struct {
 	ID         int                             `json:"id,omitempty"`

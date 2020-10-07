@@ -29,28 +29,28 @@ const (
 
 // BareMetalMachineSpec defines the desired state of a BareMetalMachine
 type BareMetalMachineSpec struct {
-	SSHTokenRef sshTokenRef `json:"sshTokenRef,omitempty"`
+	SSHTokenRef sshTokenRef `json:"sshTokenRef"`
 
 	// ProviderID is the unique identifier as specified by the cloud provider.
 	// +optional
-	ProviderID *string `json:"providerID,omitempty"`
+	ProviderID *string `json:"providerID"`
 
 	// +optional
-	Port *int `json:"port,omitempty"`
+	Port *int `json:"port"`
 
 	// +optional
-	Partition *string `json:"partition,omitempty"`
+	Partition *string `json:"partition"`
 
-	ImagePath *string `json:"imagePath,omitempty"`
+	ImagePath *string `json:"imagePath"`
 
-	ServerType *string `json:"serverType,omitempty"`
+	ServerType *string `json:"serverType"`
 }
 
 type sshTokenRef struct {
-	PublicKey  string `json:"publicKey,omitempty"`
-	PrivateKey string `json:"privateKey,omitempty"`
-	SSHKeyName string `json:"sshKeyName,omitempty"`
-	TokenName  string `json:"tokenName,omitempty"`
+	PublicKey  string `json:"publicKey"`
+	PrivateKey string `json:"privateKey"`
+	SSHKeyName string `json:"sshKeyName"`
+	TokenName  string `json:"tokenName"`
 }
 
 //type BareMetalServerState string

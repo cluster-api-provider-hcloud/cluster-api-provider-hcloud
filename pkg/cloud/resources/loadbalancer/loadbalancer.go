@@ -129,6 +129,9 @@ func (s *Service) createLoadBalancer(ctx context.Context, spec infrav1.HcloudLoa
 	hc := s.scope.HcloudCluster
 
 	name := names.SimpleNameGenerator.GenerateName(hc.Name + "-kube-apiserver-")
+	if s.scope.HcloudCluster.Spec.ControlPlaneLoadBalancer.Name != nil {
+		name = *s.scope.HcloudCluster.Spec.ControlPlaneLoadBalancer.Name
+	}
 
 	// Get the Hetzner cloud object of load balancer type
 	loadBalancerType, _, err := s.scope.HcloudClient().GetLoadBalancerTypeByName(ctx, spec.Type)
