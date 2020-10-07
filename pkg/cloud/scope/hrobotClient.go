@@ -46,7 +46,7 @@ func (c *realHrobotClient) ListBMServers() ([]models.Server, error) {
 }
 
 func (c *realHrobotClient) ActivateRescue(ip string, key string) (*models.Rescue, error) {
-	return c.client.BootRescueSet(ip, &models.RescueSetInput{AuthorizedKey: key})
+	return c.client.BootRescueSet(ip, &models.RescueSetInput{OS: "linux", Arch: 64, AuthorizedKey: key})
 }
 
 func (c *realHrobotClient) ListBMKeys() ([]models.Key, error) {

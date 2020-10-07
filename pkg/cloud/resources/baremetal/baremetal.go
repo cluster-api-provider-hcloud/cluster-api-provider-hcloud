@@ -188,8 +188,17 @@ func (s *Service) Reconcile(ctx context.Context) (_ *ctrl.Result, err error) {
 
 	// check if server has been cancelled
 	if actualServer.Cancelled == true {
-		s.scope.V(1).Info("server has been cancelled", "server", actualServer.ServerName, "cancelled", actualServer.Cancelled)
-		return nil, errors.Errorf("Server %s has been cancelled", s.scope.BareMetalMachine.Name)
+		s.scope.V(1).Info("server has been cancelled", "server", actualServer.ServerName, "cancelled",
+			actualServer.Cancelled, "paid until", actualServer.PaidUntil)
+		paidUntil, err := time.Parse("2006-01-02", actualServer.PaidUntil)
+		if err != nil {
+			return nil, errors.Errorf("ERROR: Failed to parse paidUntil date. Error: %s", err)
+		}
+		// If there are less than 36 hours left, then do not add server any more
+		// TODO: Automatically mark for deletion if not this should be done by user via cluster yaml file
+		if paidUntil.Before(time.Now().Add(36 * time.Hour)) {
+			return nil, errors.Errorf("Server %s has been cancelled. Paid until %s", s.scope.BareMetalMachine.Name, actualServer.PaidUntil)
+		}
 	}
 
 	providerID := fmt.Sprintf("hetzner://%d", actualServer.ServerNumber)
@@ -224,7 +233,7 @@ func (s *Service) Reconcile(ctx context.Context) (_ *ctrl.Result, err error) {
 		return nil, errors.Errorf("SSH command hostname returned the error %s. The output of stderr is %s", err, stderr)
 	}
 	if !strings.Contains(stdout, "rescue") {
-		return nil, errors.New("Rescue system not successfully started")
+		return nil, errors.Errorf("Rescue system not successfully started. Output of command hostname is %s", stdout)
 	}
 
 	var blockDevices blockDevices
@@ -267,12 +276,9 @@ EOF`,
 
 	// install image
 	stdout, stderr, err = runSSH("bash /root/.oldroot/nfs/install/installimage", actualServer.ServerIP, 22, privateSSHKey, maxTime)
-	// TODO: Ask specifically for the error that no exit status was set and exclude it
-	/*
-		if err != nil {
-			return nil, errors.Errorf("SSH command installimage returned the error %s. The output of stderr is %s", err, stderr)
-		}
-	*/
+	if err != nil {
+		return nil, errors.Errorf("SSH command installimage returned the error %s. The output of stderr is %s", err, stderr)
+	}
 	// get again list of block devices and label children of our drive
 	stdout, stderr, err = runSSH(blockDeviceCommand, actualServer.ServerIP, 22, privateSSHKey, maxTime)
 	if err != nil {
@@ -297,12 +303,16 @@ EOF`,
 
 	// reboot system
 	stdout, stderr, err = runSSH("reboot", actualServer.ServerIP, 22, privateSSHKey, maxTime)
-	/*
-		if err != nil {
+	if err != nil {
+		if !strings.Contains(err.Error(), "remote command exited without exit status or exit signal") {
 			return nil, errors.Errorf("Error running the ssh command %s: Error: %s, stderr: %s", "reboot", err, stderr)
 		}
-	*/
-	fmt.Println("Rebooted server")
+	}
+
+	// We cannot create the file in the tmp folder right after rebooting, as it gets deleted again
+	// so we have to wait for a bit
+	_, _, _ = runSSH("sleep 60", actualServer.ServerIP, port, privateSSHKey, maxTime)
+
 	kubeadmCommand := fmt.Sprintf(
 		`cat > /tmp/kubeadm-join-config.yaml << EOF
 %s
@@ -333,7 +343,8 @@ EOF`, kubeadmConfigString)
 	if err != nil {
 		return nil, errors.Errorf("Unable to change bare metal server name: ", err)
 	}
-	fmt.Println("Finished setup of bare metal server")
+	s.scope.V(3).Info("Finished provisioning bare metal server %s", s.scope.BareMetalMachine.Name)
+
 	return nil, nil
 }
 
@@ -375,6 +386,7 @@ func (s *Service) Delete(ctx context.Context) (_ *ctrl.Result, err error) {
 			if !strings.Contains(err.Error(), "409 Conflict") {
 				return nil, errors.Errorf("Unable to activate rescue system: ", err)
 			}
+			s.scope.V(1).Info("INFO: Ignored an error", "error", err)
 		}
 
 		_, err = s.scope.HrobotClient().ResetBMServer(server.ServerIP, "hw")
@@ -387,7 +399,7 @@ func (s *Service) Delete(ctx context.Context) (_ *ctrl.Result, err error) {
 			return nil, errors.Errorf("SSH command hostname returned the error %s. The output of stderr is %s", err, stderr)
 		}
 		if !strings.Contains(stdout, "rescue") {
-			return nil, errors.New("Rescue system not successfully started")
+			return nil, errors.Errorf("Rescue system not successfully started. Output of command hostname is %s", stdout)
 		}
 
 		var blockDevices blockDevices
@@ -415,7 +427,7 @@ func (s *Service) Delete(ctx context.Context) (_ *ctrl.Result, err error) {
 		}
 
 		_, err = s.scope.HrobotClient().SetBMServerName(server.ServerIP,
-			*s.scope.BareMetalMachine.Spec.ServerType+delimiter+"unused_"+s.scope.BareMetalMachine.Name)
+			*s.scope.BareMetalMachine.Spec.ServerType+delimiter+"unused-"+s.scope.BareMetalMachine.Name)
 		if err != nil {
 			return nil, errors.Errorf("Unable to change bare metal server name: ", err)
 		}

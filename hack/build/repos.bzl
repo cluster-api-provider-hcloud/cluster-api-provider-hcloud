@@ -674,14 +674,6 @@ def go_repositories():
         sum = "h1:N0LgJ1j65A7kfXrZnUDaYCs/Sf4rEjNlfyDHW9dolSY=",
         version = "v17.0.0+incompatible",
     )
-    go_repository(
-        name = "com_github_google_go_jsonnet",
-        build_file_generation = "on",
-        build_file_proto_mode = "disable_global",
-        importpath = "github.com/google/go-jsonnet",
-        sum = "h1:lEUXTDnVsHu+CLLzMeWAdWV4JpCgkJeDqdVNS8RtyuY=",
-        version = "v0.15.0",
-    )
     git_repository(
         name = "com_github_google_go_jsonnet",
         remote = "https://github.com/google/go-jsonnet",

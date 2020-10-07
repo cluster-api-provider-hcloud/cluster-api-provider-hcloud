@@ -3,6 +3,7 @@ module github.com/cluster-api-provider-hcloud/cluster-api-provider-hcloud
 go 1.13
 
 require (
+	github.com/bazelbuild/bazel-gazelle v0.22.2 // indirect
 	github.com/bronze1man/yaml2json v0.0.0-20190501122504-861f66b7262b
 	github.com/fatih/color v1.7.0
 	github.com/go-logr/logr v0.1.0

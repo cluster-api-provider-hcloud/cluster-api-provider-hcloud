@@ -104,7 +104,7 @@ spec:
   template:
     spec:
       serverType: mytype
-      imagePath: "https://u243385:vgN3C2fsiPklqBNF@u243385.your-storagebox.de/baremetal/CentOS-82-64-crio-newer-kernel.tar.gz"
+      imagePath: "https://some-test-path.com"
       sshTokenRef:
         publicKey: public
         privateKey: private
