@@ -37,3 +37,27 @@ def go_repositories():
         sum = "h1:gjVoNDCzr51OBDyqGWqy90gAxWHU1Y90/7qOetMbR+g=",
         version = "v0.1.3",
     )
+    go_repository(
+        name = "com_github_bazelbuild_bazel_gazelle",
+        importpath = "github.com/bazelbuild/bazel-gazelle",
+        sum = "h1:a2Om7KZ31IuYtoE2SGMMEAfl6Jo+MkLdd3zM+5tkjjI=",
+        version = "v0.22.2",
+    )
+    go_repository(
+        name = "com_github_bazelbuild_buildtools",
+        importpath = "github.com/bazelbuild/buildtools",
+        sum = "h1:Et1IIXrXwhpDvR5wH9REPEZ0sUtzUoJSq19nfmBqzBY=",
+        version = "v0.0.0-20200718160251-b1667ff58f71",
+    )
+    go_repository(
+        name = "com_github_bazelbuild_rules_go",
+        importpath = "github.com/bazelbuild/rules_go",
+        sum = "h1:wzbawlkLtl2ze9w/312NHZ84c7kpUCtlkD8HgFY27sw=",
+        version = "v0.0.0-20190719190356-6dae44dc5cab",
+    )
+    go_repository(
+        name = "com_github_bmatcuk_doublestar",
+        importpath = "github.com/bmatcuk/doublestar",
+        sum = "h1:oC24CykoSAB8zd7XgruHo33E0cHJf/WhQA/7BeXj+x0=",
+        version = "v1.2.2",
+    )

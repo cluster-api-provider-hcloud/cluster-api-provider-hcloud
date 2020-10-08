@@ -17,11 +17,17 @@ import (
 	"golang.org/x/crypto/ssh"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/utils/pointer"
+	capierrors "sigs.k8s.io/cluster-api/errors"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 )
 
-const delimiter = "--"
+const (
+	delimiter                      string        = "--"
+	hoursBeforeDeletion            time.Duration = 36
+	maxWaitingTimeForSSHConnection int           = 300
+)
 
 type Service struct {
 	scope *scope.BareMetalMachineScope
@@ -69,6 +75,7 @@ func stringSliceContains(s []string, e string) bool {
 
 func (s *Service) Reconcile(ctx context.Context) (_ *ctrl.Result, err error) {
 
+	// If not token information has been given, the server cannot be successfully reconciled
 	if s.scope.HcloudCluster.Spec.HrobotTokenRef == nil {
 		return nil, errors.Errorf("ERROR: No token for Hetzner Robot provided: Cannot reconcile server %s", s.scope.BareMetalMachine.Name)
 	}
@@ -89,6 +96,7 @@ func (s *Service) Reconcile(ctx context.Context) (_ *ctrl.Result, err error) {
 		return nil, errors.Errorf("Unable to get SSH fingerprint for the SSH key %s: %s ", sshKeyName, err)
 	}
 
+	// Get the Kubeadm config from the bootstrap provider
 	userDataInitial, err := s.scope.GetRawBootstrapData(ctx)
 	if err == scope.ErrBootstrapDataNotReady {
 		s.scope.V(1).Info("Bootstrap data is not ready yet")
@@ -127,21 +135,23 @@ func (s *Service) Reconcile(ctx context.Context) (_ *ctrl.Result, err error) {
 		return nil, errors.Errorf("Error while obtaining the kubeadm config for the baremetal server", err)
 	}
 
-	// update current server
+	// update list of servers which have the right type and are not taken in other clusters
 	actualServers, err := s.actualStatus(ctx)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to refresh server status")
 	}
 
 	var actualServer models.Server
-	// isAttached is true if actualServer has the prefix clusterName in its name. This meanse it is already attached
-	// to the cluster.
+	// isAttached is true if actualServer has the prefix clusterName in its name. This means it is
+	// already attached to the cluster.
 	var isAttached bool
 	if len(actualServers) == 0 {
-
+		// If no servers are in the list, we have to return an error
 		return nil, errors.Errorf("No bare metal server found with type %s", *s.scope.BareMetalMachine.Spec.ServerType)
-
 	} else if len(actualServers) == 1 {
+		// If there is just one server, then it either not attached to a cluster or already attached to the cluster
+		// If it is attached, then it has to have the right name. If it doesn't, we have to give an error, as this is
+		// then not the right server and there are no free ones left to provision
 		actualServer = actualServers[0]
 		splitName := strings.Split(actualServer.ServerName, delimiter)
 
@@ -156,54 +166,54 @@ func (s *Service) Reconcile(ctx context.Context) (_ *ctrl.Result, err error) {
 			}
 		}
 
-	} else if len(actualServers) > 2 {
+	} else if len(actualServers) > 1 {
 
-		// If two servers are in the list, then one has to be attached to the cluster already
-		// and have the prefix clusterName and the other has the same name without prefix
-		// No two servers should have the same name, but since one of them has a prefix and the other doesn't
-		// they have two different names for Hetzner, so we have to handle this case as well
 		var check int
-		var newServer models.Server
+		var newServer *models.Server
 		for _, server := range actualServers {
 			splitName := strings.Split(server.ServerName, delimiter)
 
-			// If server is attached to some cluster
+			// If server is attached to the cluster
 			if len(splitName) == 3 {
-				// If server is attached to current cluster
-				if splitName[0] == s.scope.Cluster.Name {
-					// If server is the one we are looking for
-					if splitName[2] == s.scope.BareMetalMachine.Name {
-						isAttached = true
-						actualServer = server
-						check++
-					}
+				// If server is the one we are looking for
+				if splitName[2] == s.scope.BareMetalMachine.Name {
+					isAttached = true
+					actualServer = server
+					check++
 				}
 			} else {
 				// If server is not attached, then take it
-				newServer = server
+				newServer = &server
 			}
 		}
 
 		if check > 1 {
-			return nil, errors.Errorf(" There are %s servers which are attached to the cluster with name %s", actualServer.ServerName)
+			return nil, errors.Errorf("There are %s servers which are attached to the cluster with name %s", check, actualServer.ServerName)
 		} else if check == 0 {
 			// No attached server with the correct name found, so we have to take a new one
-			actualServer = newServer
+			if newServer == nil {
+				return nil, errors.Errorf("There are no servers of type %s which are not yet attached to the cluster", *s.scope.BareMetalMachine.Spec.ServerType)
+			}
+			actualServer = *newServer
 		}
 	}
 
 	// check if server has been cancelled
-	if actualServer.Cancelled == true {
+	if actualServer.Cancelled {
 		s.scope.V(1).Info("server has been cancelled", "server", actualServer.ServerName, "cancelled",
 			actualServer.Cancelled, "paid until", actualServer.PaidUntil)
 		paidUntil, err := time.Parse("2006-01-02", actualServer.PaidUntil)
 		if err != nil {
 			return nil, errors.Errorf("ERROR: Failed to parse paidUntil date. Error: %s", err)
 		}
-		// If there are less than 36 hours left, then do not add server any more
-		// TODO: Automatically mark for deletion if not this should be done by user via cluster yaml file
-		if paidUntil.Before(time.Now().Add(36 * time.Hour)) {
-			return nil, errors.Errorf("Server %s has been cancelled. Paid until %s", s.scope.BareMetalMachine.Name, actualServer.PaidUntil)
+		// If the server will be cancelled soon but is still in the list of actualServers, it means that
+		// it is already attached since we don't add new servers that get deleted soon to actualServers
+		// This means we have to set a failureReason so that the infrastructure object gets deleted
+		if paidUntil.Before(time.Now().Add(hoursBeforeDeletion * time.Hour)) {
+			er := capierrors.UpdateMachineError
+			s.scope.BareMetalMachine.Status.FailureReason = &er
+			s.scope.BareMetalMachine.Status.FailureMessage = pointer.StringPtr("Machine has been cancelled and is paid until less than" + hoursBeforeDeletion.String() + "hours")
+			s.scope.BareMetalMachine.Status.Ready = false
 		}
 	}
 
@@ -233,8 +243,7 @@ func (s *Service) Reconcile(ctx context.Context) (_ *ctrl.Result, err error) {
 		return nil, errors.Errorf("Unable to reset server: ", err)
 	}
 
-	maxTime := 300
-	stdout, stderr, err := runSSH("hostname", actualServer.ServerIP, 22, privateSSHKey, maxTime)
+	stdout, stderr, err := runSSH("hostname", actualServer.ServerIP, 22, privateSSHKey)
 	if err != nil {
 		return nil, errors.Errorf("SSH command hostname returned the error %s. The output of stderr is %s", err, stderr)
 	}
@@ -244,7 +253,7 @@ func (s *Service) Reconcile(ctx context.Context) (_ *ctrl.Result, err error) {
 
 	var blockDevices blockDevices
 	blockDeviceCommand := "lsblk -o name,size,rota,fstype,label -e1 -e7 --json"
-	stdout, stderr, err = runSSH(blockDeviceCommand, actualServer.ServerIP, port, privateSSHKey, maxTime)
+	stdout, stderr, err = runSSH(blockDeviceCommand, actualServer.ServerIP, port, privateSSHKey)
 	if err != nil {
 		return nil, errors.Errorf("Error running the ssh command %s: Error: %s, stderr: %s", blockDeviceCommand, err, stderr)
 	}
@@ -275,18 +284,18 @@ EOF`,
 		drive, actualServer.ServerName, partitionString, *s.scope.BareMetalMachine.Spec.ImagePath)
 
 	// Send autosetup file to server
-	stdout, stderr, err = runSSH(autoSetup, actualServer.ServerIP, 22, privateSSHKey, maxTime)
+	stdout, stderr, err = runSSH(autoSetup, actualServer.ServerIP, 22, privateSSHKey)
 	if err != nil {
 		return nil, errors.Errorf("SSH command autosetup returned the error %s. The output of stderr is %s", err, stderr)
 	}
 
 	// install image
-	stdout, stderr, err = runSSH("bash /root/.oldroot/nfs/install/installimage", actualServer.ServerIP, 22, privateSSHKey, maxTime)
+	stdout, stderr, err = runSSH("bash /root/.oldroot/nfs/install/installimage", actualServer.ServerIP, 22, privateSSHKey)
 	if err != nil {
 		return nil, errors.Errorf("SSH command installimage returned the error %s. The output of stderr is %s", err, stderr)
 	}
 	// get again list of block devices and label children of our drive
-	stdout, stderr, err = runSSH(blockDeviceCommand, actualServer.ServerIP, 22, privateSSHKey, maxTime)
+	stdout, stderr, err = runSSH(blockDeviceCommand, actualServer.ServerIP, 22, privateSSHKey)
 	if err != nil {
 		return nil, errors.Errorf("Error running the ssh command %s: Error: %s, stderr: %s", blockDeviceCommand, err, stderr)
 	}
@@ -302,13 +311,13 @@ EOF`,
 	}
 
 	// label children of our drive
-	stdout, stderr, err = runSSH(command, actualServer.ServerIP, 22, privateSSHKey, maxTime)
+	stdout, stderr, err = runSSH(command, actualServer.ServerIP, 22, privateSSHKey)
 	if err != nil {
 		return nil, errors.Errorf("Error running the ssh command %s: Error: %s, stderr: %s", command, err, stderr)
 	}
 
 	// reboot system
-	stdout, stderr, err = runSSH("reboot", actualServer.ServerIP, 22, privateSSHKey, maxTime)
+	stdout, stderr, err = runSSH("reboot", actualServer.ServerIP, 22, privateSSHKey)
 	if err != nil {
 		if !strings.Contains(err.Error(), "remote command exited without exit status or exit signal") {
 			return nil, errors.Errorf("Error running the ssh command %s: Error: %s, stderr: %s", "reboot", err, stderr)
@@ -317,7 +326,7 @@ EOF`,
 
 	// We cannot create the file in the tmp folder right after rebooting, as it gets deleted again
 	// so we have to wait for a bit
-	_, _, _ = runSSH("sleep 60", actualServer.ServerIP, port, privateSSHKey, maxTime)
+	_, _, _ = runSSH("sleep 60", actualServer.ServerIP, port, privateSSHKey)
 
 	kubeadmCommand := fmt.Sprintf(
 		`cat > /tmp/kubeadm-join-config.yaml << EOF
@@ -325,21 +334,21 @@ EOF`,
 EOF`, kubeadmConfigString)
 
 	// send kubeadmConfig to server
-	stdout, stderr, err = runSSH(kubeadmCommand, actualServer.ServerIP, port, privateSSHKey, maxTime)
+	stdout, stderr, err = runSSH(kubeadmCommand, actualServer.ServerIP, port, privateSSHKey)
 	if err != nil {
 		return nil, errors.Errorf("Error running the ssh command %s: Error: %s, stderr: %s", kubeadmCommand, err, stderr)
 	}
 
 	command = "chmod 640 /tmp/kubeadm-join-config.yaml && chown root:root /tmp/kubeadm-join-config.yaml"
 
-	stdout, stderr, err = runSSH(command, actualServer.ServerIP, port, privateSSHKey, maxTime)
+	stdout, stderr, err = runSSH(command, actualServer.ServerIP, port, privateSSHKey)
 	if err != nil {
 		return nil, errors.Errorf("Error running the ssh command %s: Error: %s, stderr: %s", command, err, stderr)
 	}
 
 	command = "kubeadm join --config /tmp/kubeadm-join-config.yaml"
 
-	stdout, stderr, err = runSSH(command, actualServer.ServerIP, port, privateSSHKey, maxTime)
+	stdout, stderr, err = runSSH(command, actualServer.ServerIP, port, privateSSHKey)
 	if err != nil {
 		return nil, errors.Errorf("Error running the ssh command %s: Error: %s, stderr: %s", command, err, stderr)
 	}
@@ -349,25 +358,12 @@ EOF`, kubeadmConfigString)
 	if err != nil {
 		return nil, errors.Errorf("Unable to change bare metal server name: ", err)
 	}
-	s.scope.V(3).Info("Finished provisioning bare metal server %s", s.scope.BareMetalMachine.Name)
-
+	s.scope.V(1).Info("Finished provisioning bare metal server %s", s.scope.BareMetalMachine.Name)
+	s.scope.BareMetalMachine.Status.Ready = true
 	return nil, nil
 }
 
 func (s *Service) Delete(ctx context.Context) (_ *ctrl.Result, err error) {
-	// TODO: Update delete so that data is kept after deletion
-	sshKeyName, _, privateSSHKey, err := s.retrieveSSHSecret(ctx)
-	if err != nil {
-		return nil, errors.Errorf("Unable to retrieve SSH secret: ", err)
-	}
-
-	sshFingerprint, err := s.getSSHFingerprintFromName(sshKeyName)
-	if err != nil {
-		return nil, errors.Errorf("Unable to get SSH fingerprint for the SSH key %s: %s ", sshKeyName, err)
-	}
-
-	maxTime := 300
-
 	// update current servers
 	actualServers, err := s.actualStatus(ctx)
 	if err != nil {
@@ -387,51 +383,6 @@ func (s *Service) Delete(ctx context.Context) (_ *ctrl.Result, err error) {
 	}
 
 	for _, server := range attachedServers {
-		_, err = s.scope.HrobotClient().ActivateRescue(server.ServerIP, sshFingerprint)
-		if err != nil {
-			if !strings.Contains(err.Error(), "409 Conflict") {
-				return nil, errors.Errorf("Unable to activate rescue system: ", err)
-			}
-			s.scope.V(1).Info("INFO: Ignored an error", "error", err)
-		}
-
-		_, err = s.scope.HrobotClient().ResetBMServer(server.ServerIP, "hw")
-		if err != nil {
-			return nil, errors.Errorf("Unable to reset server: ", err)
-		}
-
-		stdout, stderr, err := runSSH("hostname", server.ServerIP, 22, privateSSHKey, maxTime)
-		if err != nil {
-			return nil, errors.Errorf("SSH command hostname returned the error %s. The output of stderr is %s", err, stderr)
-		}
-		if !strings.Contains(stdout, "rescue") {
-			return nil, errors.Errorf("Rescue system not successfully started. Output of command hostname is %s", stdout)
-		}
-
-		var blockDevices blockDevices
-		blockDeviceCommand := "lsblk -o name,size,rota,fstype,label -e1 -e7 --json"
-		stdout, stderr, err = runSSH(blockDeviceCommand, server.ServerIP, 22, privateSSHKey, maxTime)
-		if err != nil {
-			return nil, errors.Errorf("Error running the ssh command %s: Error: %s, stderr: %s", blockDeviceCommand, err, stderr)
-		}
-
-		err = json.Unmarshal([]byte(stdout), &blockDevices)
-		if err != nil {
-			return nil, errors.Errorf("Error while unmarshaling: %s", err)
-		}
-		var command string
-		for _, device := range blockDevices.Devices {
-			str := fmt.Sprintf(`wipefs -a /dev/%s
-`, device.Name)
-			command = command + str
-		}
-		command = command[:len(command)-1]
-
-		stdout, stderr, err = runSSH(command, server.ServerIP, 22, privateSSHKey, maxTime)
-		if err != nil {
-			return nil, errors.Errorf("Error running the ssh command %s: Error: %s, stderr: %s", command, err, stderr)
-		}
-
 		_, err = s.scope.HrobotClient().SetBMServerName(server.ServerIP,
 			*s.scope.BareMetalMachine.Spec.ServerType+delimiter+"unused-"+s.scope.BareMetalMachine.Name)
 		if err != nil {
@@ -477,7 +428,17 @@ func (s *Service) actualStatus(ctx context.Context) ([]models.Server, error) {
 	for _, server := range serverList {
 		splitName := strings.Split(server.ServerName, delimiter)
 		if len(splitName) == 2 && splitName[0] == *s.scope.BareMetalMachine.Spec.ServerType {
-			actualServers = append(actualServers, server)
+			if !server.Cancelled {
+				actualServers = append(actualServers, server)
+			} else {
+				paidUntil, err := time.Parse("2006-01-02", server.PaidUntil)
+				if err != nil {
+					return nil, errors.Errorf("ERROR: Failed to parse paidUntil date. Error: %s", err)
+				}
+				if !paidUntil.Before(time.Now().Add(hoursBeforeDeletion * time.Hour)) {
+					actualServers = append(actualServers, server)
+				}
+			}
 		}
 		if len(splitName) == 3 && splitName[0] == s.scope.Cluster.Name && splitName[1] == *s.scope.BareMetalMachine.Spec.ServerType {
 			actualServers = append(actualServers, server)
@@ -661,7 +622,7 @@ func (s *Service) retrieveSSHSecret(ctx context.Context) (sshKeyName string, pub
 	return sshKeyName, publicKey, privateKey, nil
 }
 
-func runSSH(command, ip string, port int, privateSSHKey string, maxTime int) (stdout string, stderr string, err error) {
+func runSSH(command, ip string, port int, privateSSHKey string) (stdout string, stderr string, err error) {
 
 	// Create the Signer for this private key.
 	signer, err := ssh.ParsePrivateKey([]byte(privateSSHKey))
@@ -681,7 +642,7 @@ func runSSH(command, ip string, port int, privateSSHKey string, maxTime int) (st
 	// Connect to the remote server and perform the SSH handshake.
 	var client *ssh.Client
 	var check bool
-	for i := 0; i < (maxTime / 15); i++ {
+	for i := 0; i < (maxWaitingTimeForSSHConnection / 15); i++ {
 		client, err = ssh.Dial("tcp", ip+":"+strconv.Itoa(port), config)
 		if err != nil {
 			// If the SSH connection could not be established, then retry 15 sec later
@@ -709,6 +670,7 @@ func runSSH(command, ip string, port int, privateSSHKey string, maxTime int) (st
 
 	sess.Stdout = &stdoutBuffer
 	sess.Stderr = &stderrBuffer
+
 	err = sess.Run(command)
 
 	stdout = stdoutBuffer.String()

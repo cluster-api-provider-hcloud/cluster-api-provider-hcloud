@@ -61,6 +61,7 @@ type BareMetalMachineStatus struct {
 	IPv6       string `json:"ipv6,omitempty"`
 	ServerID   int    `json:"server_number,omitempty"`
 	ServerName string `json:"server_name,omitempty"`
+	Ready      bool   `json:"ready,omitempty"`
 	Status     string `json:"status,omitempty"`
 	Cancelled  bool   `json:"cancelled,omitempty"`
 	Reset      bool   `json:"reset,omitempty"`

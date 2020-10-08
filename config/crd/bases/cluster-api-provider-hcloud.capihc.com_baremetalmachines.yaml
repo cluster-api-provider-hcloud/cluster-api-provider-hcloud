@@ -96,6 +96,8 @@ spec:
                 type: string
               ipv6:
                 type: string
+              ready:
+                type: boolean
               rescue:
                 type: boolean
               reset:

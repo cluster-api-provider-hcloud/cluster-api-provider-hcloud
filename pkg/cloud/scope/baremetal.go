@@ -3,13 +3,14 @@ package scope
 import (
 	"context"
 
+	infrav1 "github.com/cluster-api-provider-hcloud/cluster-api-provider-hcloud/api/v1alpha3"
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/utils/pointer"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha3"
+	capierrors "sigs.k8s.io/cluster-api/errors"
 	"sigs.k8s.io/cluster-api/util/patch"
-
-	infrav1 "github.com/cluster-api-provider-hcloud/cluster-api-provider-hcloud/api/v1alpha3"
 )
 
 // ClusterScopeParams defines the input parameters used to create a new Scope.
@@ -71,6 +72,14 @@ func (m *BareMetalMachineScope) Namespace() string {
 // PatchObject persists the machine spec and status.
 func (m *BareMetalMachineScope) PatchObject(ctx context.Context) error {
 	return m.patchHelper.Patch(ctx, m.BareMetalMachine)
+}
+
+func (m *BareMetalMachineScope) SetFailureReason(reason capierrors.MachineStatusError) {
+	m.BareMetalMachine.Status.FailureReason = &reason
+}
+
+func (m *BareMetalMachineScope) SetFailureMessage(err error) {
+	m.BareMetalMachine.Status.FailureMessage = pointer.StringPtr(err.Error())
 }
 
 // GetRawBootstrapData returns the bootstrap data from the secret in the BareMetalMachine's bootstrap.dataSecretName.
