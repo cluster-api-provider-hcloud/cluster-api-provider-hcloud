@@ -112,7 +112,7 @@ func (s *Service) Reconcile(ctx context.Context) (err error) {
 
 func (s *Service) createLoadBalancer(ctx context.Context, spec infrav1.HcloudLoadBalancerSpec) (*infrav1.HcloudLoadBalancerStatus, error) {
 
-	s.scope.V(2).Info("Create a new loadbalancer", "algorithm type", spec.Algorithm)
+	s.scope.V(1).Info("Create a new loadbalancer", "algorithm type", spec.Algorithm)
 
 	// gather algorithm type
 	var algType hcloud.LoadBalancerAlgorithmType
@@ -161,19 +161,16 @@ func (s *Service) createLoadBalancer(ctx context.Context, spec infrav1.HcloudLoa
 		}
 	}
 
-	var mybool = false
-	var defaultPort = int(s.scope.ControlPlaneAPIEndpointPort())
-	var listenPort = defaultPort
-	// If controlPlaneEndpoint has been specified (or set) then use it
-	if s.scope.HcloudCluster.Spec.ControlPlaneEndpoint != nil {
-		listenPort = int(s.scope.HcloudCluster.Spec.ControlPlaneEndpoint.Port)
-	}
-
-	kubeapiservice := hcloud.LoadBalancerCreateOptsService{
-		Protocol:        hcloud.LoadBalancerServiceProtocolTCP,
-		ListenPort:      &listenPort,
-		DestinationPort: &defaultPort,
-		Proxyprotocol:   &mybool,
+	var services []hcloud.LoadBalancerCreateOptsService
+	var mybool bool
+	for _, spec := range s.scope.HcloudCluster.Spec.ControlPlaneLoadBalancer.Services {
+		s := hcloud.LoadBalancerCreateOptsService{
+			Protocol:        hcloud.LoadBalancerServiceProtocol(spec.Protocol),
+			ListenPort:      &spec.ListenPort,
+			DestinationPort: &spec.DestinationPort,
+			Proxyprotocol:   &mybool,
+		}
+		services = append(services, s)
 	}
 
 	clusterTagKey := infrav1.ClusterTagKey(hc.Name)
@@ -187,7 +184,7 @@ func (s *Service) createLoadBalancer(ctx context.Context, spec infrav1.HcloudLoa
 		Location:         location,
 		Network:          network,
 		Labels:           labels,
-		Services:         []hcloud.LoadBalancerCreateOptsService{kubeapiservice},
+		Services:         services,
 	}
 
 	lb, _, err := s.scope.HcloudClient().CreateLoadBalancer(ctx, opts)

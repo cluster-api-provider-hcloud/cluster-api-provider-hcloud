@@ -68,8 +68,25 @@ spec:
                     type: integer
                   name:
                     type: string
+                  services:
+                    items:
+                      properties:
+                        destinationPort:
+                          type: integer
+                        listenPort:
+                          type: integer
+                        protocol:
+                          type: string
+                      required:
+                      - destinationPort
+                      - listenPort
+                      - protocol
+                      type: object
+                    type: array
                   type:
                     type: string
+                required:
+                - services
                 type: object
               locations:
                 items:

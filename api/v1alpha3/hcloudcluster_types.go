@@ -96,6 +96,13 @@ type HcloudLoadBalancerSpec struct {
 	ID        *int                            `json:"id,omitempty"`
 	Algorithm HcloudLoadBalancerAlgorithmType `json:"algorithm,omitempty"`
 	Type      string                          `json:"type,omitempty"`
+	Services  []LoadBalancerServiceSpec       `json:"services"`
+}
+
+type LoadBalancerServiceSpec struct {
+	Protocol        string `json:"protocol"`
+	ListenPort      int    `json:"listenPort"`
+	DestinationPort int    `json:"destinationPort"`
 }
 type HcloudLoadBalancerStatus struct {
 	ID         int                             `json:"id,omitempty"`
