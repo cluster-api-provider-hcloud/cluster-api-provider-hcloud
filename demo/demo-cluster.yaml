@@ -40,6 +40,9 @@ spec:
     - listenPort: 443
       destinationPort: 6443
       protocol: tcp
+    - listenPort: 8091
+      destinationPort: 8091
+      protocol: tcp
   locations:
   - fsn1  # first location is used for location of Loadbalancer
   - nbg1

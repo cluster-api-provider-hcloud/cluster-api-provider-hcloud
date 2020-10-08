@@ -161,16 +161,15 @@ func (s *Service) createLoadBalancer(ctx context.Context, spec infrav1.HcloudLoa
 		}
 	}
 
-	var services []hcloud.LoadBalancerCreateOptsService
 	var mybool bool
-	for _, spec := range s.scope.HcloudCluster.Spec.ControlPlaneLoadBalancer.Services {
-		s := hcloud.LoadBalancerCreateOptsService{
-			Protocol:        hcloud.LoadBalancerServiceProtocol(spec.Protocol),
-			ListenPort:      &spec.ListenPort,
-			DestinationPort: &spec.DestinationPort,
-			Proxyprotocol:   &mybool,
-		}
-		services = append(services, s)
+	// The first service in the list is the one of kubeAPI
+	kubeAPISpec := s.scope.HcloudCluster.Spec.ControlPlaneLoadBalancer.Services[0]
+
+	createServiceOpts := hcloud.LoadBalancerCreateOptsService{
+		Protocol:        hcloud.LoadBalancerServiceProtocol(kubeAPISpec.Protocol),
+		ListenPort:      &kubeAPISpec.ListenPort,
+		DestinationPort: &kubeAPISpec.DestinationPort,
+		Proxyprotocol:   &mybool,
 	}
 
 	clusterTagKey := infrav1.ClusterTagKey(hc.Name)
@@ -184,12 +183,29 @@ func (s *Service) createLoadBalancer(ctx context.Context, spec infrav1.HcloudLoa
 		Location:         location,
 		Network:          network,
 		Labels:           labels,
-		Services:         services,
+		Services:         []hcloud.LoadBalancerCreateOptsService{createServiceOpts},
 	}
 
 	lb, _, err := s.scope.HcloudClient().CreateLoadBalancer(ctx, opts)
 	if err != nil {
 		return nil, fmt.Errorf("error creating load balancer: %s", err)
+	}
+
+	// If there is more than one service in the specs, add them here one after another
+	// Adding all at the same time on creation led to an error that the source port is already in use
+	if len(s.scope.HcloudCluster.Spec.ControlPlaneLoadBalancer.Services) > 1 {
+		for _, spec := range s.scope.HcloudCluster.Spec.ControlPlaneLoadBalancer.Services[1:] {
+			serviceOpts := hcloud.LoadBalancerAddServiceOpts{
+				Protocol:        hcloud.LoadBalancerServiceProtocol(spec.Protocol),
+				ListenPort:      &spec.ListenPort,
+				DestinationPort: &spec.DestinationPort,
+				Proxyprotocol:   &mybool,
+			}
+			_, _, err := s.scope.HcloudClient().AddServiceToLoadBalancer(ctx, lb.LoadBalancer, serviceOpts)
+			if err != nil {
+				return nil, fmt.Errorf("Error adding service to load balancer: %s", err)
+			}
+		}
 	}
 
 	status, err := s.apiToStatus(lb.LoadBalancer)
