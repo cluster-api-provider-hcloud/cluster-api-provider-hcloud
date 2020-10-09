@@ -35,8 +35,4 @@ go_test(
     name = "go_default_test",
     srcs = ["userdata_test.go"],
     embed = [":go_default_library"],
-    deps = [
-        "@io_k8s_sigs_cluster_api//bootstrap/kubeadm/api/v1alpha3:go_default_library",
-        "@tools_gotest//assert:go_default_library",
-    ],
 )
