@@ -674,14 +674,6 @@ def go_repositories():
         sum = "h1:N0LgJ1j65A7kfXrZnUDaYCs/Sf4rEjNlfyDHW9dolSY=",
         version = "v17.0.0+incompatible",
     )
-    go_repository(
-        name = "com_github_google_go_jsonnet",
-        build_file_generation = "on",
-        build_file_proto_mode = "disable_global",
-        importpath = "github.com/google/go-jsonnet",
-        sum = "h1:lEUXTDnVsHu+CLLzMeWAdWV4JpCgkJeDqdVNS8RtyuY=",
-        version = "v0.15.0",
-    )
     git_repository(
         name = "com_github_google_go_jsonnet",
         remote = "https://github.com/google/go-jsonnet",
@@ -1200,22 +1192,6 @@ def go_repositories():
         importpath = "github.com/OneOfOne/xxhash",
         sum = "h1:KMrpdQIwFcEqXDklaen+P1axHaj9BSKzvpUUfnHldSE=",
         version = "v1.2.2",
-    )
-    go_repository(
-        name = "com_github_onsi_ginkgo",
-        build_file_generation = "on",
-        build_file_proto_mode = "disable_global",
-        importpath = "github.com/onsi/ginkgo",
-        sum = "h1:mFwc4LvZ0xpSvDZ3E+k8Yte0hLOMxXUlP+yXtJqkYfQ=",
-        version = "v1.12.1",
-    )
-    go_repository(
-        name = "com_github_onsi_gomega",
-        build_file_generation = "on",
-        build_file_proto_mode = "disable_global",
-        importpath = "github.com/onsi/gomega",
-        sum = "h1:o0+MgICZLuZ7xjH7Vx6zS/zcu93/BEp1VwkIW1mEXCE=",
-        version = "v1.10.1",
     )
     go_repository(
         name = "com_github_opencontainers_go_digest",
