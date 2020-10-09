@@ -19,8 +19,5 @@ go_library(
     srcs = ["fake.go"],
     importpath = "github.com/cluster-api-provider-hcloud/cluster-api-provider-hcloud/hack/build",
     visibility = ["//visibility:public"],
-    deps = [
-        "@com_github_tcnksm_ghr//:go_default_library",
-        "@io_k8s_sigs_controller_tools//pkg/version:go_default_library",
-    ],
+    deps = ["@io_k8s_sigs_controller_tools//pkg/version:go_default_library"],
 )
