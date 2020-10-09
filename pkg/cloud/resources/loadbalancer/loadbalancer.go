@@ -112,7 +112,7 @@ func (s *Service) Reconcile(ctx context.Context) (err error) {
 
 func (s *Service) createLoadBalancer(ctx context.Context, spec infrav1.HcloudLoadBalancerSpec) (*infrav1.HcloudLoadBalancerStatus, error) {
 
-	s.scope.V(2).Info("Create a new loadbalancer", "algorithm type", spec.Algorithm)
+	s.scope.V(1).Info("Create a new loadbalancer", "algorithm type", spec.Algorithm)
 
 	// gather algorithm type
 	var algType hcloud.LoadBalancerAlgorithmType
@@ -161,18 +161,14 @@ func (s *Service) createLoadBalancer(ctx context.Context, spec infrav1.HcloudLoa
 		}
 	}
 
-	var mybool = false
-	var defaultPort = int(s.scope.ControlPlaneAPIEndpointPort())
-	var listenPort = defaultPort
-	// If controlPlaneEndpoint has been specified (or set) then use it
-	if s.scope.HcloudCluster.Spec.ControlPlaneEndpoint != nil {
-		listenPort = int(s.scope.HcloudCluster.Spec.ControlPlaneEndpoint.Port)
-	}
+	var mybool bool
+	// The first service in the list is the one of kubeAPI
+	kubeAPISpec := s.scope.HcloudCluster.Spec.ControlPlaneLoadBalancer.Services[0]
 
-	kubeapiservice := hcloud.LoadBalancerCreateOptsService{
-		Protocol:        hcloud.LoadBalancerServiceProtocolTCP,
-		ListenPort:      &listenPort,
-		DestinationPort: &defaultPort,
+	createServiceOpts := hcloud.LoadBalancerCreateOptsService{
+		Protocol:        hcloud.LoadBalancerServiceProtocol(kubeAPISpec.Protocol),
+		ListenPort:      &kubeAPISpec.ListenPort,
+		DestinationPort: &kubeAPISpec.DestinationPort,
 		Proxyprotocol:   &mybool,
 	}
 
@@ -187,12 +183,29 @@ func (s *Service) createLoadBalancer(ctx context.Context, spec infrav1.HcloudLoa
 		Location:         location,
 		Network:          network,
 		Labels:           labels,
-		Services:         []hcloud.LoadBalancerCreateOptsService{kubeapiservice},
+		Services:         []hcloud.LoadBalancerCreateOptsService{createServiceOpts},
 	}
 
 	lb, _, err := s.scope.HcloudClient().CreateLoadBalancer(ctx, opts)
 	if err != nil {
 		return nil, fmt.Errorf("error creating load balancer: %s", err)
+	}
+
+	// If there is more than one service in the specs, add them here one after another
+	// Adding all at the same time on creation led to an error that the source port is already in use
+	if len(s.scope.HcloudCluster.Spec.ControlPlaneLoadBalancer.Services) > 1 {
+		for _, spec := range s.scope.HcloudCluster.Spec.ControlPlaneLoadBalancer.Services[1:] {
+			serviceOpts := hcloud.LoadBalancerAddServiceOpts{
+				Protocol:        hcloud.LoadBalancerServiceProtocol(spec.Protocol),
+				ListenPort:      &spec.ListenPort,
+				DestinationPort: &spec.DestinationPort,
+				Proxyprotocol:   &mybool,
+			}
+			_, _, err := s.scope.HcloudClient().AddServiceToLoadBalancer(ctx, lb.LoadBalancer, serviceOpts)
+			if err != nil {
+				return nil, fmt.Errorf("Error adding service to load balancer: %s", err)
+			}
+		}
 	}
 
 	status, err := s.apiToStatus(lb.LoadBalancer)

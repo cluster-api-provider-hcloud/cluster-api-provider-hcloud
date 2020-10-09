@@ -202,11 +202,14 @@ func (r *HcloudClusterReconciler) reconcileNormal(clusterScope *scope.ClusterSco
 	if err := loadbalancer.NewService(clusterScope).Reconcile(ctx); err != nil {
 		return reconcile.Result{}, errors.Wrapf(err, "failed to reconcile load balancers for HcloudCluster %s/%s", hcloudCluster.Namespace, hcloudCluster.Name)
 	}
-
+	// In the case when the controlPlaneLoadBalancer has an IPv4 we use it as default for
+	// the host of the controlPlaneEndpoint.
+	// The first service of the loadBalancer is the kubeAPIService, from which we take the
+	// destinationPort as default
 	if hcloudCluster.Status.ControlPlaneLoadBalancer.IPv4 != "<nil>" {
 
 		var defaultHost = hcloudCluster.Status.ControlPlaneLoadBalancer.IPv4
-		var defaultPort = clusterScope.ControlPlaneAPIEndpointPort()
+		var defaultPort = int32(hcloudCluster.Spec.ControlPlaneLoadBalancer.Services[0].DestinationPort)
 
 		if hcloudCluster.Spec.ControlPlaneEndpoint == nil {
 			hcloudCluster.Spec.ControlPlaneEndpoint = &clusterv1.APIEndpoint{

@@ -2,10 +2,7 @@ load("@io_bazel_rules_go//go:def.bzl", "go_library")
 
 go_library(
     name = "go_default_library",
-    srcs = [
-        "server.go",
-        "userdata.go",
-    ],
+    srcs = ["server.go"],
     importpath = "github.com/cluster-api-provider-hcloud/cluster-api-provider-hcloud/pkg/cloud/resources/server",
     visibility = ["//visibility:public"],
     deps = [
@@ -23,7 +20,6 @@ go_library(
         "@io_k8s_apimachinery//pkg/types:go_default_library",
         "@io_k8s_apimachinery//pkg/util/errors:go_default_library",
         "@io_k8s_sigs_cluster_api//api/v1alpha3:go_default_library",
-        "@io_k8s_sigs_cluster_api//bootstrap/kubeadm/api/v1alpha3:go_default_library",
         "@io_k8s_sigs_controller_runtime//:go_default_library",
         "@io_k8s_sigs_controller_runtime//pkg/reconcile:go_default_library",
     ],
