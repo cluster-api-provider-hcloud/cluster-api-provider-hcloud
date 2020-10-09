@@ -82,6 +82,10 @@ func (m *BareMetalMachineScope) SetFailureMessage(err error) {
 	m.BareMetalMachine.Status.FailureMessage = pointer.StringPtr(err.Error())
 }
 
+func (m *BareMetalMachineScope) IsBootstrapDataReady(ctx context.Context) bool {
+	return m.Machine.Spec.Bootstrap.DataSecretName != nil
+}
+
 // GetRawBootstrapData returns the bootstrap data from the secret in the BareMetalMachine's bootstrap.dataSecretName.
 func (m *BareMetalMachineScope) GetRawBootstrapData(ctx context.Context) ([]byte, error) {
 	if m.Machine.Spec.Bootstrap.DataSecretName == nil {
