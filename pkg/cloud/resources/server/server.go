@@ -138,16 +138,8 @@ func (s *Service) Reconcile(ctx context.Context) (_ *ctrl.Result, err error) {
 	cloudProviderValue := "external"
 
 	if s.scope.IsControlPlane() {
-		// set up iptables proxy
-		if kubeadmConfig.IsInit() {
-			iptablesProxy, err := s.getIPTablesProxyFile()
-			if err != nil {
-				return nil, err
-			}
-			if err := userData.SetOrUpdateFile(iptablesProxy); err != nil {
-				return nil, err
-			}
 
+		if kubeadmConfig.IsInit() {
 			if c := kubeadmConfig.ClusterConfiguration; c != nil {
 				if c.APIServer.ExtraArgs == nil {
 					c.APIServer.ExtraArgs = make(map[string]string)
