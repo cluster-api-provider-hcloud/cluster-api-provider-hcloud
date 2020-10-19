@@ -237,10 +237,12 @@ func (s *Service) provisionMachine(ctx context.Context, server models.Server) er
 		return err
 	}
 
-	kubeadmConfigString, err := userData.GetContentInformation()
-	if err != nil {
-		return errors.Errorf("Error while obtaining the kubeadm config for the baremetal server", err)
+	userDataBytes := bytes.NewBuffer(nil)
+	if err := userData.WriteYAML(userDataBytes); err != nil {
+		return errors.Errorf("Error while writing yaml file", err)
 	}
+
+	cloudInitConfigString := userDataBytes.String()
 
 	_, err = s.scope.HrobotClient().ActivateRescue(server.ServerIP, sshFingerprint)
 	if err != nil {
@@ -339,25 +341,18 @@ EOF`,
 		return errors.Errorf("Connection to server after reboot could not be established: %s", err)
 	}
 
-	kubeadmCommand := fmt.Sprintf(
-		`cat > /tmp/kubeadm-join-config.yaml << EOF
+	cloudInitCommand := fmt.Sprintf(
+		`cat > /tmp/user-data.txt << EOF
 %s
-EOF`, kubeadmConfigString)
+EOF`, cloudInitConfigString)
 
 	// send kubeadmConfig to server
-	stdout, stderr, err = runSSH(kubeadmCommand, server.ServerIP, port, privateSSHKey)
+	stdout, stderr, err = runSSH(cloudInitCommand, server.ServerIP, port, privateSSHKey)
 	if err != nil {
-		return errors.Errorf("Error running the ssh command %s: Error: %s, stderr: %s", kubeadmCommand, err, stderr)
+		return errors.Errorf("Error running the ssh command %s: Error: %s, stderr: %s", cloudInitCommand, err, stderr)
 	}
-
-	command = "chmod 640 /tmp/kubeadm-join-config.yaml && chown root:root /tmp/kubeadm-join-config.yaml"
-
-	stdout, stderr, err = runSSH(command, server.ServerIP, port, privateSSHKey)
-	if err != nil {
-		return errors.Errorf("Error running the ssh command %s: Error: %s, stderr: %s", command, err, stderr)
-	}
-
-	command = "kubeadm join --config /tmp/kubeadm-join-config.yaml"
+	//TODO cloud init command
+	command = "cloud-init command"
 
 	stdout, stderr, err = runSSH(command, server.ServerIP, port, privateSSHKey)
 	if err != nil {
