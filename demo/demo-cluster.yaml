@@ -55,13 +55,10 @@ spec:
   hcloudTokenRef:
     key: token
     name: hetzner-token
-<<<<<<< HEAD
   hrobotTokenRef:
     passwordKey: robot-password
     userNameKey: robot-user
     tokenName: bm-token
-=======
->>>>>>> main
 ---
 apiVersion: controlplane.cluster.x-k8s.io/v1alpha3
 kind: KubeadmControlPlane

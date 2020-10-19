@@ -78,15 +78,11 @@ func (c *realHcloudClient) DeleteTargetServerOfLoadBalancer(ctx context.Context,
 	return c.client.LoadBalancer.RemoveServerTarget(ctx, lb, server)
 }
 
-<<<<<<< HEAD:pkg/cloud/scope/hcloudClient.go
-func (c *realHcloudClient) ListImages(ctx context.Context, opts hcloud.ImageListOpts) ([]*hcloud.Image, error) {
-=======
-func (c *realClient) AddServiceToLoadBalancer(ctx context.Context, lb *hcloud.LoadBalancer, opts hcloud.LoadBalancerAddServiceOpts) (*hcloud.Action, *hcloud.Response, error) {
+func (c *realHcloudClient) AddServiceToLoadBalancer(ctx context.Context, lb *hcloud.LoadBalancer, opts hcloud.LoadBalancerAddServiceOpts) (*hcloud.Action, *hcloud.Response, error) {
 	return c.client.LoadBalancer.AddService(ctx, lb, opts)
 }
 
-func (c *realClient) ListImages(ctx context.Context, opts hcloud.ImageListOpts) ([]*hcloud.Image, error) {
->>>>>>> main:pkg/cloud/scope/client.go
+func (c *realHcloudClient) ListImages(ctx context.Context, opts hcloud.ImageListOpts) ([]*hcloud.Image, error) {
 	return c.client.Image.AllWithOpts(ctx, opts)
 }
 

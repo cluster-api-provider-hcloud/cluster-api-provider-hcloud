@@ -84,7 +84,6 @@ spec:
                   type:
                     type: string
                 required:
-<<<<<<< HEAD
                 - algorithm
                 - type
                 type: object
@@ -116,9 +115,6 @@ spec:
                 - passwordKey
                 - tokenName
                 - userNameKey
-=======
-                - services
->>>>>>> main
                 type: object
               locations:
                 items:
