@@ -66,9 +66,25 @@ spec:
                     type: string
                   name:
                     type: string
+                  services:
+                    items:
+                      properties:
+                        destinationPort:
+                          type: integer
+                        listenPort:
+                          type: integer
+                        protocol:
+                          type: string
+                      required:
+                      - destinationPort
+                      - listenPort
+                      - protocol
+                      type: object
+                    type: array
                   type:
                     type: string
                 required:
+<<<<<<< HEAD
                 - algorithm
                 - type
                 type: object
@@ -100,6 +116,9 @@ spec:
                 - passwordKey
                 - tokenName
                 - userNameKey
+=======
+                - services
+>>>>>>> main
                 type: object
               locations:
                 items:

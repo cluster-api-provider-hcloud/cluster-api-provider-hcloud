@@ -11,8 +11,6 @@ require (
 	github.com/google/go-jsonnet v0.15.0
 	github.com/hetznercloud/hcloud-go v1.22.0
 	github.com/nl2go/hrobot-go v0.1.3
-	github.com/onsi/ginkgo v1.12.1
-	github.com/onsi/gomega v1.10.1
 	github.com/pkg/errors v0.9.1
 	github.com/spf13/cobra v1.0.0
 	github.com/tcnksm/ghr v0.13.0

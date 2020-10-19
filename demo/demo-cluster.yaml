@@ -36,6 +36,13 @@ spec:
   controlPlaneLoadbalancer:
     type: lb11
     algorithm: round_robin
+    services:
+    - listenPort: 443
+      destinationPort: 6443
+      protocol: tcp
+    - listenPort: 8091
+      destinationPort: 8091
+      protocol: tcp
   locations:
   - fsn1  # first location is used for location of Loadbalancer
   - nbg1
@@ -48,10 +55,13 @@ spec:
   hcloudTokenRef:
     key: token
     name: hetzner-token
+<<<<<<< HEAD
   hrobotTokenRef:
     passwordKey: robot-password
     userNameKey: robot-user
     tokenName: bm-token
+=======
+>>>>>>> main
 ---
 apiVersion: controlplane.cluster.x-k8s.io/v1alpha3
 kind: KubeadmControlPlane

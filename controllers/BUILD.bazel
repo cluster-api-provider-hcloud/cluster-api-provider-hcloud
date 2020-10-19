@@ -53,17 +53,6 @@ go_test(
     srcs = ["suite_test.go"],
     data = ["@kubebuilder_linux_amd64_bin//:bin"],
     embed = [":go_default_library"],
-    deps = [
-        "//api/v1alpha3:go_default_library",
-        "@com_github_onsi_ginkgo//:go_default_library",
-        "@com_github_onsi_gomega//:go_default_library",
-        "@io_k8s_client_go//kubernetes/scheme:go_default_library",
-        "@io_k8s_client_go//rest:go_default_library",
-        "@io_k8s_sigs_controller_runtime//pkg/client:go_default_library",
-        "@io_k8s_sigs_controller_runtime//pkg/envtest:go_default_library",
-        "@io_k8s_sigs_controller_runtime//pkg/log:go_default_library",
-        "@io_k8s_sigs_controller_runtime//pkg/log/zap:go_default_library",
-    ],
 )
 
 filegroup(
