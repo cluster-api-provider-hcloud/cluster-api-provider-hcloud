@@ -89,6 +89,101 @@ func (s *Service) Reconcile(ctx context.Context) (_ *ctrl.Result, err error) {
 		return &ctrl.Result{RequeueAfter: 2 * time.Second}, nil
 	}
 
+	if s.scope.IsBootstrapDataReady(s.scope.Ctx) {
+		return &ctrl.Result{RequeueAfter: 15 * time.Second}, nil
+	}
+
+	// update current server
+	actualServers, err := s.actualStatus(ctx)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to refresh server status")
+	}
+
+	var actualServer *hcloud.Server
+
+	if len(actualServers) == 0 {
+		fmt.Printf("Wants to create server %s", s.scope.Machine.Name)
+		server, err := s.createServer(s.scope.Ctx, failureDomain, imageID)
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to create server")
+		}
+		if server != nil {
+			record.Eventf(
+				s.scope.HcloudMachine,
+				"SuccessfulCreate",
+				"Created new server with id %d",
+				server.ID,
+			)
+			actualServer = server
+		} else {
+			// In this case something was not ready yet
+			return &reconcile.Result{}, nil
+		}
+	} else if len(actualServers) == 1 {
+		actualServer = actualServers[0]
+	} else {
+		return nil, errors.New("found more than one actual servers")
+	}
+
+	if err := setStatusFromAPI(&s.scope.HcloudMachine.Status, actualServer); err != nil {
+		return nil, errors.New("error setting status")
+	}
+
+	// wait for server being running
+	if actualServer.Status != hcloud.ServerStatusRunning {
+		s.scope.V(1).Info("server not in running state", "server", actualServer.Name, "status", actualServer.Status)
+		return &reconcile.Result{RequeueAfter: 2 * time.Second}, nil
+	}
+
+	providerID := fmt.Sprintf("hcloud://%d", actualServer.ID)
+
+	if !s.scope.IsControlPlane() {
+		s.scope.HcloudMachine.Spec.ProviderID = &providerID
+		s.scope.HcloudMachine.Status.Ready = true
+		return nil, nil
+	}
+
+	// check if at least one of the adresses is ready
+	var errors []error
+	for _, address := range s.scope.HcloudMachine.Status.Addresses {
+		if address.Type != corev1.NodeExternalIP && address.Type != corev1.NodeExternalDNS {
+			continue
+		}
+
+		clientConfig, err := s.scope.ClientConfigWithAPIEndpoint(clusterv1.APIEndpoint{
+			Host: address.Address,
+			Port: s.scope.ControlPlaneAPIEndpointPort(),
+		})
+		if err != nil {
+			return nil, err
+		}
+
+		if err := s.addServerToLoadBalancer(ctx, actualServer); err != nil {
+			errors = append(errors, err)
+		}
+
+		if err := scope.IsControlPlaneReady(ctx, clientConfig); err != nil {
+			errors = append(errors, err)
+		}
+
+		s.scope.HcloudMachine.Spec.ProviderID = &providerID
+		s.scope.HcloudMachine.Status.Ready = true
+		return nil, nil
+	}
+
+	if err := errorutil.NewAggregate(errors); err != nil {
+		record.Warnf(
+			s.scope.HcloudMachine,
+			"APIServerNotReady",
+			"Health check for API server failed: %s",
+			err,
+		)
+	}
+	return nil, fmt.Errorf("Not usable Address found")
+}
+
+func (s *Service) createServer(ctx context.Context, failureDomain string, imageID *infrav1.HcloudImageID) (*hcloud.Server, error) {
+
 	s.scope.HcloudMachine.Status.ImageID = imageID
 
 	// gather volumes
@@ -103,13 +198,13 @@ func (s *Service) Reconcile(ctx context.Context) (_ *ctrl.Result, err error) {
 		)
 		if apierrors.IsNotFound(err) {
 			s.scope.V(1).Info("HcloudVolume is not found", "hcloudVolume", volumeObjectKey)
-			return &reconcile.Result{}, nil
+			return nil, nil
 		} else if err != nil {
 			return nil, err
 		}
 		if hcloudVolume.Status.VolumeID == nil {
 			s.scope.V(1).Info("HcloudVolume is not existing yet", "hcloudVolume", volumeObjectKey)
-			return &reconcile.Result{}, nil
+			return nil, nil
 		}
 		volumes[pos] = &hcloud.Volume{
 			ID: int(*hcloudVolume.Status.VolumeID),
@@ -117,21 +212,22 @@ func (s *Service) Reconcile(ctx context.Context) (_ *ctrl.Result, err error) {
 	}
 
 	userDataInitial, err := s.scope.GetRawBootstrapData(ctx)
-	if err == scope.ErrBootstrapDataNotReady {
-		s.scope.V(1).Info("Bootstrap data is not ready yet")
-		return &reconcile.Result{RequeueAfter: 15 * time.Second}, nil
-	} else if err != nil {
-		return nil, err
+	if err != nil {
+		if err == scope.ErrBootstrapDataNotReady {
+
+			return nil, nil
+		}
+		return nil, fmt.Errorf("Failed to get raw bootstrap data: %s", err)
 	}
 
 	userData, err := userdata.NewFromReader(bytes.NewReader(userDataInitial))
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("Failed get userdata reader: %s", err)
 	}
 
 	kubeadmConfig, err := userData.GetKubeadmConfig()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("Failed to get kubeadm config: %s", err)
 	}
 
 	cloudProviderKey := "cloud-provider"
@@ -210,12 +306,6 @@ func (s *Service) Reconcile(ctx context.Context) (_ *ctrl.Result, err error) {
 		return nil, err
 	}
 
-	// update current server
-	actualServers, err := s.actualStatus(ctx)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to refresh server status")
-	}
-
 	var myTrue = true
 	var myFalse = false
 
@@ -267,83 +357,11 @@ func (s *Service) Reconcile(ctx context.Context) (_ *ctrl.Result, err error) {
 			ID: net.ID,
 		}}
 	}
-
-	var actualServer *hcloud.Server
-
-	if len(actualServers) == 0 {
-
-		if res, _, err := s.scope.HcloudClient().CreateServer(s.scope.Ctx, opts); err != nil {
-			return nil, errors.Wrap(err, "failed to create server")
-		} else {
-			record.Eventf(
-				s.scope.HcloudMachine,
-				"SuccessfulCreate",
-				"Created new server with id %d",
-				res.Server.ID,
-			)
-			actualServer = res.Server
-		}
-	} else if len(actualServers) == 1 {
-		actualServer = actualServers[0]
-	} else {
-		return nil, errors.New("found more than one actual servers")
+	res, _, err := s.scope.HcloudClient().CreateServer(s.scope.Ctx, opts)
+	if err != nil {
+		return nil, fmt.Errorf("Error while creating Hcloud server %s: %s", &s.scope.HcloudMachine.Name, err)
 	}
-
-	if err := setStatusFromAPI(&s.scope.HcloudMachine.Status, actualServer); err != nil {
-		return nil, errors.New("error setting status")
-	}
-
-	// wait for server being running
-	if actualServer.Status != hcloud.ServerStatusRunning {
-		s.scope.V(1).Info("server not in running state", "server", actualServer.Name, "status", actualServer.Status)
-		return &reconcile.Result{RequeueAfter: 2 * time.Second}, nil
-	}
-
-	providerID := fmt.Sprintf("hcloud://%d", actualServer.ID)
-
-	if !s.scope.IsControlPlane() {
-		s.scope.HcloudMachine.Spec.ProviderID = &providerID
-		s.scope.HcloudMachine.Status.Ready = true
-		return nil, nil
-	}
-
-	// check if at least one of the adresses is ready
-	var errors []error
-	for _, address := range s.scope.HcloudMachine.Status.Addresses {
-		if address.Type != corev1.NodeExternalIP && address.Type != corev1.NodeExternalDNS {
-			continue
-		}
-
-		clientConfig, err := s.scope.ClientConfigWithAPIEndpoint(clusterv1.APIEndpoint{
-			Host: address.Address,
-			Port: s.scope.ControlPlaneAPIEndpointPort(),
-		})
-		if err != nil {
-			return nil, err
-		}
-
-		if err := s.addServerToLoadBalancer(ctx, actualServer); err != nil {
-			errors = append(errors, err)
-		}
-
-		if err := scope.IsControlPlaneReady(ctx, clientConfig); err != nil {
-			errors = append(errors, err)
-		}
-
-		s.scope.HcloudMachine.Spec.ProviderID = &providerID
-		s.scope.HcloudMachine.Status.Ready = true
-		return nil, nil
-	}
-
-	if err := errorutil.NewAggregate(errors); err != nil {
-		record.Warnf(
-			s.scope.HcloudMachine,
-			"APIServerNotReady",
-			"Health check for API server failed: %s",
-			err,
-		)
-	}
-	return nil, fmt.Errorf("Not usable Address found")
+	return res.Server, nil
 }
 
 func (s *Service) Delete(ctx context.Context) (_ *ctrl.Result, err error) {
