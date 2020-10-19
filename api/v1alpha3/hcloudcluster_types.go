@@ -108,8 +108,8 @@ type HcloudLoadBalancerSpec struct {
 	Name *string `json:"name"`
 
 	Algorithm HcloudLoadBalancerAlgorithmType `json:"algorithm"`
-	Type      string
-	Services  []LoadBalancerServiceSpec `json:"services"`
+	Type      string                          `json:"type"`
+	Services  []LoadBalancerServiceSpec       `json:"services"`
 }
 
 type LoadBalancerServiceSpec struct {
