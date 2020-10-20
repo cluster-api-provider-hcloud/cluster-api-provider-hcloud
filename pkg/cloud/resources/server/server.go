@@ -371,10 +371,11 @@ func (s *Service) Delete(ctx context.Context) (_ *ctrl.Result, err error) {
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to refresh server status")
 	}
+	var result *ctrl.Result
 	if server == nil {
 		s.scope.V(2).Info("Unable to locate Hcloud instance by ID or tags")
 		record.Warnf(s.scope.HcloudMachine, "NoInstanceFound", "Unable to find matching Hcloud instance for %s", s.scope.Name())
-		return &reconcile.Result{}, nil
+		return result, nil
 	}
 
 	err = s.deleteServerOfLoadBalancer(ctx, server)
@@ -410,7 +411,7 @@ func (s *Service) Delete(ctx context.Context) (_ *ctrl.Result, err error) {
 		"Hcloud server %s deleted",
 		s.scope.Name(),
 	)
-	return &ctrl.Result{}, nil
+	return result, nil
 }
 
 func setStatusFromAPI(status *infrav1.HcloudMachineStatus, server *hcloud.Server) error {
