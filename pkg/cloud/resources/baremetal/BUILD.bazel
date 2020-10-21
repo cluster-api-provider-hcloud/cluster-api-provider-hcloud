@@ -8,6 +8,7 @@ go_library(
     deps = [
         "//pkg/cloud/resources/server/userdata:go_default_library",
         "//pkg/cloud/scope:go_default_library",
+        "//pkg/record:go_default_library",
         "@com_github_nl2go_hrobot_go//models:go_default_library",
         "@com_github_pkg_errors//:go_default_library",
         "@io_k8s_api//core/v1:go_default_library",
