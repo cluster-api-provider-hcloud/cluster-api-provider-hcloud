@@ -37,36 +37,6 @@ func NewService(scope *scope.MachineScope) *Service {
 	}
 }
 
-var errNotImplemented = errors.New("Not implemented")
-
-const etcdMountPath = "/var/lib/etcd"
-
-func stringSliceContains(s []string, e string) bool {
-	for _, a := range s {
-		if a == e {
-			return true
-		}
-	}
-	return false
-}
-
-func (s *Service) createLabels() map[string]string {
-
-	m := map[string]string{
-		infrav1.ClusterTagKey(s.scope.HcloudCluster.Name): string(infrav1.ResourceLifecycleOwned),
-		infrav1.MachineNameTagKey:                         s.scope.Name(),
-	}
-
-	var machineType string
-	if s.scope.IsControlPlane() == true {
-		machineType = "control_plane"
-	} else {
-		machineType = "worker"
-	}
-	m["machine_type"] = machineType
-	return m
-}
-
 func (s *Service) Reconcile(ctx context.Context) (_ *ctrl.Result, err error) {
 	// detect failure domain
 	failureDomain, err := s.scope.GetFailureDomain()
@@ -82,12 +52,101 @@ func (s *Service) Reconcile(ctx context.Context) (_ *ctrl.Result, err error) {
 		Image:             s.scope.HcloudMachine.Spec.ImageName,
 	})
 	if err != nil {
+		record.Warnf(s.scope.HcloudMachine,
+			"FailedEnsuringHcloudImage",
+			"Failed to ensure image for Hcloud server %s: %s",
+			s.scope.Name(),
+			err,
+		)
 		return nil, err
 	}
-
+	// We have to wait for the image and bootstrap data to be ready
 	if imageID == nil {
 		return &ctrl.Result{RequeueAfter: 2 * time.Second}, nil
 	}
+
+	if !s.scope.IsBootstrapDataReady(s.scope.Ctx) {
+		return &ctrl.Result{RequeueAfter: 15 * time.Second}, nil
+	}
+
+	instance, err := s.findServer(ctx)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to get server")
+	}
+
+	// If no server is found we have to create one
+	if instance == nil {
+		instance, err = s.createServer(s.scope.Ctx, failureDomain, imageID)
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to create server")
+		}
+		record.Eventf(
+			s.scope.HcloudMachine,
+			"SuccessfulCreate",
+			"Created new server with id %d",
+			instance.ID,
+		)
+	}
+
+	if err := setStatusFromAPI(&s.scope.HcloudMachine.Status, instance); err != nil {
+		return nil, errors.New("error setting status")
+	}
+
+	// wait for server being running
+	if instance.Status != hcloud.ServerStatusRunning {
+		s.scope.V(1).Info("server not in running state", "server", instance.Name, "status", instance.Status)
+		return &reconcile.Result{RequeueAfter: 2 * time.Second}, nil
+	}
+
+	providerID := fmt.Sprintf("hcloud://%d", instance.ID)
+
+	if !s.scope.IsControlPlane() {
+		s.scope.HcloudMachine.Spec.ProviderID = &providerID
+		s.scope.HcloudMachine.Status.Ready = true
+		return nil, nil
+	}
+
+	// all control planes have to be attached to the load balancer
+	if err := s.reconcileLoadBalancerAttachment(ctx, instance); err != nil {
+		return nil, errors.Wrap(err, "failed to add server to load balancer")
+	}
+
+	// check if at least one of the adresses is ready
+	var errors []error
+	for _, address := range s.scope.HcloudMachine.Status.Addresses {
+		if address.Type != corev1.NodeExternalIP && address.Type != corev1.NodeExternalDNS {
+			continue
+		}
+
+		clientConfig, err := s.scope.ClientConfigWithAPIEndpoint(clusterv1.APIEndpoint{
+			Host: address.Address,
+			Port: s.scope.ControlPlaneAPIEndpointPort(),
+		})
+		if err != nil {
+			return nil, err
+		}
+
+		if err := scope.IsControlPlaneReady(ctx, clientConfig); err != nil {
+			errors = append(errors, err)
+		}
+
+		s.scope.HcloudMachine.Spec.ProviderID = &providerID
+		s.scope.HcloudMachine.Status.Ready = true
+		return nil, nil
+	}
+
+	if err := errorutil.NewAggregate(errors); err != nil {
+		record.Warnf(
+			s.scope.HcloudMachine,
+			"APIServerNotReady",
+			"Health check for API server failed: %s",
+			err,
+		)
+	}
+	return nil, fmt.Errorf("Not usable Address found")
+}
+
+func (s *Service) createServer(ctx context.Context, failureDomain string, imageID *infrav1.HcloudImageID) (*hcloud.Server, error) {
 
 	s.scope.HcloudMachine.Status.ImageID = imageID
 
@@ -103,40 +162,44 @@ func (s *Service) Reconcile(ctx context.Context) (_ *ctrl.Result, err error) {
 		)
 		if apierrors.IsNotFound(err) {
 			s.scope.V(1).Info("HcloudVolume is not found", "hcloudVolume", volumeObjectKey)
-			return &reconcile.Result{}, nil
+			return nil, nil
 		} else if err != nil {
 			return nil, err
 		}
 		if hcloudVolume.Status.VolumeID == nil {
 			s.scope.V(1).Info("HcloudVolume is not existing yet", "hcloudVolume", volumeObjectKey)
-			return &reconcile.Result{}, nil
+			return nil, nil
 		}
 		volumes[pos] = &hcloud.Volume{
 			ID: int(*hcloudVolume.Status.VolumeID),
 		}
 	}
 
+	// get userData
 	userDataInitial, err := s.scope.GetRawBootstrapData(ctx)
-	if err == scope.ErrBootstrapDataNotReady {
-		s.scope.V(1).Info("Bootstrap data is not ready yet")
-		return &reconcile.Result{RequeueAfter: 15 * time.Second}, nil
-	} else if err != nil {
-		return nil, err
+	if err != nil {
+		record.Warnf(
+			s.scope.HcloudMachine,
+			"FailedGetBootstrapData",
+			err.Error(),
+		)
+		return nil, fmt.Errorf("Failed to get raw bootstrap data: %s", err)
 	}
 
 	userData, err := userdata.NewFromReader(bytes.NewReader(userDataInitial))
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("Failed get userdata reader: %s", err)
 	}
 
 	kubeadmConfig, err := userData.GetKubeadmConfig()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("Failed to get kubeadm config: %s", err)
 	}
 
 	cloudProviderKey := "cloud-provider"
 	cloudProviderValue := "external"
 
+	// configure the APIServer and kubeadm
 	if s.scope.IsControlPlane() {
 
 		if kubeadmConfig.IsInit() {
@@ -210,12 +273,6 @@ func (s *Service) Reconcile(ctx context.Context) (_ *ctrl.Result, err error) {
 		return nil, err
 	}
 
-	// update current server
-	actualServers, err := s.actualStatus(ctx)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to refresh server status")
-	}
-
 	var myTrue = true
 	var myFalse = false
 
@@ -238,7 +295,7 @@ func (s *Service) Reconcile(ctx context.Context) (_ *ctrl.Result, err error) {
 		Volumes:          volumes,
 	}
 
-	// setup SSH keys
+	// set up SSH keys
 	sshKeySpecs := s.scope.HcloudMachine.Spec.SSHKeys
 	if len(sshKeySpecs) == 0 {
 		sshKeySpecs = s.scope.HcloudCluster.Spec.SSHKeys
@@ -261,139 +318,75 @@ func (s *Service) Reconcile(ctx context.Context) (_ *ctrl.Result, err error) {
 		}
 	}
 
-	// setup network if available
+	// set up network if available
 	if net := s.scope.HcloudCluster.Status.Network; net != nil {
 		opts.Networks = []*hcloud.Network{{
 			ID: net.ID,
 		}}
 	}
 
-	var actualServer *hcloud.Server
-
-	if len(actualServers) == 0 {
-
-		if res, _, err := s.scope.HcloudClient().CreateServer(s.scope.Ctx, opts); err != nil {
-			return nil, errors.Wrap(err, "failed to create server")
-		} else {
-			record.Eventf(
-				s.scope.HcloudMachine,
-				"SuccessfulCreate",
-				"Created new server with id %d",
-				res.Server.ID,
-			)
-			actualServer = res.Server
-		}
-	} else if len(actualServers) == 1 {
-		actualServer = actualServers[0]
-	} else {
-		return nil, errors.New("found more than one actual servers")
-	}
-
-	if err := setStatusFromAPI(&s.scope.HcloudMachine.Status, actualServer); err != nil {
-		return nil, errors.New("error setting status")
-	}
-
-	// wait for server being running
-	if actualServer.Status != hcloud.ServerStatusRunning {
-		s.scope.V(1).Info("server not in running state", "server", actualServer.Name, "status", actualServer.Status)
-		return &reconcile.Result{RequeueAfter: 2 * time.Second}, nil
-	}
-
-	providerID := fmt.Sprintf("hcloud://%d", actualServer.ID)
-
-	if !s.scope.IsControlPlane() {
-		s.scope.HcloudMachine.Spec.ProviderID = &providerID
-		s.scope.HcloudMachine.Status.Ready = true
-		return nil, nil
-	}
-
-	// check if at least one of the adresses is ready
-	var errors []error
-	for _, address := range s.scope.HcloudMachine.Status.Addresses {
-		if address.Type != corev1.NodeExternalIP && address.Type != corev1.NodeExternalDNS {
-			continue
-		}
-
-		clientConfig, err := s.scope.ClientConfigWithAPIEndpoint(clusterv1.APIEndpoint{
-			Host: address.Address,
-			Port: s.scope.ControlPlaneAPIEndpointPort(),
-		})
-		if err != nil {
-			return nil, err
-		}
-
-		if err := s.addServerToLoadBalancer(ctx, actualServer); err != nil {
-			errors = append(errors, err)
-		}
-
-		if err := scope.IsControlPlaneReady(ctx, clientConfig); err != nil {
-			errors = append(errors, err)
-		}
-
-		s.scope.HcloudMachine.Spec.ProviderID = &providerID
-		s.scope.HcloudMachine.Status.Ready = true
-		return nil, nil
-	}
-
-	if err := errorutil.NewAggregate(errors); err != nil {
-		record.Warnf(
-			s.scope.HcloudMachine,
-			"APIServerNotReady",
-			"Health check for API server failed: %s",
+	// Create the server
+	res, _, err := s.scope.HcloudClient().CreateServer(s.scope.Ctx, opts)
+	if err != nil {
+		record.Warnf(s.scope.HcloudMachine,
+			"FailedCreateHcloudServer",
+			"Failed to create Hcloud server %s: %s",
+			s.scope.Name(),
 			err,
 		)
+		return nil, fmt.Errorf("Error while creating Hcloud server %s: %s", &s.scope.HcloudMachine.Name, err)
 	}
-	return nil, fmt.Errorf("Not usable Address found")
+
+	return res.Server, nil
 }
 
 func (s *Service) Delete(ctx context.Context) (_ *ctrl.Result, err error) {
-	// update current servers
-	actualServers, err := s.actualStatus(ctx)
+	// find current server
+	server, err := s.findServer(ctx)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to refresh server status")
 	}
-
-	var actionWait []*hcloud.Server
-	var actionShutdown []*hcloud.Server
-	var actionDelete []*hcloud.Server
-
-	for _, server := range actualServers {
-		switch status := server.Status; status {
-		case hcloud.ServerStatusRunning:
-			actionShutdown = append(actionShutdown, server)
-		case hcloud.ServerStatusOff:
-			actionDelete = append(actionDelete, server)
-		default:
-			actionWait = append(actionWait, server)
-		}
+	var result *ctrl.Result
+	// If no server has been found then nothing can be deleted
+	if server == nil {
+		s.scope.V(2).Info("Unable to locate Hcloud instance by ID or tags")
+		record.Warnf(s.scope.HcloudMachine, "NoInstanceFound", "Unable to find matching Hcloud instance for %s", s.scope.Name())
+		return result, nil
 	}
 
-	// shutdown servers
-	for _, server := range actionShutdown {
+	err = s.deleteServerOfLoadBalancer(ctx, server)
+	if err != nil {
+		return &reconcile.Result{}, errors.Errorf("Error while deleting attached server of loadbalancer: %s", err)
+	}
+
+	// First shut the server down, then delete it
+	switch status := server.Status; status {
+
+	case hcloud.ServerStatusRunning:
+
 		if _, _, err := s.scope.HcloudClient().ShutdownServer(ctx, server); err != nil {
-			return nil, errors.Wrap(err, "failed to shutdown server")
+			return &reconcile.Result{}, errors.Wrap(err, "failed to shutdown server")
 		}
-		actionWait = append(actionWait, server)
-	}
+		return &ctrl.Result{RequeueAfter: 5 * time.Second}, nil
 
-	// delete servers that need delete
-	for _, server := range actionDelete {
-		if server.Labels["machine_type"] == "control_plane" {
-			s.deleteServerOfLoadBalancer(ctx, server)
-		}
+	case hcloud.ServerStatusOff:
 
 		if _, err := s.scope.HcloudClient().DeleteServer(ctx, server); err != nil {
-			return nil, errors.Wrap(err, "failed to delete server")
+			record.Warnf(s.scope.HcloudMachine, "FailedDeleteHcloudServer", "Failed to delete Hcloud server %s", s.scope.Name())
+			return &reconcile.Result{}, errors.Wrap(err, "failed to delete server")
 		}
-	}
 
-	var result *ctrl.Result
-	if len(actionWait) > 0 {
-		result = &ctrl.Result{
-			RequeueAfter: 5 * time.Second,
-		}
-	}
+	default:
+		//actionWait
+		return &ctrl.Result{RequeueAfter: 5 * time.Second}, nil
 
+	}
+	record.Eventf(
+		s.scope.HcloudMachine,
+		"HcloudServerDeleted",
+		"Hcloud server %s deleted",
+		s.scope.Name(),
+	)
 	return result, nil
 }
 
@@ -436,8 +429,9 @@ func setStatusFromAPI(status *infrav1.HcloudMachineStatus, server *hcloud.Server
 	return nil
 }
 
-func (s *Service) addServerToLoadBalancer(ctx context.Context, server *hcloud.Server) error {
+func (s *Service) reconcileLoadBalancerAttachment(ctx context.Context, server *hcloud.Server) error {
 
+	// We differentiate between private and public net
 	var hasPrivateIP bool
 	if len(server.PrivateNet) > 0 {
 		hasPrivateIP = true
@@ -445,13 +439,24 @@ func (s *Service) addServerToLoadBalancer(ctx context.Context, server *hcloud.Se
 
 	loadBalancerAddServerTargetOpts := hcloud.LoadBalancerAddServerTargetOpts{Server: server, UsePrivateIP: &hasPrivateIP}
 
-	lb, err := loadbalancer.GetLoadBalancer(&s.scope.ClusterScope)
+	lb, err := loadbalancer.FindLoadBalancer(&s.scope.ClusterScope)
 	if err != nil {
 		return err
 	}
 
 	// If load balancer has not been attached to a network, then it cannot add a server with private IP
 	if hasPrivateIP == true && len(lb.PrivateNet) == 0 {
+		return nil
+	}
+
+	var alreadyAttached bool
+	for _, target := range lb.Targets {
+		if target.Server.Server.ID == server.ID {
+			alreadyAttached = true
+		}
+	}
+	// if server is already attached then return nil
+	if alreadyAttached {
 		return nil
 	}
 
@@ -471,10 +476,22 @@ func (s *Service) addServerToLoadBalancer(ctx context.Context, server *hcloud.Se
 
 func (s *Service) deleteServerOfLoadBalancer(ctx context.Context, server *hcloud.Server) error {
 
-	lb, err := loadbalancer.GetLoadBalancer(&s.scope.ClusterScope)
+	lb, err := loadbalancer.FindLoadBalancer(&s.scope.ClusterScope)
 	if err != nil {
 		return err
 	}
+	// if the server is not attached to the load balancer then we return without doing anything
+	var stillAttached bool
+	for _, target := range lb.Targets {
+		if target.Server.Server.ID == server.ID {
+			stillAttached = true
+		}
+	}
+
+	if !stillAttached {
+		return nil
+	}
+
 	_, _, err = s.scope.HcloudClient().DeleteTargetServerOfLoadBalancer(ctx, lb, server)
 	if err != nil {
 		s.scope.V(2).Info("Could not delete server as target of load balancer", "Server", server.ID, "Load Balancer", lb.ID)
@@ -489,14 +506,50 @@ func (s *Service) deleteServerOfLoadBalancer(ctx context.Context, server *hcloud
 	return nil
 }
 
-// actualStatus gathers all matching server instances, matched by tag
-func (s *Service) actualStatus(ctx context.Context) ([]*hcloud.Server, error) {
+// We write the server name in the labels, so that all labels are or should be unique
+func (s *Service) findServer(ctx context.Context) (*hcloud.Server, error) {
 	opts := hcloud.ServerListOpts{}
 	opts.LabelSelector = utils.LabelsToLabelSelector(s.createLabels())
-	servers, err := s.scope.HcloudClient().ListServers(s.scope.Ctx, opts)
+	servers, err := s.scope.HcloudClient().ListServers(ctx, opts)
 	if err != nil {
 		return nil, err
 	}
+	if len(servers) > 1 {
+		record.Warnf(s.scope.HcloudMachine,
+			"MultipleInstances",
+			"Found %v instances of name %s",
+			len(servers),
+			s.scope.Name())
+		return nil, fmt.Errorf("Found %v servers with name %s", len(servers), s.scope.Name())
+	} else if len(servers) == 0 {
+		return nil, nil
+	}
 
-	return servers, nil
+	return servers[0], nil
+}
+
+func stringSliceContains(s []string, e string) bool {
+	for _, a := range s {
+		if a == e {
+			return true
+		}
+	}
+	return false
+}
+
+func (s *Service) createLabels() map[string]string {
+
+	m := map[string]string{
+		infrav1.ClusterTagKey(s.scope.HcloudCluster.Name): string(infrav1.ResourceLifecycleOwned),
+		infrav1.MachineNameTagKey:                         s.scope.Name(),
+	}
+
+	var machineType string
+	if s.scope.IsControlPlane() == true {
+		machineType = "control_plane"
+	} else {
+		machineType = "worker"
+	}
+	m["machine_type"] = machineType
+	return m
 }
