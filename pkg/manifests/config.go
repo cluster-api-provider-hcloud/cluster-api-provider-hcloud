@@ -19,11 +19,15 @@ import (
 func sampleParameters() *parameters.ManifestParameters {
 	hcloudNetwork := intstr.FromString("cluster-dev")
 	hcloudToken := "my-token"
+	robotUserName := "my-user"
+	robotPassword := "invalid-password"
 	kubeAPIServerDomain := ""
 	port := "6443"
 
 	return &parameters.ManifestParameters{
 		HcloudToken:         &hcloudToken,
+		RobotUserName:       &robotUserName,
+		RobotPassword:       &robotPassword,
 		HcloudNetwork:       &hcloudNetwork,
 		KubeAPIServerDomain: &kubeAPIServerDomain,
 		Port:                &port,

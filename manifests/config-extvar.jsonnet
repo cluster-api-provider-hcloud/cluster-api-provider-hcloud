@@ -3,6 +3,8 @@ local utils = import 'utils.libsonnet';
 
 local myConfig = {
   hcloudToken: std.extVar('hcloud-token'),
+  robotUserName: std.extVar('robot-username'),
+  robotPassword: std.extVar('robot-password'),
   hcloudNetwork: std.extVar('hcloud-network'),
   kubeAPIServerIPv4: std.extVar('kube-apiserver-ip'),
   kubeAPIServerDomain: std.extVar('kube-apiserver-domain'),

@@ -147,6 +147,8 @@ func NewClusterScope(params ClusterScopeParams) (*ClusterScope, error) {
 		hcloudClient:  hcc,
 		hrobotClient:  hrc,
 		hcloudToken:   hcloudToken,
+		robotUserName: robotUserName,
+		robotPassword: robotPassword,
 		patchHelper:   helper,
 		packer:        params.Packer,
 		manifests:     params.Manifests,
@@ -157,13 +159,15 @@ func NewClusterScope(params ClusterScopeParams) (*ClusterScope, error) {
 type ClusterScope struct {
 	Ctx context.Context
 	logr.Logger
-	Client       client.Client
-	patchHelper  *patch.Helper
-	hcloudClient HcloudClient
-	hrobotClient HrobotClient
-	hcloudToken  string
-	packer       Packer
-	manifests    Manifests
+	Client        client.Client
+	patchHelper   *patch.Helper
+	hcloudClient  HcloudClient
+	hrobotClient  HrobotClient
+	hcloudToken   string
+	robotUserName string
+	robotPassword string
+	packer        Packer
+	manifests     Manifests
 
 	Cluster       *clusterv1.Cluster
 	HcloudCluster *infrav1.HcloudCluster
@@ -256,6 +260,8 @@ func (s *ClusterScope) manifestParameters() (*parameters.ManifestParameters, err
 	}
 
 	p.HcloudToken = &s.hcloudToken
+	p.RobotUserName = &s.robotUserName
+	p.RobotPassword = &s.robotPassword
 
 	if s.HcloudCluster.Status.Network != nil {
 		hcloudNetwork := intstr.FromInt(s.HcloudCluster.Status.Network.ID)
