@@ -334,29 +334,53 @@ EOF`,
 		return errors.Errorf("Unable to reset server: ", err)
 	}
 
-	// We cannot create the file in the tmp folder right after rebooting, as it gets deleted again
+	// We cannot create the files right after rebooting, as it gets deleted again
 	// so we have to wait for a bit
 	_, _, err = runSSH("sleep 60", server.ServerIP, port, privateSSHKey)
 	if err != nil {
 		return errors.Errorf("Connection to server after reboot could not be established: %s", err)
 	}
 
+	// create nocloud directory for cloud-init
+	command = "mkdir -p /var/lib/cloud/seed/nocloud"
+	stdout, stderr, err = runSSH(command, server.ServerIP, port, privateSSHKey)
+	if err != nil {
+		return errors.Errorf("Error running the ssh command %s: Error: %s, stderr: %s", command, err, stderr)
+	}
+	s.scope.V(1).Info("Created nocloud directory for %s", s.scope.BareMetalMachine.Name)
+
+	// create meta-data for cloud-init
+	command = "echo 'instance-id: iid-system-uuid' >> /var/lib/cloud/seed/nocloud/meta-data"
+	stdout, stderr, err = runSSH(command, server.ServerIP, port, privateSSHKey)
+	if err != nil {
+		return errors.Errorf("Error running the ssh command %s: Error: %s, stderr: %s", command, err, stderr)
+	}
+	s.scope.V(1).Info("Created meta-data for %s", s.scope.BareMetalMachine.Name)
+
+	// create user-data for cloud-init provider nocloud
 	cloudInitCommand := fmt.Sprintf(
-		`cat > /tmp/user-data.txt << EOF
+		`cat > /var/lib/cloud/seed/nocloud/user-data << EOF
 %s
 EOF`, cloudInitConfigString)
+	s.scope.V(1).Info("Created user-data for %s", s.scope.BareMetalMachine.Name)
 
-	// send kubeadmConfig to server
+	// send user-data to server
 	stdout, stderr, err = runSSH(cloudInitCommand, server.ServerIP, port, privateSSHKey)
 	if err != nil {
 		return errors.Errorf("Error running the ssh command %s: Error: %s, stderr: %s", cloudInitCommand, err, stderr)
 	}
-	//TODO cloud init command
-	command = "cloud-init command"
+	s.scope.V(1).Info("Sended user-data to server %s", s.scope.BareMetalMachine.Name)
 
-	stdout, stderr, err = runSSH(command, server.ServerIP, port, privateSSHKey)
+	// Waiting for server
+	_, _, err = runSSH("sleep 30", server.ServerIP, port, privateSSHKey)
 	if err != nil {
-		return errors.Errorf("Error running the ssh command %s: Error: %s, stderr: %s", command, err, stderr)
+		return errors.Errorf("Connection to server after reboot could not be established: %s", err)
+	}
+
+	// reboot system
+	_, err = s.scope.HrobotClient().ResetBMServer(server.ServerIP, "hw")
+	if err != nil {
+		return errors.Errorf("Unable to reset server: ", err)
 	}
 
 	_, err = s.scope.HrobotClient().SetBMServerName(server.ServerIP,
