@@ -27,8 +27,10 @@ import (
 const (
 	delimiter                      string        = "--"
 	hoursBeforeDeletion            time.Duration = 36
-	maxWaitingTimeForSSHConnection int           = 300
+	maxWaitingTimeForSSHConnection int           = 200
 	defaultPort                    int           = 22
+	rateLimitTimeOut               time.Duration = 660
+	rateLimitTimeOutDeletion       time.Duration = 120
 )
 
 type Service struct {
@@ -82,12 +84,20 @@ func (s *Service) Reconcile(ctx context.Context) (_ *ctrl.Result, err error) {
 	// update list of servers which have the right type and are not taken in other clusters
 	serverList, err := s.listMatchingMachines(ctx)
 	if err != nil {
+		if checkRateLimitExceeded(err) {
+			record.Warnf(s.scope.BareMetalMachine, "HrobotRateLimitExceeded", "Hrobot rate limit exceeded. Wait for %v sec before trying again.", rateLimitTimeOut)
+			return &reconcile.Result{RequeueAfter: rateLimitTimeOut * time.Second}, nil
+		}
 		return nil, errors.Wrap(err, "failed to list machines")
 	}
 
 	// Find the machine if already attached to the cluster
 	actualServer, err := s.findAttachedMachine(serverList)
 	if err != nil {
+		if checkRateLimitExceeded(err) {
+			record.Warnf(s.scope.BareMetalMachine, "HrobotRateLimitExceeded", "Hrobot rate limit exceeded. Wait for %v sec before trying again.", rateLimitTimeOut)
+			return &reconcile.Result{RequeueAfter: rateLimitTimeOut * time.Second}, nil
+		}
 		return nil, errors.Wrap(err, "failed to find attached machine")
 	}
 
@@ -122,6 +132,10 @@ func (s *Service) Reconcile(ctx context.Context) (_ *ctrl.Result, err error) {
 		// i.e. which is not attached already
 		newServer, err := s.findNewMachine(serverList)
 		if err != nil {
+			if checkRateLimitExceeded(err) {
+				record.Warnf(s.scope.BareMetalMachine, "HrobotRateLimitExceeded", "Hrobot rate limit exceeded. Wait for %v sec before trying again.", rateLimitTimeOut)
+				return &reconcile.Result{RequeueAfter: rateLimitTimeOut * time.Second}, nil
+			}
 			return nil, errors.Errorf("Failed to find new machine: %s", err)
 		}
 		// If the machine is not ready to provision yet, we wait
@@ -136,6 +150,10 @@ func (s *Service) Reconcile(ctx context.Context) (_ *ctrl.Result, err error) {
 		}
 		// Provision the machine
 		if err := s.provisionMachine(ctx, *newServer); err != nil {
+			if checkRateLimitExceeded(err) {
+				record.Warnf(s.scope.BareMetalMachine, "HrobotRateLimitExceeded", "Hrobot rate limit exceeded. Wait for %v sec before trying again.", rateLimitTimeOut)
+				return &reconcile.Result{RequeueAfter: rateLimitTimeOut * time.Second}, nil
+			}
 			return nil, errors.Errorf("Failed to provision new machine: %s", err)
 		}
 		actualServer = newServer
@@ -269,19 +287,19 @@ func (s *Service) provisionMachine(ctx context.Context, server models.Server) er
 	}
 
 	cloudInitConfigString := userDataBytes.String()
-
+	fmt.Println("Activate rescue")
 	// First we have to activate rescue mode
 	_, err = s.scope.HrobotClient().ActivateRescue(server.ServerIP, sshFingerprint)
 	if err != nil {
 		return errors.Errorf("Unable to activate rescue system: ", err)
 	}
-
+	fmt.Println("Reset server")
 	// Reset the server
 	_, err = s.scope.HrobotClient().ResetBMServer(server.ServerIP, "hw")
 	if err != nil {
 		return errors.Errorf("Unable to reset server: ", err)
 	}
-
+	fmt.Println("Run hostname command")
 	// Find out if rescue system has been started successfully
 	stdout, stderr, err := runSSH("hostname", server.ServerIP, 22, privateSSHKey)
 	if err != nil {
@@ -290,7 +308,7 @@ func (s *Service) provisionMachine(ctx context.Context, server models.Server) er
 	if !strings.Contains(stdout, "rescue") {
 		return errors.Errorf("Rescue system not successfully started. Output of command hostname is %s", stdout)
 	}
-
+	fmt.Println("Run block device command")
 	// Find the block device where we can install our image
 	var blockDevices blockDevices
 	blockDeviceCommand := "lsblk -o name,size,rota,fstype,label -e1 -e7 --json"
@@ -322,19 +340,15 @@ HOSTNAME %s
 %s
 IMAGE %s
 EOF`,
-		drive, server.ServerName, partitionString, *s.scope.BareMetalMachine.Spec.ImagePath)
-
+		drive, s.scope.BareMetalMachine.Name, partitionString, *s.scope.BareMetalMachine.Spec.ImagePath)
+	fmt.Println("Send autosetup to server")
 	// Send autosetup file to server
 	stdout, stderr, err = runSSH(autoSetup, server.ServerIP, 22, privateSSHKey)
 	if err != nil {
 		return errors.Errorf("SSH command autosetup returned the error %s. The output of stderr is %s", err, stderr)
 	}
 
-	_, err = s.scope.HrobotClient().SetBMServerName(server.ServerIP, s.scope.BareMetalMachine.Name)
-	if err != nil {
-		return errors.Errorf("Unable to change bare metal server name: ", err)
-	}
-
+	fmt.Println("Install image")
 	// Install the image
 	stdout, stderr, err = runSSH("bash /root/.oldroot/nfs/install/installimage", server.ServerIP, 22, privateSSHKey)
 	if err != nil {
@@ -346,11 +360,7 @@ EOF`,
 		return errors.Errorf("SSH command installimage returned the error %s. The output of stderr is %s", err, stderr)
 	}
 
-	_, err = s.scope.HrobotClient().SetBMServerName(server.ServerIP,
-		*s.scope.BareMetalMachine.Spec.ServerType+delimiter+s.scope.BareMetalMachine.Name)
-	if err != nil {
-		return errors.Errorf("Unable to change bare metal server name: ", err)
-	}
+	fmt.Println("Run block device command")
 	// get again list of block devices and label children of our drive
 	stdout, stderr, err = runSSH(blockDeviceCommand, server.ServerIP, 22, privateSSHKey)
 	if err != nil {
@@ -361,7 +371,7 @@ EOF`,
 	if err != nil {
 		return errors.Errorf("Error while unmarshaling: %s", err)
 	}
-
+	fmt.Println("Label children")
 	// label the block device so that we know in the future where we installed our image
 	command, err := labelChildrenCommand(blockDevices, drive)
 	if err != nil {
@@ -373,12 +383,20 @@ EOF`,
 		return errors.Errorf("Error running the ssh command %s: Error: %s, stderr: %s", command, err, stderr)
 	}
 
+	fmt.Println("Reboot system")
 	// reboot system
-	_, err = s.scope.HrobotClient().ResetBMServer(server.ServerIP, "hw")
+	/*
+		_, err = s.scope.HrobotClient().ResetBMServer(server.ServerIP, "hw")
+		if err != nil {
+			return errors.Errorf("Unable to reset server: ", err)
+		}
+	*/
+	stdout, stderr, err = runSSH("reboot", server.ServerIP, 22, privateSSHKey)
 	if err != nil {
-		return errors.Errorf("Unable to reset server: ", err)
+		return errors.Errorf("Error running the ssh command %s: Error: %s, stderr: %s", command, err, stderr)
 	}
 
+	fmt.Println("sleep 60")
 	// We cannot create the files right after rebooting, as it gets deleted again
 	// so we have to wait for a bit
 	_, _, err = runSSH("sleep 60", server.ServerIP, port, privateSSHKey)
@@ -386,6 +404,7 @@ EOF`,
 		return errors.Errorf("Connection to server after reboot could not be established: %s", err)
 	}
 
+	fmt.Println("Create nocloud directory")
 	// create nocloud directory for cloud-init
 	command = "mkdir -p /var/lib/cloud/seed/nocloud"
 	stdout, stderr, err = runSSH(command, server.ServerIP, port, privateSSHKey)
@@ -393,7 +412,7 @@ EOF`,
 		return errors.Errorf("Error running the ssh command %s: Error: %s, stderr: %s", command, err, stderr)
 	}
 	s.scope.V(1).Info("Created nocloud directory for %s", s.scope.BareMetalMachine.Name)
-
+	fmt.Println("Create meta data")
 	// create meta-data for cloud-init
 	command = "echo 'instance-id: iid-system-uuid' >> /var/lib/cloud/seed/nocloud/meta-data"
 	stdout, stderr, err = runSSH(command, server.ServerIP, port, privateSSHKey)
@@ -401,7 +420,7 @@ EOF`,
 		return errors.Errorf("Error running the ssh command %s: Error: %s, stderr: %s", command, err, stderr)
 	}
 	s.scope.V(1).Info("Created meta-data for %s", s.scope.BareMetalMachine.Name)
-
+	fmt.Println("Cloud init")
 	// create user-data for cloud-init provider nocloud
 	cloudInitCommand := fmt.Sprintf(
 		`cat > /var/lib/cloud/seed/nocloud/user-data << EOF
@@ -415,19 +434,19 @@ EOF`, cloudInitConfigString)
 		return errors.Errorf("Error running the ssh command %s: Error: %s, stderr: %s", cloudInitCommand, err, stderr)
 	}
 	s.scope.V(1).Info("Sended user-data to server %s", s.scope.BareMetalMachine.Name)
-
+	fmt.Println("sleep 30")
 	// Wait for server
 	_, _, err = runSSH("sleep 30", server.ServerIP, port, privateSSHKey)
 	if err != nil {
 		return errors.Errorf("Connection to server after reboot could not be established: %s", err)
 	}
-
+	fmt.Println("Reboot server")
 	// reboot system
 	_, err = s.scope.HrobotClient().ResetBMServer(server.ServerIP, "hw")
 	if err != nil {
 		return errors.Errorf("Unable to reset server: ", err)
 	}
-
+	fmt.Println("Set server name and finish")
 	// Finally set the machine's name. The name replaces labels as we cannot label bare metal machines directly
 	_, err = s.scope.HrobotClient().SetBMServerName(server.ServerIP,
 		s.scope.Cluster.Name+delimiter+*s.scope.BareMetalMachine.Spec.ServerType+delimiter+s.scope.BareMetalMachine.Name)
@@ -448,11 +467,19 @@ func (s *Service) Delete(ctx context.Context) (_ *ctrl.Result, err error) {
 
 	serverList, err := s.listMatchingMachines(ctx)
 	if err != nil {
+		if checkRateLimitExceeded(err) {
+			record.Warnf(s.scope.BareMetalMachine, "HrobotRateLimitExceeded", "Hrobot rate limit exceeded. Wait for %v sec before trying again.", rateLimitTimeOutDeletion)
+			return &reconcile.Result{RequeueAfter: rateLimitTimeOutDeletion * time.Second}, nil
+		}
 		return nil, errors.Wrap(err, "failed to refresh server status")
 	}
 
 	server, err := s.findAttachedMachine(serverList)
 	if err != nil {
+		if checkRateLimitExceeded(err) {
+			record.Warnf(s.scope.BareMetalMachine, "HrobotRateLimitExceeded", "Hrobot rate limit exceeded. Wait for %v sec before trying again.", rateLimitTimeOutDeletion)
+			return &reconcile.Result{RequeueAfter: rateLimitTimeOutDeletion * time.Second}, nil
+		}
 		return nil, errors.Wrap(err, "failed to find attached machine")
 	}
 	if server == nil {
@@ -724,6 +751,7 @@ func runSSH(command, ip string, port int, privateSSHKey string) (stdout string, 
 			ssh.PublicKeys(signer),
 		},
 		HostKeyCallback: ssh.InsecureIgnoreHostKey(), // ssh.FixedHostKey(hostKey),
+		Timeout:         15 * time.Second,
 	}
 
 	// Connect to the remote server and perform the SSH handshake.
@@ -763,4 +791,8 @@ func runSSH(command, ip string, port int, privateSSHKey string) (stdout string, 
 	stdout = stdoutBuffer.String()
 	stderr = stderrBuffer.String()
 	return stdout, stderr, err
+}
+
+func checkRateLimitExceeded(err error) bool {
+	return strings.Contains(err.Error(), "rate limit exceeded")
 }
