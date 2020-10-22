@@ -89,6 +89,10 @@ func (m *MachineScope) PatchObject(ctx context.Context) error {
 	return m.patchHelper.Patch(ctx, m.HcloudMachine)
 }
 
+func (m *MachineScope) IsBootstrapDataReady(ctx context.Context) bool {
+	return m.Machine.Spec.Bootstrap.DataSecretName != nil
+}
+
 func (m *MachineScope) GetFailureDomain() (string, error) {
 	if m.Machine.Spec.FailureDomain != nil {
 		return *m.Machine.Spec.FailureDomain, nil

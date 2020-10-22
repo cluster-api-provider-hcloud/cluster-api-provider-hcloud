@@ -2073,54 +2073,7 @@ def go_repositories():
         sum = "h1:y3YD99XOyWaXkiF1kd41uRvfp/64teWcrEZFuHxPhJ4=",
         version = "v0.3.0",
     )
-    go_repository(
-        name = "com_github_hashicorp_go_version",
-        build_file_generation = "on",
-        build_file_proto_mode = "disable_global",
-        importpath = "github.com/hashicorp/go-version",
-        sum = "h1:3vNe/fWF5CBgRIguda1meWhsZHy3m8gCJ5wx+dIzX/E=",
-        version = "v1.2.0",
-    )
-    go_repository(
-        name = "com_github_mitchellh_colorstring",
-        build_file_generation = "on",
-        build_file_proto_mode = "disable_global",
-        importpath = "github.com/mitchellh/colorstring",
-        sum = "h1:62I3jR2EmQ4l5rM/4FEfDWcRD+abF5XlKShorW5LRoQ=",
-        version = "v0.0.0-20190213212951-d06e56a500db",
-    )
-    go_repository(
-        name = "com_github_songmu_retry",
-        build_file_generation = "on",
-        build_file_proto_mode = "disable_global",
-        importpath = "github.com/Songmu/retry",
-        sum = "h1:hPA5xybQsksLR/ry/+t/7cFajPW+dqjmjhzZhioBILA=",
-        version = "v0.1.0",
-    )
-    go_repository(
-        name = "com_github_tcnksm_ghr",
-        build_file_generation = "on",
-        build_file_proto_mode = "disable_global",
-        importpath = "github.com/tcnksm/ghr",
-        sum = "h1:a5ZbaUAfiaiw6rEDJVUEDYA9YreZOkh3XAfXHWn8zu8=",
-        version = "v0.13.0",
-    )
-    go_repository(
-        name = "com_github_tcnksm_go_gitconfig",
-        build_file_generation = "on",
-        build_file_proto_mode = "disable_global",
-        importpath = "github.com/tcnksm/go-gitconfig",
-        sum = "h1:iiDhRitByXAEyjgBqsKi9QU4o2TNtv9kPP3RgPgXBPw=",
-        version = "v0.1.2",
-    )
-    go_repository(
-        name = "com_github_tcnksm_go_latest",
-        build_file_generation = "on",
-        build_file_proto_mode = "disable_global",
-        importpath = "github.com/tcnksm/go-latest",
-        sum = "h1:IWllFTiDjjLIf2oeKxpIUmtiDV5sn71VgeQgg6vcE7k=",
-        version = "v0.0.0-20170313132115-e3007ae9052e",
-    )
+
     go_repository(
         name = "io_k8s_sigs_apiserver_network_proxy_konnectivity_client",
         build_file_generation = "on",
