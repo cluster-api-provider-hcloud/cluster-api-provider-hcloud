@@ -1,7 +1,23 @@
 load("@bazel_gazelle//:deps.bzl", "go_repository")
 load("@bazel_tools//tools/build_defs/repo:git.bzl", "git_repository")
 
+# Manually defined repositories are kept separate to keep things easy to
+# maintain.
+def manual_repositories():
+    # This is needed to avoid errors when building @io_k8s_code_generator cmd/
+    # targets that look like:
+    # ERROR: no such package '@org_golang_x_mod//semver': The repository '@org_golang_x_mod' could not be resolved and referenced by '@org_golang_x_tools//internal/imports:go_default_library'
+    go_repository(
+        name = "org_golang_x_mod",
+        build_file_generation = "on",
+        build_file_proto_mode = "disable",
+        importpath = "golang.org/x/mod",
+        sum = "h1:KU7oHjnv3XNWfa5COkzUifxZmxp1TyI7ImMXqFxLwvQ=",
+        version = "v0.2.0",
+    )
+
 def go_repositories():
+    manual_repositories()
     go_repository(
         name = "co_honnef_go_tools",
         build_file_generation = "on",
