@@ -11,7 +11,7 @@ require (
 	github.com/hetznercloud/hcloud-go v1.22.0
 	github.com/pkg/errors v0.9.1
 	github.com/spf13/cobra v1.0.0
-	github.com/tcnksm/ghr v0.13.0 // indirect
+	github.com/tcnksm/ghr v0.13.0
 	gopkg.in/yaml.v3 v3.0.0-20200121175148-a6ecf24a6d71
 	k8s.io/api v0.18.6
 	k8s.io/apimachinery v0.18.6

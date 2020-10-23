@@ -71,21 +71,21 @@ sh_binary(
     ],
 )
 
-# sh_test(
-#     name = "verify-bazel",
-#     srcs = ["bazel.sh"],
-#     args = [
-#         "verify",
-#         "$(location %s)" % GAZELLE,
-#         "$(location %s)" % KAZEL,
-#     ],
-#     data = [
-#         ":lib",
-#         "@//:all-srcs",
-#         GAZELLE,
-#         KAZEL,
-#     ],
-# )
+sh_test(
+    name = "verify-bazel",
+    srcs = ["bazel.sh"],
+    args = [
+        "verify",
+        "$(location %s)" % GAZELLE,
+        "$(location %s)" % KAZEL,
+    ],
+    data = [
+        ":lib",
+        "@//:all-srcs",
+        GAZELLE,
+        KAZEL,
+    ],
+)
 
 sh_binary(
     name = "update-deps",
