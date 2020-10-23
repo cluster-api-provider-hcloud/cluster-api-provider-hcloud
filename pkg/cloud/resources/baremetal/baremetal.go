@@ -158,13 +158,15 @@ func (s *Service) Reconcile(ctx context.Context) (_ *ctrl.Result, err error) {
 		}
 		actualServer = newServer
 	}
-
-	providerID := fmt.Sprintf("hetzner://%d", actualServer.ServerNumber)
+	s.scope.BareMetalMachine.Status.ServerState = "running"
+	providerID := fmt.Sprintf("hcloud://%d", actualServer.ServerNumber)
 
 	s.scope.BareMetalMachine.Spec.ProviderID = &providerID
+	fmt.Println("providerID: ", s.scope.BareMetalMachine.Spec.ProviderID)
 
 	// TODO: Ask for the state of the server and only if it is ready set it to true
 	s.scope.BareMetalMachine.Status.Ready = true
+	fmt.Println("Status: ", s.scope.BareMetalMachine.Status.Ready)
 	return nil, nil
 }
 
@@ -383,7 +385,6 @@ EOF`,
 		return errors.Errorf("Error running the ssh command %s: Error: %s, stderr: %s", command, err, stderr)
 	}
 
-	fmt.Println("Reboot system")
 	// reboot system
 	/*
 		_, err = s.scope.HrobotClient().ResetBMServer(server.ServerIP, "hw")
@@ -391,9 +392,20 @@ EOF`,
 			return errors.Errorf("Unable to reset server: ", err)
 		}
 	*/
+	fmt.Println("wait for 30s")
+	// We cannot create the files right after rebooting, as it gets deleted again
+	// so we have to wait for a bit
+	_, _, err = runSSH("sleep 30", server.ServerIP, 22, privateSSHKey)
+	if err != nil {
+		return errors.Errorf("Connection to server after reboot could not be established: %s", err)
+	}
+
+	fmt.Println("Reboot system")
 	stdout, stderr, err = runSSH("reboot", server.ServerIP, 22, privateSSHKey)
 	if err != nil {
-		return errors.Errorf("Error running the ssh command %s: Error: %s, stderr: %s", command, err, stderr)
+		if !strings.Contains(err.Error(), "exited without exit status or exit signal") {
+			return errors.Errorf("Error running the ssh command %s: Error: %s, stderr: %s", command, err, stderr)
+		}
 	}
 
 	fmt.Println("sleep 60")
