@@ -4,14 +4,14 @@ go 1.13
 
 require (
 	github.com/bronze1man/yaml2json v0.0.0-20190501122504-861f66b7262b
-	github.com/fatih/color v1.7.0
+	github.com/fatih/color v1.9.0
 	github.com/go-logr/logr v0.1.0
 	github.com/golang/mock v1.4.3
-	github.com/google/go-jsonnet v0.15.0
+	github.com/google/go-jsonnet v0.16.0
 	github.com/hetznercloud/hcloud-go v1.22.0
 	github.com/pkg/errors v0.9.1
 	github.com/spf13/cobra v1.0.0
-	github.com/tcnksm/ghr v0.13.0 // indirect
+	github.com/tcnksm/ghr v0.13.0
 	gopkg.in/yaml.v3 v3.0.0-20200121175148-a6ecf24a6d71
 	k8s.io/api v0.18.6
 	k8s.io/apimachinery v0.18.6

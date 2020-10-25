@@ -45,7 +45,7 @@ mockgen:
 # Generate hack/build/repos.bzl from go.mod
 .PHONY: bazel_repos
 bazel_repos:
-	bazel run //:gazelle -- update-repos -from_file=go.mod -to_macro=repositories.bzl%go_repositories -prune=true
+	bazel run //hack:update-deps
 
 .PHONY: delete_capihc
 delete_capihc:
