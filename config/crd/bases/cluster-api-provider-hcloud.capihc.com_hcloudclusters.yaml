@@ -85,6 +85,7 @@ spec:
                     type: string
                 required:
                 - algorithm
+                - services
                 - type
                 type: object
               hcloudTokenRef:

@@ -148,6 +148,7 @@ func (s *Service) Reconcile(ctx context.Context) (_ *ctrl.Result, err error) {
 			s.scope.V(2).Info("Bootstrap data is not ready yet")
 			return &reconcile.Result{RequeueAfter: 15 * time.Second}, nil
 		}
+		s.scope.BareMetalMachine.Status.ServerState = "initializing"
 		// Provision the machine
 		if err := s.provisionMachine(ctx, *newServer); err != nil {
 			if checkRateLimitExceeded(err) {
@@ -162,7 +163,7 @@ func (s *Service) Reconcile(ctx context.Context) (_ *ctrl.Result, err error) {
 	providerID := fmt.Sprintf("hcloud://%d", actualServer.ServerNumber)
 
 	s.scope.BareMetalMachine.Spec.ProviderID = &providerID
-	fmt.Println("providerID: ", s.scope.BareMetalMachine.Spec.ProviderID)
+	fmt.Println("providerID: ", *s.scope.BareMetalMachine.Spec.ProviderID)
 
 	// TODO: Ask for the state of the server and only if it is ready set it to true
 	s.scope.BareMetalMachine.Status.Ready = true
@@ -342,9 +343,9 @@ HOSTNAME %s
 %s
 IMAGE %s
 EOF`,
-		drive, s.scope.BareMetalMachine.Name, partitionString, *s.scope.BareMetalMachine.Spec.ImagePath)
+		drive, s.scope.Cluster.Name+delimiter+*s.scope.BareMetalMachine.Spec.ServerType+delimiter+s.scope.BareMetalMachine.Name, partitionString, *s.scope.BareMetalMachine.Spec.ImagePath)
 	fmt.Println("Send autosetup to server")
-	// Send autosetup file to server
+	// Send autosetup file to server s.scope.Cluster.Name+delimiter+
 	stdout, stderr, err = runSSH(autoSetup, server.ServerIP, 22, privateSSHKey)
 	if err != nil {
 		return errors.Errorf("SSH command autosetup returned the error %s. The output of stderr is %s", err, stderr)
@@ -452,12 +453,21 @@ EOF`, cloudInitConfigString)
 	if err != nil {
 		return errors.Errorf("Connection to server after reboot could not be established: %s", err)
 	}
-	fmt.Println("Reboot server")
-	// reboot system
-	_, err = s.scope.HrobotClient().ResetBMServer(server.ServerIP, "hw")
+
+	fmt.Println("Reboot system")
+	stdout, stderr, err = runSSH("reboot", server.ServerIP, 22, privateSSHKey)
 	if err != nil {
-		return errors.Errorf("Unable to reset server: ", err)
+		if !strings.Contains(err.Error(), "exited without exit status or exit signal") {
+			return errors.Errorf("Error running the ssh command %s: Error: %s, stderr: %s", command, err, stderr)
+		}
 	}
+
+	// fmt.Println("Reboot server")
+	// // reboot system
+	// _, err = s.scope.HrobotClient().ResetBMServer(server.ServerIP, "hw")
+	// if err != nil {
+	// 	return errors.Errorf("Unable to reset server: ", err)
+	// }
 	fmt.Println("Set server name and finish")
 	// Finally set the machine's name. The name replaces labels as we cannot label bare metal machines directly
 	_, err = s.scope.HrobotClient().SetBMServerName(server.ServerIP,

@@ -108,7 +108,7 @@ spec:
                 type: string
               server_number:
                 type: integer
-              status:
+              serverState:
                 type: string
             type: object
         type: object
