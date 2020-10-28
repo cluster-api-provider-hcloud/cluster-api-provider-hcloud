@@ -290,7 +290,7 @@ func (s *Service) provisionMachine(ctx context.Context, server models.Server) er
 	}
 
 	// avoid errors when reboot comes too early for the previous command
-	_, _, err = runSSH("sleep 10", server.ServerIP, 22, privateSSHKey)
+	_, stderr, err := runSSH("sleep 10", server.ServerIP, 22, privateSSHKey)
 	if err != nil {
 		return errors.Errorf("Error running the ssh command sleep 10: Error: %s, stderr: %s", err, stderr)
 	}
@@ -304,7 +304,7 @@ func (s *Service) provisionMachine(ctx context.Context, server models.Server) er
 	}
 
 	// wait for reboot
-	_, _, err = runSSH("sleep 30", server.ServerIP, 22, privateSSHKey)
+	_, stderr, err = runSSH("sleep 30", server.ServerIP, 22, privateSSHKey)
 	if err != nil {
 		return errors.Errorf("Error running the ssh command sleep 30: Error: %s, stderr: %s", err, stderr)
 	}
