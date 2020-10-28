@@ -99,9 +99,34 @@ local newHrobotSecret(user, password) =
     },
 };
 
+local newCASecret(caCrt, caKey) =
+  if (caCrt =="") then {
+    } else {
+  vcManagerNamespace: {
+    apiVersion: 'v1',
+    kind: 'Namespace',
+    metadata: {
+      name: 'vc-manager',
+    },
+  },
+  caSecret: {
+    apiVersion: 'v1',
+    kind: 'Secret',
+    metadata: {
+      name: 'vc-kubelet-client',
+      namespace: 'vc-manager',
+    },
+    type: 'Opaque',
+    data: {
+      'client.crt': std.base64(caCrt),
+      'client.key': std.base64(caKey),
+    },
+  },
+};
+
 local addons = {
   secrets: newHcloudSecret($._config.hcloudNetwork, $._config.hcloudToken, $._config.kubeAPIServerIPv4, $._config.kubeAPIServerDomain)
-  + newHrobotSecret($._config.robotUserName, $._config.robotPassword),
+  + newHrobotSecret($._config.robotUserName, $._config.robotPassword) + newCASecret($._config.caCrt, $._config.caKey),
   controlPlaneServices: newControlPlaneService($._config.kubeAPIServerIPv4, $._config.kubeAPIServerDomain, $._config.port),
 };
 

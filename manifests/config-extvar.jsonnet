@@ -9,6 +9,8 @@ local myConfig = {
   kubeAPIServerIPv4: std.extVar('kube-apiserver-ip'),
   kubeAPIServerDomain: std.extVar('kube-apiserver-domain'),
   port: std.parseInt(std.extVar('port')),
+  caCrt: std.extVar('ca-crt'),
+  caKey: std.extVar('ca-key'),
 };
 
 local addLabelIfNotExists(key, value) =

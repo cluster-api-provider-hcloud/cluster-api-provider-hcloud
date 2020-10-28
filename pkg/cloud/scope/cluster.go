@@ -269,6 +269,34 @@ func (s *ClusterScope) manifestParameters() (*parameters.ManifestParameters, err
 	}
 	var port = strconv.FormatInt(int64(s.HcloudCluster.Spec.ControlPlaneEndpoint.Port), 10)
 	p.Port = &port
+
+	var CaCrtString string
+	var CaKeyString string
+
+	if s.HcloudCluster.Spec.VCKubeletClientSecretEnabled {
+		secret := &corev1.Secret{}
+		key := types.NamespacedName{Namespace: s.Namespace(), Name: s.Name() + "-ca"}
+		if err := s.Client.Get(s.Ctx, key, secret); err != nil {
+			return nil, errors.Wrapf(err, "failed to retrieve ca secret %s/%s", s.Namespace(), s.Name())
+		}
+
+		tlsCrt, ok := secret.Data["tls.crt"]
+
+		if !ok {
+			return nil, errors.New("error retrieving bootstrap data: secret value key is missing")
+		}
+
+		tlsKey, ok := secret.Data["tls.key"]
+		if !ok {
+			return nil, errors.New("error retrieving bootstrap data: secret value key is missing")
+		}
+
+		CaCrtString = string(tlsCrt)
+		CaKeyString = string(tlsKey)
+	}
+
+	p.CAcrt = &CaCrtString
+	p.CAkey = &CaKeyString
 	return &p, nil
 }
 

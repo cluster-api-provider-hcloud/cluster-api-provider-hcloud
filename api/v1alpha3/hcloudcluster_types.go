@@ -57,6 +57,10 @@ type HcloudClusterSpec struct {
 	// +optional
 	Network *HcloudNetworkSpec `json:"network"`
 
+	// Useful for https://github.com/kubernetes-sigs/multi-tenancy/blob/master/incubator/virtualcluster/doc/demo.md#optional-update-client-ca-secret
+	// +optional
+	VCKubeletClientSecretEnabled bool `json:"vcKubeletClientSecretEnabled"`
+
 	HcloudTokenRef *corev1.SecretKeySelector `json:"hcloudTokenRef"`
 
 	// If no token is provided then it is assumed that the bare metal controller is unused

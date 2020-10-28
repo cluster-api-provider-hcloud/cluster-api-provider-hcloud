@@ -19,6 +19,8 @@ import (
 func sampleParameters() *parameters.ManifestParameters {
 	hcloudNetwork := intstr.FromString("cluster-dev")
 	hcloudToken := "my-token"
+	caCrt := "no-crt"
+	caKey := "no-key"
 	robotUserName := "my-user"
 	robotPassword := "invalid-password"
 	kubeAPIServerDomain := ""
@@ -31,6 +33,8 @@ func sampleParameters() *parameters.ManifestParameters {
 		HcloudNetwork:       &hcloudNetwork,
 		KubeAPIServerDomain: &kubeAPIServerDomain,
 		Port:                &port,
+		CAcrt:               &caCrt,
+		CAkey:               &caKey,
 	}
 }
 

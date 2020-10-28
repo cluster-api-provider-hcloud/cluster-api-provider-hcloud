@@ -59,6 +59,7 @@ spec:
     passwordKey: robot-password
     userNameKey: robot-user
     tokenName: bm-token
+  vcKubeletClientSecretEnabled: true
 ---
 apiVersion: controlplane.cluster.x-k8s.io/v1alpha3
 kind: KubeadmControlPlane
@@ -162,36 +163,6 @@ spec:
         kind: HcloudMachineTemplate
         name: cluster-dev-worker-fsn1-mt-0
       failureDomain: fsn1
----
-apiVersion: cluster.x-k8s.io/v1alpha3
-kind: MachineDeployment
-metadata:
-  name: cluster-dev-worker-bm
-  namespace: default
-  labels:
-    nodepool: worker-bm
-spec:
-  replicas: 1
-  clusterName: cluster-dev
-  selector:
-    matchLabels:
-      nodepool: worker-bm
-  template:
-    metadata:
-      labels:
-        nodepool: worker-bm
-    spec:
-      clusterName: cluster-dev
-      version: v1.19.0
-      bootstrap:
-        configRef:
-          apiVersion: bootstrap.cluster.x-k8s.io/v1alpha3
-          kind: KubeadmConfigTemplate
-          name: cluster-dev-worker-kubeadm-0
-      infrastructureRef:
-        apiVersion: cluster-api-provider-hcloud.capihc.com/v1alpha3
-        kind: BareMetalMachineTemplate
-        name: cluster-dev-worker-bm-mt-0
 ---
 apiVersion: cluster.x-k8s.io/v1alpha3
 kind: MachineDeployment
