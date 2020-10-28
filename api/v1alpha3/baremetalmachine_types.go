@@ -57,15 +57,15 @@ type sshTokenRef struct {
 
 // BareMetalMachineStatus defines the observed state of BareMetalMachine
 type BareMetalMachineStatus struct {
-	IPv4       string `json:"server_ip,omitempty"`
-	IPv6       string `json:"ipv6,omitempty"`
-	ServerID   int    `json:"server_number,omitempty"`
-	ServerName string `json:"server_name,omitempty"`
-	Ready      bool   `json:"ready,omitempty"`
-	Status     string `json:"status,omitempty"`
-	Cancelled  bool   `json:"cancelled,omitempty"`
-	Reset      bool   `json:"reset,omitempty"`
-	Rescue     bool   `json:"rescue,omitempty"`
+	IPv4        string `json:"server_ip,omitempty"`
+	IPv6        string `json:"ipv6,omitempty"`
+	ServerID    int    `json:"server_number,omitempty"`
+	ServerName  string `json:"server_name,omitempty"`
+	Ready       bool   `json:"ready,omitempty"`
+	ServerState string `json:"serverState,omitempty"`
+	Cancelled   bool   `json:"cancelled,omitempty"`
+	Reset       bool   `json:"reset,omitempty"`
+	Rescue      bool   `json:"rescue,omitempty"`
 
 	// FailureReason will be set in the event that there is a terminal problem
 	// reconciling the Machine and will contain a succinct value suitable
