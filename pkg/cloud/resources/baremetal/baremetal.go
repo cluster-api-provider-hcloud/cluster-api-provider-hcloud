@@ -296,11 +296,24 @@ func (s *Service) provisionMachine(ctx context.Context, server models.Server) er
 	if err != nil {
 		return errors.Errorf("Unable to activate rescue system: ", err)
 	}
-	fmt.Println("Reset server")
-	// Reset the server
-	_, err = s.scope.HrobotClient().ResetBMServer(server.ServerIP, "hw")
+	// avoid errors when reboot comes too early for the previous command
+	_, stderr, err := runSSH("sleep 10", server.ServerIP, 22, privateSSHKey)
 	if err != nil {
-		return errors.Errorf("Unable to reset server: ", err)
+		return errors.Errorf("Error running the ssh command sleep 10: Error: %s, stderr: %s", err, stderr)
+	}
+
+	// Reset the server
+	stdout, stderr, err := runSSH("reboot", server.ServerIP, 22, privateSSHKey)
+	if err != nil {
+		if !strings.Contains(err.Error(), "exited without exit status or exit signal") {
+			return errors.Errorf("Error running the ssh command reboot: Error: %s, stderr: %s", err, stderr)
+		}
+	}
+
+	// wait for reboot
+	_, stderr, err = runSSH("sleep 30", server.ServerIP, 22, privateSSHKey)
+	if err != nil {
+		return errors.Errorf("Error running the ssh command sleep 30: Error: %s, stderr: %s", err, stderr)
 	}
 	fmt.Println("Run hostname command")
 	// Find out if rescue system has been started successfully
