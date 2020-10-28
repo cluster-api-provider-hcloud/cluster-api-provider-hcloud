@@ -290,15 +290,15 @@ func (s *Service) provisionMachine(ctx context.Context, server models.Server) er
 	}
 
 	// Reset the server
-	stdout, stderr, err = runSSH("reboot", server.ServerIP, 22, privateSSHKey)
+	stdout, stderr, err := runSSH("reboot", server.ServerIP, 22, privateSSHKey)
 	if err != nil {
 		if !strings.Contains(err.Error(), "exited without exit status or exit signal") {
-			return errors.Errorf("Error running the ssh command %s: Error: %s, stderr: %s", command, err, stderr)
+			return errors.Errorf("Error running the ssh command reboot: Error: %s, stderr: %s", err, stderr)
 		}
 	}
 
 	// Find out if rescue system has been started successfully
-	stdout, stderr, err := runSSH("hostname", server.ServerIP, 22, privateSSHKey)
+	stdout, stderr, err = runSSH("hostname", server.ServerIP, 22, privateSSHKey)
 	if err != nil {
 		return errors.Errorf("SSH command hostname returned the error %s. The output of stderr is %s", err, stderr)
 	}
@@ -381,14 +381,14 @@ EOF`,
 	// avoid errors when reboot comes too early for the previous command
 	_, _, err = runSSH("sleep 30", server.ServerIP, 22, privateSSHKey)
 	if err != nil {
-		return errors.Errorf("Error running the ssh command sleep 30: Error: %s, stderr: %s", command, err, stderr)
+		return errors.Errorf("Error running the ssh command sleep 30: Error: %s, stderr: %s", err, stderr)
 	}
 
 	// reboot system
 	stdout, stderr, err = runSSH("reboot", server.ServerIP, 22, privateSSHKey)
 	if err != nil {
 		if !strings.Contains(err.Error(), "exited without exit status or exit signal") {
-			return errors.Errorf("Error running the ssh command %s: Error: %s, stderr: %s", command, err, stderr)
+			return errors.Errorf("Error running the ssh command reboot: Error: %s, stderr: %s", err, stderr)
 		}
 	}
 

@@ -2210,3 +2210,11 @@ def go_repositories():
         sum = "h1:4MY060fB1DLGMB/7MBTLnwQUY6+F09GEiz6SsrNqyzM=",
         version = "v1.23.0",
     )
+    go_repository(
+        name = "com_github_nl2go_hrobot_go",
+        build_file_generation = "on",
+        build_file_proto_mode = "disable_global",
+        importpath = "github.com/nl2go/hrobot-go",
+        sum = "h1:gjVoNDCzr51OBDyqGWqy90gAxWHU1Y90/7qOetMbR+g=",
+        version = "v0.1.3",
+    )
