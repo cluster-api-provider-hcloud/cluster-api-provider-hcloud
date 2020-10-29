@@ -360,17 +360,18 @@ EOF`,
 	// Install the image
 	stdout, stderr, err = runSSH("bash /root/.oldroot/nfs/install/installimage", server.ServerIP, 22, privateSSHKey)
 	if err != nil {
-		// If an error occurs here, we have to wipe the device to avoid future problems and rename the server in "myType -- name"
+		// If an error occurs here, we have to wipe the device to avoid future problems
 		wipeCommand := fmt.Sprintf("wipefs -a /dev/%s", drive)
 		_, _, _ = runSSH(wipeCommand, server.ServerIP, 22, privateSSHKey)
-		_, err = s.scope.HrobotClient().SetBMServerName(server.ServerIP,
-			*s.scope.BareMetalMachine.Spec.ServerType+delimiter+s.scope.BareMetalMachine.Name)
 		return errors.Errorf("SSH command installimage returned the error %s. The output of stderr is %s", err, stderr)
 	}
 
 	// get again list of block devices and label children of our drive
 	stdout, stderr, err = runSSH(blockDeviceCommand, server.ServerIP, 22, privateSSHKey)
 	if err != nil {
+		// If an error occurs here, we have to wipe the device to avoid future problems
+		wipeCommand := fmt.Sprintf("wipefs -a /dev/%s", drive)
+		_, _, _ = runSSH(wipeCommand, server.ServerIP, 22, privateSSHKey)
 		return errors.Errorf("Error running the ssh command %s: Error: %s, stderr: %s", blockDeviceCommand, err, stderr)
 	}
 
@@ -387,6 +388,9 @@ EOF`,
 
 	stdout, stderr, err = runSSH(command, server.ServerIP, 22, privateSSHKey)
 	if err != nil {
+		// If an error occurs here, we have to wipe the device to avoid future problems
+		wipeCommand := fmt.Sprintf("wipefs -a /dev/%s", drive)
+		_, _, _ = runSSH(wipeCommand, server.ServerIP, 22, privateSSHKey)
 		return errors.Errorf("Error running the ssh command %s: Error: %s, stderr: %s", command, err, stderr)
 	}
 
