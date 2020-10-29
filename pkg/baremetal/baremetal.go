@@ -293,7 +293,7 @@ func (s *Service) provisionMachine(ctx context.Context, server models.Server) er
 	_, err = s.scope.HrobotClient().ResetBMServer(server.ServerIP, "hw")
 
 	// Find out if rescue system has been started successfully
-	stdout, stderr, err = runSSH("hostname", server.ServerIP, 22, privateSSHKey)
+	stdout, stderr, err := runSSH("hostname", server.ServerIP, 22, privateSSHKey)
 	if err != nil {
 		return errors.Errorf("SSH command hostname returned the error %s. The output of stderr is %s", err, stderr)
 	}
