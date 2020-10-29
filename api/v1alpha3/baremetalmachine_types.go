@@ -16,75 +16,56 @@ limitations under the License.
 package v1alpha3
 
 import (
-	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/cluster-api/errors"
 )
 
 const (
-	// ClusterFinalizer allows ReconcileHcloudMachine to clean up Hcloud
-	// resources associated with HcloudMachine before removing it from the
+	// ClusterFinalizer allows Reconcile BareMetalMachine to clean up
+	// resources associated with BareMetalMachine before removing it from the
 	// apiserver.
-	MachineFinalizer = "hcloudmachine.cluster-api-provider-hcloud.capihc.com"
+	BareMetalMachineFinalizer = "baremetalmachine.cluster-api-provider-hcloud.capihc.com"
 )
 
-// HcloudMachineSpec defines the desired state of HcloudMachine
-type HcloudMachineSpec struct {
-	// define Machine specific SSH keys, overrides cluster wide SSH keys
-	// +optional
-	SSHKeys []HcloudSSHKeySpec `json:"sshKeys"`
-
-	Type HcloudMachineTypeSpec `json:"type"`
-
-	// +optional
-	Volumes []HcloudMachineVolume `json:"volumes"`
-
-	ImageName string `json:"image"`
+// BareMetalMachineSpec defines the desired state of a BareMetalMachine
+type BareMetalMachineSpec struct {
+	SSHTokenRef sshTokenRef `json:"sshTokenRef"`
 
 	// ProviderID is the unique identifier as specified by the cloud provider.
 	// +optional
 	ProviderID *string `json:"providerID"`
+
+	// +optional
+	Port *int `json:"port"`
+
+	// +optional
+	Partition *string `json:"partition"`
+
+	ImagePath *string `json:"imagePath"`
+
+	ServerType *string `json:"serverType"`
 }
 
-type HcloudMachineTypeSpec string
-
-type HcloudServerState string
-
-type HcloudImageID int
-
-type HcloudSSHKeySpec struct {
-	Name *string `json:"name,omitempty"`
-	ID   *int    `json:"id,omitempty"`
+type sshTokenRef struct {
+	PublicKey  string `json:"publicKey"`
+	PrivateKey string `json:"privateKey"`
+	SSHKeyName string `json:"sshKeyName"`
+	TokenName  string `json:"tokenName"`
 }
 
-// HcloudMachineVolume represent a Volume attachment
-type HcloudMachineVolume struct {
-	Name      string `json:"name,omitempty"`
-	VolumeRef string `json:"volumeRef,omitempty"`
-	MountPath string `json:"mountPath,omitempty"`
-}
+//type BareMetalServerState string
 
-// HcloudMachineStatus defines the observed state of HcloudMachine
-type HcloudMachineStatus struct {
-	Location    HcloudLocation    `json:"location,omitempty"`
-	NetworkZone HcloudNetworkZone `json:"networkZone,omitempty"`
-	ImageID     *HcloudImageID    `json:"imageID,omitempty"`
-
-	// ServerState is the state of the server for this machine.
-	// +optional
-	ServerState HcloudServerState `json:"serverState,omitempty"`
-
-	// Ready is true when the provider resource is ready.
-	// +optional
-	Ready bool `json:"ready"`
-
-	// ImageInitialized returns true if the image has been successfully
-	// initialized by packer
-	// +optional
-	ImageInitialized bool `json:"imageInitialized,omitempty"`
-
-	// Addresses contains the server's associated addresses.
-	Addresses []v1.NodeAddress `json:"addresses,omitempty"`
+// BareMetalMachineStatus defines the observed state of BareMetalMachine
+type BareMetalMachineStatus struct {
+	IPv4        string `json:"server_ip,omitempty"`
+	IPv6        string `json:"ipv6,omitempty"`
+	ServerID    int    `json:"server_number,omitempty"`
+	ServerName  string `json:"server_name,omitempty"`
+	Ready       bool   `json:"ready,omitempty"`
+	ServerState string `json:"serverState,omitempty"`
+	Cancelled   bool   `json:"cancelled,omitempty"`
+	Reset       bool   `json:"reset,omitempty"`
+	Rescue      bool   `json:"rescue,omitempty"`
 
 	// FailureReason will be set in the event that there is a terminal problem
 	// reconciling the Machine and will contain a succinct value suitable
@@ -125,37 +106,37 @@ type HcloudMachineStatus struct {
 	FailureMessage *string `json:"failureMessage,omitempty"`
 }
 
-func (h *HcloudMachine) HcloudMachineSpec() *HcloudMachineSpec {
+func (h *BareMetalMachine) BareMetalMachineSpec() *BareMetalMachineSpec {
 	return h.Spec.DeepCopy()
 }
 
 // +kubebuilder:object:root=true
-// +kubebuilder:resource:path=hcloudmachines,scope=Namespaced,categories=cluster-api
+// +kubebuilder:resource:path=baremetalmachines,scope=Namespaced,categories=cluster-api
 // +kubebuilder:storageversion
 // +kubebuilder:subresource:status
 // +kubebuilder:printcolumn:name="State",type="string",JSONPath=".status.serverState",description="Server state"
 // +kubebuilder:printcolumn:name="Ready",type="string",JSONPath=".status.ready",description="Machine ready status"
 // +kubebuilder:printcolumn:name="InstanceID",type="string",JSONPath=".spec.providerID",description="Hcloud instance ID"
-// +kubebuilder:printcolumn:name="Machine",type="string",JSONPath=".metadata.ownerReferences[?(@.kind==\"Machine\")].name",description="Machine object which owns with this HcloudMachine"
+// +kubebuilder:printcolumn:name="Machine",type="string",JSONPath=".metadata.ownerReferences[?(@.kind==\"Machine\")].name",description="Machine object which owns with this BareMetalMachine"
 
-// HcloudMachine is the Schema for the hcloudmachine API
-type HcloudMachine struct {
+// BareMetalMachine is the Schema for the bareMetalMachine API
+type BareMetalMachine struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   HcloudMachineSpec   `json:"spec,omitempty"`
-	Status HcloudMachineStatus `json:"status,omitempty"`
+	Spec   BareMetalMachineSpec   `json:"spec,omitempty"`
+	Status BareMetalMachineStatus `json:"status,omitempty"`
 }
 
 // +kubebuilder:object:root=true
 
-// HcloudMachineList contains a list of HcloudMachine
-type HcloudMachineList struct {
+// BareMetalMachineList contains a list of BareMetalMachine
+type BareMetalMachineList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
-	Items           []HcloudMachine `json:"items"`
+	Items           []BareMetalMachine `json:"items"`
 }
 
 func init() {
-	SchemeBuilder.Register(&HcloudMachine{}, &HcloudMachineList{})
+	SchemeBuilder.Register(&BareMetalMachine{}, &BareMetalMachineList{})
 }

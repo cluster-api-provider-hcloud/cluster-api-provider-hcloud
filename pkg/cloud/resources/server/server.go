@@ -20,11 +20,11 @@ import (
 
 	infrav1 "github.com/cluster-api-provider-hcloud/cluster-api-provider-hcloud/api/v1alpha3"
 	loadbalancer "github.com/cluster-api-provider-hcloud/cluster-api-provider-hcloud/pkg/cloud/resources/loadbalancer"
-	"github.com/cluster-api-provider-hcloud/cluster-api-provider-hcloud/pkg/cloud/resources/server/userdata"
-	"github.com/cluster-api-provider-hcloud/cluster-api-provider-hcloud/pkg/cloud/scope"
 	"github.com/cluster-api-provider-hcloud/cluster-api-provider-hcloud/pkg/cloud/utils"
 	packerapi "github.com/cluster-api-provider-hcloud/cluster-api-provider-hcloud/pkg/packer/api"
 	"github.com/cluster-api-provider-hcloud/cluster-api-provider-hcloud/pkg/record"
+	"github.com/cluster-api-provider-hcloud/cluster-api-provider-hcloud/pkg/scope"
+	"github.com/cluster-api-provider-hcloud/cluster-api-provider-hcloud/pkg/userdata"
 )
 
 type Service struct {

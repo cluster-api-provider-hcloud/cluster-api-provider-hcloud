@@ -1870,8 +1870,8 @@ def go_repositories():
         build_file_generation = "on",
         build_file_proto_mode = "disable_global",
         importpath = "golang.org/x/crypto",
-        sum = "h1:xMPOj6Pz6UipU1wXLkrtqpHbR0AVFnyPEQq/wRWz9lM=",
-        version = "v0.0.0-20200302210943-78000ba7a073",
+        sum = "h1:vclmkQCjlDX5OydZ9wv8rBCcS0QyQY66Mpf/7BZbInM=",
+        version = "v0.0.0-20200820211705-5c72a883971a",
     )
     go_repository(
         name = "org_golang_x_exp",
@@ -1934,8 +1934,8 @@ def go_repositories():
         build_file_generation = "on",
         build_file_proto_mode = "disable_global",
         importpath = "golang.org/x/sys",
-        sum = "h1:xhmwyvizuTgC2qz7ZlMluP20uW+C3Rm0FD/WLDX8884=",
-        version = "v0.0.0-20200323222414-85ca7c5b95cd",
+        sum = "h1:fihtqzYxy4E31W1yUlyRGveTZT1JIP0bmKaDZ2ceKAw=",
+        version = "v0.0.0-20201005172224-997123666555",
     )
     go_repository(
         name = "org_golang_x_text",
@@ -2209,4 +2209,12 @@ def go_repositories():
         importpath = "google.golang.org/protobuf",
         sum = "h1:4MY060fB1DLGMB/7MBTLnwQUY6+F09GEiz6SsrNqyzM=",
         version = "v1.23.0",
+    )
+    go_repository(
+        name = "com_github_nl2go_hrobot_go",
+        build_file_generation = "on",
+        build_file_proto_mode = "disable_global",
+        importpath = "github.com/nl2go/hrobot-go",
+        sum = "h1:gjVoNDCzr51OBDyqGWqy90gAxWHU1Y90/7qOetMbR+g=",
+        version = "v0.1.3",
     )

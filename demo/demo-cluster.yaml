@@ -52,9 +52,14 @@ spec:
     subnets: []
   sshKeys:
   - name: cluster
-  tokenRef:
+  hcloudTokenRef:
     key: token
     name: hetzner-token
+  hrobotTokenRef:
+    passwordKey: robot-password
+    userNameKey: robot-user
+    tokenName: bm-token
+  vcKubeletClientSecretEnabled: true
 ---
 apiVersion: controlplane.cluster.x-k8s.io/v1alpha3
 kind: KubeadmControlPlane
@@ -97,6 +102,22 @@ spec:
     spec:
       type: cx21-ceph
       image: centos-8_k8s-v1.19.0
+---
+apiVersion: cluster-api-provider-hcloud.capihc.com/v1alpha3
+kind: BareMetalMachineTemplate
+metadata:
+  name: cluster-dev-worker-bm-mt-0
+  namespace: default
+spec:
+  template:
+    spec:
+      serverType: mytype
+      imagePath: "https://some-test-path.com"
+      sshTokenRef:
+        publicKey: public
+        privateKey: private
+        sshKeyName: name
+        tokenName: bm-sshkey
 ---
 apiVersion: bootstrap.cluster.x-k8s.io/v1alpha3
 kind: KubeadmConfigTemplate
@@ -249,6 +270,25 @@ spec:
   selector:
     matchLabels:
       nodepool: worker
+  unhealthyConditions:
+  - type: Ready
+    status: Unknown
+    timeout: 300s
+  - type: Ready
+    status: "False"
+    timeout: 300s
+---
+apiVersion: cluster.x-k8s.io/v1alpha3
+kind: MachineHealthCheck
+metadata:
+  name: cluster-dev-worker-bm-unhealthy-5m
+spec:
+  clusterName: cluster-dev
+  maxUnhealthy: 100%
+  nodeStartupTimeout: 10m
+  selector:
+    matchLabels:
+      nodepool: worker-bm
   unhealthyConditions:
   - type: Ready
     status: Unknown

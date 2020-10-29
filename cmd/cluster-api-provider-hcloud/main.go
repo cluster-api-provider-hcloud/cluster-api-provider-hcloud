@@ -107,6 +107,16 @@ var rootCmd = &cobra.Command{
 				setupLog.Error(err, "unable to create controller", "controller", "HcloudMachine")
 				os.Exit(1)
 			}
+			if err = (&controllers.BareMetalMachineReconciler{
+				Client:    mgr.GetClient(),
+				Log:       ctrl.Log.WithName("controllers").WithName("BareMetalMachine"),
+				Scheme:    mgr.GetScheme(),
+				Packer:    packerMgr,
+				Manifests: manifestsMgr,
+			}).SetupWithManager(mgr, controller.Options{}); err != nil {
+				setupLog.Error(err, "unable to create controller", "controller", "BareMetalMachine")
+				os.Exit(1)
+			}
 			if err = (&controllers.HcloudVolumeReconciler{
 				Client:    mgr.GetClient(),
 				Log:       ctrl.Log.WithName("controllers").WithName("HcloudVolume"),

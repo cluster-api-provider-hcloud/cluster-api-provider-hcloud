@@ -64,8 +64,6 @@ spec:
                     - round_robin
                     - least_connections
                     type: string
-                  id:
-                    type: integer
                   name:
                     type: string
                   services:
@@ -86,7 +84,38 @@ spec:
                   type:
                     type: string
                 required:
+                - algorithm
                 - services
+                - type
+                type: object
+              hcloudTokenRef:
+                description: SecretKeySelector selects a key of a Secret.
+                properties:
+                  key:
+                    description: The key of the secret to select from.  Must be a valid secret key.
+                    type: string
+                  name:
+                    description: 'Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names TODO: Add other useful fields. apiVersion, kind, uid?'
+                    type: string
+                  optional:
+                    description: Specify whether the Secret or its key must be defined
+                    type: boolean
+                required:
+                - key
+                type: object
+              hrobotTokenRef:
+                description: If no token is provided then it is assumed that the bare metal controller is unused
+                properties:
+                  passwordKey:
+                    type: string
+                  tokenName:
+                    type: string
+                  userNameKey:
+                    type: string
+                required:
+                - passwordKey
+                - tokenName
+                - userNameKey
                 type: object
               locations:
                 items:
@@ -116,21 +145,12 @@ spec:
                       type: string
                   type: object
                 type: array
-              tokenRef:
-                description: SecretKeySelector selects a key of a Secret.
-                properties:
-                  key:
-                    description: The key of the secret to select from.  Must be a valid secret key.
-                    type: string
-                  name:
-                    description: 'Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names TODO: Add other useful fields. apiVersion, kind, uid?'
-                    type: string
-                  optional:
-                    description: Specify whether the Secret or its key must be defined
-                    type: boolean
-                required:
-                - key
-                type: object
+              vcKubeletClientSecretEnabled:
+                type: boolean
+            required:
+            - controlPlaneLoadbalancer
+            - hcloudTokenRef
+            - sshKeys
             type: object
           status:
             description: HcloudClusterStatus defines the observed state of HcloudCluster

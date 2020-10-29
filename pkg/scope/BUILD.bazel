@@ -3,12 +3,14 @@ load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
 go_library(
     name = "go_default_library",
     srcs = [
-        "client.go",
+        "baremetal.go",
         "cluster.go",
+        "hcloudClient.go",
+        "hrobotClient.go",
         "machine.go",
         "volume.go",
     ],
-    importpath = "github.com/cluster-api-provider-hcloud/cluster-api-provider-hcloud/pkg/cloud/scope",
+    importpath = "github.com/cluster-api-provider-hcloud/cluster-api-provider-hcloud/pkg/scope",
     visibility = ["//visibility:public"],
     deps = [
         "//api/v1alpha3:go_default_library",
@@ -16,6 +18,8 @@ go_library(
         "//pkg/packer/api:go_default_library",
         "@com_github_go_logr_logr//:go_default_library",
         "@com_github_hetznercloud_hcloud_go//hcloud:go_default_library",
+        "@com_github_nl2go_hrobot_go//:go_default_library",
+        "@com_github_nl2go_hrobot_go//models:go_default_library",
         "@com_github_pkg_errors//:go_default_library",
         "@io_k8s_api//core/v1:go_default_library",
         "@io_k8s_apimachinery//pkg/types:go_default_library",
@@ -24,10 +28,12 @@ go_library(
         "@io_k8s_client_go//tools/clientcmd:go_default_library",
         "@io_k8s_klog//klogr:go_default_library",
         "@io_k8s_sigs_cluster_api//api/v1alpha3:go_default_library",
+        "@io_k8s_sigs_cluster_api//errors:go_default_library",
         "@io_k8s_sigs_cluster_api//util:go_default_library",
         "@io_k8s_sigs_cluster_api//util/kubeconfig:go_default_library",
         "@io_k8s_sigs_cluster_api//util/patch:go_default_library",
         "@io_k8s_sigs_controller_runtime//pkg/client:go_default_library",
+        "@io_k8s_utils//pointer:go_default_library",
     ],
 )
 
@@ -42,7 +48,7 @@ filegroup(
     name = "all-srcs",
     srcs = [
         ":package-srcs",
-        "//pkg/cloud/scope/mock:all-srcs",
+        "//pkg/scope/mock:all-srcs",
     ],
     tags = ["automanaged"],
     visibility = ["//visibility:public"],

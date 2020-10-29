@@ -3,6 +3,7 @@ load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
 go_library(
     name = "go_default_library",
     srcs = [
+        "baremetalmachine_controller.go",
         "cluster_csr_controller.go",
         "controllers.go",
         "hcloudcluster_controller.go",
@@ -13,15 +14,16 @@ go_library(
     visibility = ["//visibility:public"],
     deps = [
         "//api/v1alpha3:go_default_library",
+        "//pkg/baremetal:go_default_library",
         "//pkg/cloud/resources/loadbalancer:go_default_library",
         "//pkg/cloud/resources/location:go_default_library",
         "//pkg/cloud/resources/network:go_default_library",
         "//pkg/cloud/resources/server:go_default_library",
         "//pkg/cloud/resources/volume:go_default_library",
-        "//pkg/cloud/scope:go_default_library",
         "//pkg/csr:go_default_library",
         "//pkg/manifests:go_default_library",
         "//pkg/packer:go_default_library",
+        "//pkg/scope:go_default_library",
         "@com_github_go_logr_logr//:go_default_library",
         "@com_github_pkg_errors//:go_default_library",
         "@io_k8s_api//certificates/v1beta1:go_default_library",

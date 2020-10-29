@@ -9,9 +9,9 @@ import (
 	"k8s.io/apiserver/pkg/storage/names"
 
 	infrav1 "github.com/cluster-api-provider-hcloud/cluster-api-provider-hcloud/api/v1alpha3"
-	"github.com/cluster-api-provider-hcloud/cluster-api-provider-hcloud/pkg/cloud/scope"
 	"github.com/cluster-api-provider-hcloud/cluster-api-provider-hcloud/pkg/cloud/utils"
 	"github.com/cluster-api-provider-hcloud/cluster-api-provider-hcloud/pkg/record"
+	"github.com/cluster-api-provider-hcloud/cluster-api-provider-hcloud/pkg/scope"
 )
 
 type Service struct {
@@ -85,6 +85,9 @@ func (s *Service) createLoadBalancer(ctx context.Context, spec infrav1.HcloudLoa
 	hc := s.scope.HcloudCluster
 
 	name := names.SimpleNameGenerator.GenerateName(hc.Name + "-kube-apiserver-")
+	if s.scope.HcloudCluster.Spec.ControlPlaneLoadBalancer.Name != nil {
+		name = *s.scope.HcloudCluster.Spec.ControlPlaneLoadBalancer.Name
+	}
 
 	// Get the Hetzner cloud object of load balancer type
 	loadBalancerType, _, err := s.scope.HcloudClient().GetLoadBalancerTypeByName(ctx, spec.Type)

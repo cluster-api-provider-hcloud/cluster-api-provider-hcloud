@@ -48,7 +48,7 @@ local newControlPlaneService(ip, domain, port) = {
   spec: specs(ip, domain, port),
 };
 
-local newSecrets(network, token, ip, domain) = 
+local newHcloudSecret(network, token, ip, domain) = 
   if (domain =="") then {
     hcloudSecret: {
       apiVersion: 'v1',
@@ -81,8 +81,52 @@ local newSecrets(network, token, ip, domain) =
     },
 };
 
+local newHrobotSecret(user, password) = 
+  if (user =="") then {
+    } else {
+    hrobotSecret: {
+      apiVersion: 'v1',
+      kind: 'Secret',
+      metadata: {
+        name: 'hrobot',
+        namespace: 'kube-system',
+      },
+      type: 'Opaque',
+      data: {
+        'robot-user': std.base64(user),
+        'robot-password': std.base64(password),
+      },
+    },
+};
+
+local newCASecret(caCrt, caKey) =
+  if (caCrt =="") then {
+    } else {
+  vcManagerNamespace: {
+    apiVersion: 'v1',
+    kind: 'Namespace',
+    metadata: {
+      name: 'vc-manager',
+    },
+  },
+  caSecret: {
+    apiVersion: 'v1',
+    kind: 'Secret',
+    metadata: {
+      name: 'vc-kubelet-client',
+      namespace: 'vc-manager',
+    },
+    type: 'Opaque',
+    data: {
+      'client.crt': std.base64(caCrt),
+      'client.key': std.base64(caKey),
+    },
+  },
+};
+
 local addons = {
-  secrets: newSecrets($._config.hcloudNetwork, $._config.hcloudToken, $._config.kubeAPIServerIPv4, $._config.kubeAPIServerDomain),
+  secrets: newHcloudSecret($._config.hcloudNetwork, $._config.hcloudToken, $._config.kubeAPIServerIPv4, $._config.kubeAPIServerDomain)
+  + newHrobotSecret($._config.robotUserName, $._config.robotPassword) + newCASecret($._config.caCrt, $._config.caKey),
   controlPlaneServices: newControlPlaneService($._config.kubeAPIServerIPv4, $._config.kubeAPIServerDomain, $._config.port),
 };
 

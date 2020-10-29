@@ -6,22 +6,22 @@ metadata:
   annotations:
     controller-gen.kubebuilder.io/version: (unknown)
   creationTimestamp: null
-  name: hcloudmachinetemplates.cluster-api-provider-hcloud.capihc.com
+  name: baremetalmachinetemplates.cluster-api-provider-hcloud.capihc.com
 spec:
   group: cluster-api-provider-hcloud.capihc.com
   names:
     categories:
     - cluster-api
-    kind: HcloudMachineTemplate
-    listKind: HcloudMachineTemplateList
-    plural: hcloudmachinetemplates
-    singular: hcloudmachinetemplate
+    kind: BareMetalMachineTemplate
+    listKind: BareMetalMachineTemplateList
+    plural: baremetalmachinetemplates
+    singular: baremetalmachinetemplate
   scope: Namespaced
   versions:
   - name: v1alpha3
     schema:
       openAPIV3Schema:
-        description: HcloudMachineTemplate is the Schema for the hcloudmachine API
+        description: BareMetalMachineTemplate is the Schema for the bareMetalMachine API
         properties:
           apiVersion:
             description: 'APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
@@ -32,46 +32,45 @@ spec:
           metadata:
             type: object
           spec:
-            description: HcloudMachineTemplateSpec defines the desired state of HcloudMachineTemplate
+            description: BareMetalMachineTemplateSpec defines the desired state of BareMetalMachineTemplate
             properties:
               template:
-                description: HcloudMachineTemplateResource describes the data needed to create am HcloudMachine from a template
+                description: BareMetalMachineTemplateResource describes the data needed to create am BareMetalMachine from a template
                 properties:
                   spec:
                     description: Spec is the specification of the desired behavior of the machine.
                     properties:
-                      image:
+                      imagePath:
                         type: string
+                      partition:
+                        type: string
+                      port:
+                        type: integer
                       providerID:
                         description: ProviderID is the unique identifier as specified by the cloud provider.
                         type: string
-                      sshKeys:
-                        description: define Machine specific SSH keys, overrides cluster wide SSH keys
-                        items:
-                          properties:
-                            id:
-                              type: integer
-                            name:
-                              type: string
-                          type: object
-                        type: array
-                      type:
+                      serverType:
                         type: string
-                      volumes:
-                        items:
-                          description: HcloudMachineVolume represent a Volume attachment
-                          properties:
-                            mountPath:
-                              type: string
-                            name:
-                              type: string
-                            volumeRef:
-                              type: string
-                          type: object
-                        type: array
+                      sshTokenRef:
+                        properties:
+                          privateKey:
+                            type: string
+                          publicKey:
+                            type: string
+                          sshKeyName:
+                            type: string
+                          tokenName:
+                            type: string
+                        required:
+                        - privateKey
+                        - publicKey
+                        - sshKeyName
+                        - tokenName
+                        type: object
                     required:
-                    - image
-                    - type
+                    - imagePath
+                    - serverType
+                    - sshTokenRef
                     type: object
                 required:
                 - spec

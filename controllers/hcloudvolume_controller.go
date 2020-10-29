@@ -33,9 +33,9 @@ import (
 	infrav1 "github.com/cluster-api-provider-hcloud/cluster-api-provider-hcloud/api/v1alpha3"
 	"github.com/cluster-api-provider-hcloud/cluster-api-provider-hcloud/pkg/cloud/resources/location"
 	"github.com/cluster-api-provider-hcloud/cluster-api-provider-hcloud/pkg/cloud/resources/volume"
-	"github.com/cluster-api-provider-hcloud/cluster-api-provider-hcloud/pkg/cloud/scope"
 	"github.com/cluster-api-provider-hcloud/cluster-api-provider-hcloud/pkg/manifests"
 	"github.com/cluster-api-provider-hcloud/cluster-api-provider-hcloud/pkg/packer"
+	"github.com/cluster-api-provider-hcloud/cluster-api-provider-hcloud/pkg/scope"
 )
 
 // HcloudVolumeReconciler reconciles a HcloudVolume object

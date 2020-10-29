@@ -6,10 +6,14 @@ import (
 
 type ManifestParameters struct {
 	HcloudToken         *string
+	RobotUserName       *string
+	RobotPassword       *string
 	HcloudNetwork       *intstr.IntOrString
 	KubeAPIServerIPv4   *string
 	KubeAPIServerDomain *string
 	Port                *string
+	CAcrt               *string
+	CAkey               *string
 }
 
 func (m *ManifestParameters) ExtVar() map[string]string {
@@ -34,6 +38,22 @@ func (m *ManifestParameters) ExtVar() map[string]string {
 	}
 
 	if key, val := "hcloud-token", m.HcloudToken; val != nil {
+		extVar[key] = *val
+	}
+
+	if key, val := "robot-username", m.RobotUserName; val != nil {
+		extVar[key] = *val
+	}
+
+	if key, val := "robot-password", m.RobotPassword; val != nil {
+		extVar[key] = *val
+	}
+
+	if key, val := "ca-crt", m.CAcrt; val != nil {
+		extVar[key] = *val
+	}
+
+	if key, val := "ca-key", m.CAkey; val != nil {
 		extVar[key] = *val
 	}
 

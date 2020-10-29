@@ -3,6 +3,11 @@ load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
 go_library(
     name = "go_default_library",
     srcs = [
+        "baremetalmachine_conversion.go",
+        "baremetalmachine_types.go",
+        "baremetalmachine_webhook.go",
+        "baremetalmachinetemplate_conversion.go",
+        "baremetalmachinetemplate_types.go",
         "groupversion_info.go",
         "hcloudcluster_conversion.go",
         "hcloudcluster_types.go",
