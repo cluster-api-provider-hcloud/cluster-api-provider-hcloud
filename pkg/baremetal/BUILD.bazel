@@ -3,12 +3,12 @@ load("@io_bazel_rules_go//go:def.bzl", "go_library")
 go_library(
     name = "go_default_library",
     srcs = ["baremetal.go"],
-    importpath = "github.com/cluster-api-provider-hcloud/cluster-api-provider-hcloud/pkg/cloud/resources/baremetal",
+    importpath = "github.com/cluster-api-provider-hcloud/cluster-api-provider-hcloud/pkg/baremetal",
     visibility = ["//visibility:public"],
     deps = [
-        "//pkg/cloud/resources/server/userdata:go_default_library",
-        "//pkg/cloud/scope:go_default_library",
         "//pkg/record:go_default_library",
+        "//pkg/scope:go_default_library",
+        "//pkg/userdata:go_default_library",
         "@com_github_nl2go_hrobot_go//models:go_default_library",
         "@com_github_pkg_errors//:go_default_library",
         "@io_k8s_api//core/v1:go_default_library",

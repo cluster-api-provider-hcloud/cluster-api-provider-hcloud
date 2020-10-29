@@ -8,11 +8,11 @@ go_library(
     deps = [
         "//api/v1alpha3:go_default_library",
         "//pkg/cloud/resources/loadbalancer:go_default_library",
-        "//pkg/cloud/resources/server/userdata:go_default_library",
-        "//pkg/cloud/scope:go_default_library",
         "//pkg/cloud/utils:go_default_library",
         "//pkg/packer/api:go_default_library",
         "//pkg/record:go_default_library",
+        "//pkg/scope:go_default_library",
+        "//pkg/userdata:go_default_library",
         "@com_github_hetznercloud_hcloud_go//hcloud:go_default_library",
         "@com_github_pkg_errors//:go_default_library",
         "@io_k8s_api//core/v1:go_default_library",
@@ -34,10 +34,7 @@ filegroup(
 
 filegroup(
     name = "all-srcs",
-    srcs = [
-        ":package-srcs",
-        "//pkg/cloud/resources/server/userdata:all-srcs",
-    ],
+    srcs = [":package-srcs"],
     tags = ["automanaged"],
     visibility = ["//visibility:public"],
 )

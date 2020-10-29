@@ -10,9 +10,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/cluster-api-provider-hcloud/cluster-api-provider-hcloud/pkg/cloud/resources/server/userdata"
-	"github.com/cluster-api-provider-hcloud/cluster-api-provider-hcloud/pkg/cloud/scope"
 	"github.com/cluster-api-provider-hcloud/cluster-api-provider-hcloud/pkg/record"
+	"github.com/cluster-api-provider-hcloud/cluster-api-provider-hcloud/pkg/scope"
+	"github.com/cluster-api-provider-hcloud/cluster-api-provider-hcloud/pkg/userdata"
 	"github.com/nl2go/hrobot-go/models"
 	"github.com/pkg/errors"
 	"golang.org/x/crypto/ssh"

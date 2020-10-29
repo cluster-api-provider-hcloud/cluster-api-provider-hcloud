@@ -10,7 +10,7 @@ go_library(
         "machine.go",
         "volume.go",
     ],
-    importpath = "github.com/cluster-api-provider-hcloud/cluster-api-provider-hcloud/pkg/cloud/scope",
+    importpath = "github.com/cluster-api-provider-hcloud/cluster-api-provider-hcloud/pkg/scope",
     visibility = ["//visibility:public"],
     deps = [
         "//api/v1alpha3:go_default_library",
@@ -48,7 +48,7 @@ filegroup(
     name = "all-srcs",
     srcs = [
         ":package-srcs",
-        "//pkg/cloud/scope/mock:all-srcs",
+        "//pkg/scope/mock:all-srcs",
     ],
     tags = ["automanaged"],
     visibility = ["//visibility:public"],
