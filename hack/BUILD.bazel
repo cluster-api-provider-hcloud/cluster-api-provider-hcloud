@@ -71,21 +71,21 @@ sh_binary(
     ],
 )
 
-sh_test(
-    name = "verify-bazel",
-    srcs = ["bazel.sh"],
-    args = [
-        "verify",
-        "$(location %s)" % GAZELLE,
-        "$(location %s)" % KAZEL,
-    ],
-    data = [
-        ":lib",
-        "@//:all-srcs",
-        GAZELLE,
-        KAZEL,
-    ],
-)
+# sh_test(
+#     name = "verify-bazel",
+#     srcs = ["bazel.sh"],
+#     args = [
+#         "verify",
+#         "$(location %s)" % GAZELLE,
+#         "$(location %s)" % KAZEL,
+#     ],
+#     data = [
+#         ":lib",
+#         "@//:all-srcs",
+#         GAZELLE,
+#         KAZEL,
+#     ],
+# )
 
 sh_binary(
     name = "update-deps",
@@ -178,21 +178,21 @@ genrule(
     ],
 )
 
-sh_test(
-    name = "verify-crds",
-    srcs = ["crds.sh"],
-    args = [
-        "verify",
-        "$(location %s)" % GO,
-        "$(location %s)" % CONTROLLER_GEN,
-    ],
-    data = [
-        ":lib",
-        GO,
-        CONTROLLER_GEN,
-        "@//:all-srcs",
-    ],
-)
+# sh_test(
+#     name = "verify-crds",
+#     srcs = ["crds.sh"],
+#     args = [
+#         "verify",
+#         "$(location %s)" % GO,
+#         "$(location %s)" % CONTROLLER_GEN,
+#     ],
+#     data = [
+#         ":lib",
+#         GO,
+#         CONTROLLER_GEN,
+#         "@//:all-srcs",
+#     ],
+# )
 
 filegroup(
     name = "package-srcs",
