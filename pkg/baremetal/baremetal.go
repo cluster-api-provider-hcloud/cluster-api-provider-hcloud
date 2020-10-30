@@ -161,8 +161,6 @@ func (s *Service) Reconcile(ctx context.Context) (_ *ctrl.Result, err error) {
 	// TODO: Ask for the state of the server and only if it is ready set it to true
 	s.scope.BareMetalMachine.Status.Ready = true
 
-	s.addLabel("node/type", "bm")
-
 	return nil, nil
 }
 
@@ -505,12 +503,6 @@ func (s *Service) Delete(ctx context.Context) (_ *ctrl.Result, err error) {
 	}
 
 	return nil, nil
-}
-
-func (s *Service) addLabel(key, value string) {
-	labels := s.scope.Machine.GetLabels()
-	labels[key] = value
-	s.scope.Machine.SetLabels(labels)
 }
 
 func (s *Service) getSSHFingerprintFromName(name string) (fingerprint string, err error) {
