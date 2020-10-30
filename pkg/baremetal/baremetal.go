@@ -308,7 +308,7 @@ func (s *Service) provisionMachine(ctx context.Context, server models.Server) er
 
 	var blockDevices blockDevices
 	blockDeviceCommand := "lsblk -o name,size,rota,fstype,label -e1 -e7 --json"
-	stdout, stderr, err = runSSH(blockDeviceCommand, server.ServerIP, port, privateSSHKey)
+	stdout, stderr, err = runSSH(blockDeviceCommand, server.ServerIP, 22, privateSSHKey)
 	if err != nil {
 		return errors.Errorf("Error running the ssh command %s: Error: %s, stderr: %s", blockDeviceCommand, err, stderr)
 	}
@@ -340,14 +340,14 @@ EOF`,
 
 	s.scope.V(4).Info("Send auto setup file to server")
 	// Send autosetup file to server
-	stdout, stderr, err = runSSH(autoSetup, server.ServerIP, 22, privateSSHKey)
+	_, stderr, err = runSSH(autoSetup, server.ServerIP, 22, privateSSHKey)
 	if err != nil {
 		return errors.Errorf("SSH command autosetup returned the error %s. The output of stderr is %s", err, stderr)
 	}
 
 	s.scope.V(4).Info("Install image")
 	// Install the image
-	stdout, stderr, err = runSSH("bash /root/.oldroot/nfs/install/installimage", server.ServerIP, 22, privateSSHKey)
+	_, stderr, err = runSSH("bash /root/.oldroot/nfs/install/installimage", server.ServerIP, 22, privateSSHKey)
 	if err != nil {
 		// If an error occurs here, we have to wipe the device to avoid future problems
 		wipeCommand := fmt.Sprintf("wipefs -a /dev/%s", drive)
@@ -375,7 +375,7 @@ EOF`,
 		return errors.Errorf("Error while constructing labeling children command of device %s: %s", drive, err)
 	}
 	s.scope.V(4).Info("Label children")
-	stdout, stderr, err = runSSH(command, server.ServerIP, 22, privateSSHKey)
+	_, stderr, err = runSSH(command, server.ServerIP, 22, privateSSHKey)
 	if err != nil {
 		// If an error occurs here, we have to wipe the device to avoid future problems
 		wipeCommand := fmt.Sprintf("wipefs -a /dev/%s", drive)
@@ -384,14 +384,14 @@ EOF`,
 	}
 
 	// avoid errors when reboot comes too early for the previous command
-	_, _, err = runSSH("sleep 30", server.ServerIP, 22, privateSSHKey)
+	_, stderr, err = runSSH("sleep 30", server.ServerIP, 22, privateSSHKey)
 	if err != nil {
 		return errors.Errorf("Error running the ssh command sleep 30: Error: %s, stderr: %s", err, stderr)
 	}
 
 	s.scope.V(4).Info("Reboot")
 	// reboot system
-	stdout, stderr, err = runSSH("reboot", server.ServerIP, 22, privateSSHKey)
+	_, stderr, err = runSSH("reboot", server.ServerIP, 22, privateSSHKey)
 	if err != nil {
 		if !strings.Contains(err.Error(), "exited without exit status or exit signal") {
 			return errors.Errorf("Error running the ssh command reboot: Error: %s, stderr: %s", err, stderr)
@@ -407,7 +407,7 @@ EOF`,
 	s.scope.V(4).Info("Create nocloud directory")
 	// create nocloud directory for cloud-init
 	command = "mkdir -p /var/lib/cloud/seed/nocloud"
-	stdout, stderr, err = runSSH(command, server.ServerIP, port, privateSSHKey)
+	_, stderr, err = runSSH(command, server.ServerIP, port, privateSSHKey)
 	if err != nil {
 		return errors.Errorf("Error running the ssh command %s: Error: %s, stderr: %s", command, err, stderr)
 	}
@@ -415,7 +415,7 @@ EOF`,
 	s.scope.V(4).Info("Create meta data for cloud init")
 	// create meta-data for cloud-init
 	command = "echo 'instance-id: iid-system-uuid' >> /var/lib/cloud/seed/nocloud/meta-data"
-	stdout, stderr, err = runSSH(command, server.ServerIP, port, privateSSHKey)
+	_, stderr, err = runSSH(command, server.ServerIP, port, privateSSHKey)
 	if err != nil {
 		return errors.Errorf("Error running the ssh command %s: Error: %s, stderr: %s", command, err, stderr)
 	}
@@ -428,7 +428,7 @@ EOF`, cloudInitConfigString)
 
 	s.scope.V(4).Info("Send userdata")
 	// send user-data to server
-	stdout, stderr, err = runSSH(cloudInitCommand, server.ServerIP, port, privateSSHKey)
+	_, stderr, err = runSSH(cloudInitCommand, server.ServerIP, port, privateSSHKey)
 	if err != nil {
 		return errors.Errorf("Error running the ssh command %s: Error: %s, stderr: %s", cloudInitCommand, err, stderr)
 	}
@@ -441,7 +441,7 @@ EOF`, cloudInitConfigString)
 
 	s.scope.V(4).Info("Reboot")
 	// reboot system
-	stdout, stderr, err = runSSH("reboot", server.ServerIP, port, privateSSHKey)
+	_, stderr, err = runSSH("reboot", server.ServerIP, port, privateSSHKey)
 	if err != nil {
 		if !strings.Contains(err.Error(), "exited without exit status or exit signal") {
 			return errors.Errorf("Error running the ssh command reboot: Error: %s, stderr: %s", err, stderr)
