@@ -160,6 +160,9 @@ func (s *Service) Reconcile(ctx context.Context) (_ *ctrl.Result, err error) {
 
 	// TODO: Ask for the state of the server and only if it is ready set it to true
 	s.scope.BareMetalMachine.Status.Ready = true
+
+	s.addLabel("node/type", "bm")
+
 	return nil, nil
 }
 
@@ -228,7 +231,7 @@ func (s *Service) findNewMachine(servers []models.Server) (*models.Server, error
 
 // Provisions the bare metal machine
 func (s *Service) provisionMachine(ctx context.Context, server models.Server) error {
-
+	s.scope.V(4).Info("Started provisioning bare metal machine")
 	port := defaultPort
 	if s.scope.BareMetalMachine.Spec.Port != nil {
 		port = *s.scope.BareMetalMachine.Spec.Port
@@ -282,16 +285,16 @@ func (s *Service) provisionMachine(ctx context.Context, server models.Server) er
 	}
 
 	cloudInitConfigString := userDataBytes.String()
-
+	s.scope.V(4).Info("Activate rescue")
 	// First we have to activate rescue mode
 	_, err = s.scope.HrobotClient().ActivateRescue(server.ServerIP, sshFingerprint)
 	if err != nil {
 		return errors.Errorf("Unable to activate rescue system: ", err)
 	}
-
+	s.scope.V(4).Info("Reset machine")
 	// reboot system
 	_, err = s.scope.HrobotClient().ResetBMServer(server.ServerIP, "hw")
-
+	s.scope.V(4).Info("Run SSH command hostname")
 	// Find out if rescue system has been started successfully
 	stdout, stderr, err := runSSH("hostname", server.ServerIP, 22, privateSSHKey)
 	if err != nil {
@@ -302,6 +305,9 @@ func (s *Service) provisionMachine(ctx context.Context, server models.Server) er
 	}
 
 	// Find the block device where we can install our image
+
+	s.scope.V(4).Info("Get block devices")
+
 	var blockDevices blockDevices
 	blockDeviceCommand := "lsblk -o name,size,rota,fstype,label -e1 -e7 --json"
 	stdout, stderr, err = runSSH(blockDeviceCommand, server.ServerIP, port, privateSSHKey)
@@ -334,12 +340,14 @@ IMAGE %s
 EOF`,
 		drive, s.scope.Cluster.Name+delimiter+*s.scope.BareMetalMachine.Spec.ServerType+delimiter+s.scope.BareMetalMachine.Name, partitionString, *s.scope.BareMetalMachine.Spec.ImagePath)
 
+	s.scope.V(4).Info("Send auto setup file to server")
 	// Send autosetup file to server
 	stdout, stderr, err = runSSH(autoSetup, server.ServerIP, 22, privateSSHKey)
 	if err != nil {
 		return errors.Errorf("SSH command autosetup returned the error %s. The output of stderr is %s", err, stderr)
 	}
 
+	s.scope.V(4).Info("Install image")
 	// Install the image
 	stdout, stderr, err = runSSH("bash /root/.oldroot/nfs/install/installimage", server.ServerIP, 22, privateSSHKey)
 	if err != nil {
@@ -348,7 +356,7 @@ EOF`,
 		_, _, _ = runSSH(wipeCommand, server.ServerIP, 22, privateSSHKey)
 		return errors.Errorf("SSH command installimage returned the error %s. The output of stderr is %s", err, stderr)
 	}
-
+	s.scope.V(4).Info("Get block devices")
 	// get again list of block devices and label children of our drive
 	stdout, stderr, err = runSSH(blockDeviceCommand, server.ServerIP, 22, privateSSHKey)
 	if err != nil {
@@ -368,7 +376,7 @@ EOF`,
 	if err != nil {
 		return errors.Errorf("Error while constructing labeling children command of device %s: %s", drive, err)
 	}
-
+	s.scope.V(4).Info("Label children")
 	stdout, stderr, err = runSSH(command, server.ServerIP, 22, privateSSHKey)
 	if err != nil {
 		// If an error occurs here, we have to wipe the device to avoid future problems
@@ -383,6 +391,7 @@ EOF`,
 		return errors.Errorf("Error running the ssh command sleep 30: Error: %s, stderr: %s", err, stderr)
 	}
 
+	s.scope.V(4).Info("Reboot")
 	// reboot system
 	stdout, stderr, err = runSSH("reboot", server.ServerIP, 22, privateSSHKey)
 	if err != nil {
@@ -397,7 +406,7 @@ EOF`,
 	if err != nil {
 		return errors.Errorf("Connection to server after reboot could not be established. Error: %s, stderr: %s", err, stderr)
 	}
-
+	s.scope.V(4).Info("Create nocloud directory")
 	// create nocloud directory for cloud-init
 	command = "mkdir -p /var/lib/cloud/seed/nocloud"
 	stdout, stderr, err = runSSH(command, server.ServerIP, port, privateSSHKey)
@@ -405,6 +414,7 @@ EOF`,
 		return errors.Errorf("Error running the ssh command %s: Error: %s, stderr: %s", command, err, stderr)
 	}
 
+	s.scope.V(4).Info("Create meta data for cloud init")
 	// create meta-data for cloud-init
 	command = "echo 'instance-id: iid-system-uuid' >> /var/lib/cloud/seed/nocloud/meta-data"
 	stdout, stderr, err = runSSH(command, server.ServerIP, port, privateSSHKey)
@@ -418,6 +428,7 @@ EOF`,
 %s
 EOF`, cloudInitConfigString)
 
+	s.scope.V(4).Info("Send userdata")
 	// send user-data to server
 	stdout, stderr, err = runSSH(cloudInitCommand, server.ServerIP, port, privateSSHKey)
 	if err != nil {
@@ -430,6 +441,7 @@ EOF`, cloudInitConfigString)
 		return errors.Errorf("Connection to server after reboot could not be established. Error: %s, stderr: %s", err, stderr)
 	}
 
+	s.scope.V(4).Info("Reboot")
 	// reboot system
 	stdout, stderr, err = runSSH("reboot", server.ServerIP, port, privateSSHKey)
 	if err != nil {
@@ -437,7 +449,7 @@ EOF`, cloudInitConfigString)
 			return errors.Errorf("Error running the ssh command reboot: Error: %s, stderr: %s", err, stderr)
 		}
 	}
-
+	s.scope.V(4).Info("Set server name and finish")
 	// Finally set the machine's name. The name replaces labels as we cannot label bare metal machines directly
 	_, err = s.scope.HrobotClient().SetBMServerName(server.ServerIP,
 		s.scope.Cluster.Name+delimiter+*s.scope.BareMetalMachine.Spec.ServerType+delimiter+s.scope.BareMetalMachine.Name)
@@ -493,6 +505,12 @@ func (s *Service) Delete(ctx context.Context) (_ *ctrl.Result, err error) {
 	}
 
 	return nil, nil
+}
+
+func (s *Service) addLabel(key, value string) {
+	labels := s.scope.Machine.GetLabels()
+	labels[key] = value
+	s.scope.Machine.SetLabels(labels)
 }
 
 func (s *Service) getSSHFingerprintFromName(name string) (fingerprint string, err error) {
