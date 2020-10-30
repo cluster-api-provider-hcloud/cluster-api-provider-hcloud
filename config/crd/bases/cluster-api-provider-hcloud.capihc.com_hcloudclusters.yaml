@@ -146,6 +146,7 @@ spec:
                   type: object
                 type: array
               vcKubeletClientSecretEnabled:
+                description: Useful for https://github.com/kubernetes-sigs/multi-tenancy/blob/master/incubator/virtualcluster/doc/demo.md#optional-update-client-ca-secret
                 type: boolean
             required:
             - controlPlaneLoadbalancer
