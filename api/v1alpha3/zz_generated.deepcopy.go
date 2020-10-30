@@ -94,11 +94,6 @@ func (in *BareMetalMachineSpec) DeepCopyInto(out *BareMetalMachineSpec) {
 		*out = new(string)
 		**out = **in
 	}
-	if in.Port != nil {
-		in, out := &in.Port, &out.Port
-		*out = new(int)
-		**out = **in
-	}
 	if in.Partition != nil {
 		in, out := &in.Partition, &out.Partition
 		*out = new(string)

@@ -36,9 +36,6 @@ type BareMetalMachineSpec struct {
 	ProviderID *string `json:"providerID"`
 
 	// +optional
-	Port *int `json:"port"`
-
-	// +optional
 	Partition *string `json:"partition"`
 
 	ImagePath *string `json:"imagePath"`

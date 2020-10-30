@@ -55,8 +55,6 @@ spec:
                 type: string
               partition:
                 type: string
-              port:
-                type: integer
               providerID:
                 description: ProviderID is the unique identifier as specified by the cloud provider.
                 type: string
