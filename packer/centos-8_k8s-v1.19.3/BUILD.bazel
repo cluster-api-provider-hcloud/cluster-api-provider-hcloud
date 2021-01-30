@@ -1,0 +1,53 @@
+load("@bazel_tools//tools/build_defs/pkg:pkg.bzl", "pkg_tar")
+
+filegroup(
+    name = "centos_cri",
+    srcs = [
+        "image.json",
+    ],
+)
+
+filegroup(
+    name = "scripts",
+    srcs = glob(["scripts/*.sh"]),
+)
+
+pkg_tar(
+    name = "packer",
+    srcs = [
+        ":centos_cri",
+        ":scripts",
+    ],
+    mode = "0o644",
+    package_dir = "centos-8_k8s-v1.19.3-packer-config",
+    strip_prefix = ".",
+    visibility = ["//visibility:public"],
+)
+
+sh_test(
+    name = "test_centos_crio",
+    srcs = ["packer-validate.sh"],
+    args = [
+        "$(location //hack:packer_host_bin)",
+        "$(location :centos_cri)",
+    ],
+    data = [
+        ":centos_cri",
+        ":scripts",
+        "//hack:packer_host_bin",
+    ],
+)
+
+filegroup(
+    name = "package-srcs",
+    srcs = glob(["**"]),
+    tags = ["automanaged"],
+    visibility = ["//visibility:private"],
+)
+
+filegroup(
+    name = "all-srcs",
+    srcs = [":package-srcs"],
+    tags = ["automanaged"],
+    visibility = ["//visibility:public"],
+)
