@@ -24,6 +24,9 @@ install_all: manifests ## Install CRDs into a cluster
 manifests: ## Update generated manifests
 	bazel run //hack:update-crds
 
+release: 
+	bazel run //hack:release
+
 .PHONY: deploy_kind
 deploy_kind: ## Deploy latest image and manifests to a kind cluster
 	bazel run //cmd/cluster-api-provider-hcloud:deploy
