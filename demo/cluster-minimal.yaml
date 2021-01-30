@@ -1,7 +1,7 @@
 apiVersion: cluster.x-k8s.io/v1alpha3
 kind: Cluster
 metadata:
-  name: "${CLUSTER_NAME}"
+  name: cluster-a
   namespace: default
   labels:
     cni: calico-datastore-k8s
@@ -18,16 +18,16 @@ spec:
   controlPlaneRef:
     apiVersion: controlplane.cluster.x-k8s.io/v1alpha3
     kind: KubeadmControlPlane
-    name: "${CLUSTER_NAME}-control-plane"
+    name: cluster-a-control-plane
   infrastructureRef:
     apiVersion: cluster-api-provider-hcloud.capihc.com/v1alpha3
     kind: HcloudCluster
-    name: "${CLUSTER_NAME}"
+    name: cluster-a
 ---
 apiVersion: cluster-api-provider-hcloud.capihc.com/v1alpha3
 kind: HcloudCluster
 metadata:
-  name: "${CLUSTER_NAME}"
+  name: cluster-a
   namespace: default
 spec:
   controlPlaneEndpoint:
@@ -56,13 +56,13 @@ spec:
 apiVersion: controlplane.cluster.x-k8s.io/v1alpha3
 kind: KubeadmControlPlane
 metadata:
-  name: "${CLUSTER_NAME}-control-plane"
+  name: cluster-a-control-plane
   namespace: default
 spec:
   infrastructureTemplate:
     apiVersion: cluster-api-provider-hcloud.capihc.com/v1alpha3
     kind: HcloudMachineTemplate
-    name: "${CLUSTER_NAME}-control-plane-mt-0"
+    name: cluster-a-control-plane-mt-0
   kubeadmConfigSpec:
     clusterConfiguration:
       apiServer:
@@ -87,7 +87,7 @@ spec:
 apiVersion: cluster-api-provider-hcloud.capihc.com/v1alpha3
 kind: HcloudMachineTemplate
 metadata:
-  name: "${CLUSTER_NAME}-control-plane-mt-0"
+  name: cluster-a-control-plane-mt-0
   namespace: default
 spec:
   template:
@@ -98,7 +98,7 @@ spec:
 apiVersion: bootstrap.cluster.x-k8s.io/v1alpha3
 kind: KubeadmConfigTemplate
 metadata:
-  name: "${CLUSTER_NAME}-worker-kubeadm-0"
+  name: cluster-a-worker-kubeadm-0
   namespace: default
 spec:
   template:
@@ -112,13 +112,13 @@ spec:
 apiVersion: cluster.x-k8s.io/v1alpha3
 kind: MachineDeployment
 metadata:
-  name: "${CLUSTER_NAME}-worker-fsn1"
+  name: cluster-a-worker-fsn1
   namespace: default
   labels:
     nodepool: worker
 spec:
   replicas: 1
-  clusterName: "${CLUSTER_NAME}"
+  clusterName: cluster-a
   selector:
     matchLabels:
       nodepool: worker
@@ -127,29 +127,29 @@ spec:
       labels:
         nodepool: worker
     spec:
-      clusterName: "${CLUSTER_NAME}"
+      clusterName: cluster-a
       version: v1.19.3
       bootstrap:
         configRef:
           apiVersion: bootstrap.cluster.x-k8s.io/v1alpha3
           kind: KubeadmConfigTemplate
-          name: "${CLUSTER_NAME}-worker-kubeadm-0"
+          name: cluster-a-worker-kubeadm-0
       infrastructureRef:
         apiVersion: cluster-api-provider-hcloud.capihc.com/v1alpha3
         kind: HcloudMachineTemplate
-        name: "${CLUSTER_NAME}-worker-fsn1-mt-0"
+        name: cluster-a-worker-fsn1-mt-0
       failureDomain: fsn1
 ---
 apiVersion: cluster.x-k8s.io/v1alpha3
 kind: MachineDeployment
 metadata:
-  name: "${CLUSTER_NAME}-worker-ngb1"
+  name: cluster-a-worker-ngb1
   namespace: default
   labels:
     nodepool: worker
 spec:
   replicas: 1
-  clusterName: "${CLUSTER_NAME}"
+  clusterName: cluster-a
   selector:
     matchLabels:
       nodepool: worker
@@ -158,29 +158,29 @@ spec:
       labels:
         nodepool: worker
     spec:
-      clusterName: "${CLUSTER_NAME}"
+      clusterName: cluster-a
       version: v1.19.3
       bootstrap:
         configRef:
           apiVersion: bootstrap.cluster.x-k8s.io/v1alpha3
           kind: KubeadmConfigTemplate
-          name: "${CLUSTER_NAME}-worker-kubeadm-0"
+          name: cluster-a-worker-kubeadm-0
       infrastructureRef:
         apiVersion: cluster-api-provider-hcloud.capihc.com/v1alpha3
         kind: HcloudMachineTemplate
-        name: "${CLUSTER_NAME}-worker-nbg1-mt-0"
+        name: cluster-a-worker-nbg1-mt-0
       failureDomain: nbg1
 ---
 apiVersion: cluster.x-k8s.io/v1alpha3
 kind: MachineDeployment
 metadata:
-  name: "${CLUSTER_NAME}-worker-hel1"
+  name: cluster-a-worker-hel1
   namespace: default
   labels:
     nodepool: worker
 spec:
   replicas: 1
-  clusterName: "${CLUSTER_NAME}"
+  clusterName: cluster-a
   selector:
     matchLabels:
       nodepool: worker
@@ -189,23 +189,23 @@ spec:
       labels:
         nodepool: worker
     spec:
-      clusterName: "${CLUSTER_NAME}"
+      clusterName: cluster-a
       version: v1.19.3
       bootstrap:
         configRef:
           apiVersion: bootstrap.cluster.x-k8s.io/v1alpha3
           kind: KubeadmConfigTemplate
-          name: "${CLUSTER_NAME}-worker-kubeadm-0"
+          name: cluster-a-worker-kubeadm-0
       infrastructureRef:
         apiVersion: cluster-api-provider-hcloud.capihc.com/v1alpha3
         kind: HcloudMachineTemplate
-        name: "${CLUSTER_NAME}-worker-hel1-mt-0"
+        name: cluster-a-worker-hel1-mt-0
       failureDomain: hel1
 ---
 apiVersion: cluster-api-provider-hcloud.capihc.com/v1alpha3
 kind: HcloudMachineTemplate
 metadata:
-  name: "${CLUSTER_NAME}-worker-fsn1-mt-0"
+  name: cluster-a-worker-fsn1-mt-0
   namespace: default
 spec:
   template:
@@ -216,7 +216,7 @@ spec:
 apiVersion: cluster-api-provider-hcloud.capihc.com/v1alpha3
 kind: HcloudMachineTemplate
 metadata:
-  name: "${CLUSTER_NAME}-worker-nbg1-mt-0"
+  name: cluster-a-worker-nbg1-mt-0
   namespace: default
 spec:
   template:
@@ -227,7 +227,7 @@ spec:
 apiVersion: cluster-api-provider-hcloud.capihc.com/v1alpha3
 kind: HcloudMachineTemplate
 metadata:
-  name: "${CLUSTER_NAME}-worker-hel1-mt-0"
+  name: cluster-a-worker-hel1-mt-0
   namespace: default
 spec:
   template:
@@ -238,9 +238,9 @@ spec:
 apiVersion: cluster.x-k8s.io/v1alpha3
 kind: MachineHealthCheck
 metadata:
-  name: "${CLUSTER_NAME}-worker-unhealthy-5m"
+  name: cluster-a-worker-unhealthy-5m
 spec:
-  clusterName: "${CLUSTER_NAME}"
+  clusterName: cluster-a
   maxUnhealthy: 10%
   nodeStartupTimeout: 10m
   selector:
