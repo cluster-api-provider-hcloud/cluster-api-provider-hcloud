@@ -1,0 +1,36 @@
+name: Push latest version
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v1
+
+    - name: Install bazelisk
+      run: |
+        mkdir -p "${GITHUB_WORKSPACE}/bin"
+        curl -Lo "${GITHUB_WORKSPACE}/bin/bazel" "https://github.com/bazelbuild/bazelisk/releases/download/v1.5.0/bazelisk-linux-amd64"
+        echo "605c4b417654a09febc7e15c6b802195fdd1c4fe8d876145fb15f10d4fa27b5b  ${GITHUB_WORKSPACE}/bin/bazel" | sha256sum -c
+        chmod +x "${GITHUB_WORKSPACE}/bin/bazel"
+    - name: Test
+      run: |
+        "${GITHUB_WORKSPACE}/bin/bazel" test //...
+
+    - name: Build
+      run: |
+        "${GITHUB_WORKSPACE}/bin/bazel" build //...
+
+    - name: Add docker push secret
+      run: 'umask 0077 && mkdir -p ~/.docker/ && echo "$DOCKER_AUTH_CONFIG" > ~/.docker/config.json'
+      shell: bash
+      env:
+        DOCKER_AUTH_CONFIG: ${{secrets.DOCKER_AUTH_CONFIG}}
+
+    - name: Push image
+      run: |
+        "${GITHUB_WORKSPACE}/bin/bazel" run //:images.push
