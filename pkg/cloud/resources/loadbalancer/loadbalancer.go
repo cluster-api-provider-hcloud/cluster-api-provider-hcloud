@@ -42,7 +42,7 @@ func (s *Service) Reconcile(ctx context.Context) (err error) {
 			return errors.Wrap(err, "failed to obtain load balancer status")
 		}
 		s.scope.HcloudCluster.Status.ControlPlaneLoadBalancer = *lbStatus
-		if s.scope.HcloudCluster.Status.Network != nil && len(lb.PrivateNet) > 0 {
+		if s.scope.HcloudCluster.Status.Network != nil && len(lb.PrivateNet) == 0 {
 			if err := s.attachLoadBalancerToNetwork(ctx, lb); err != nil {
 				return errors.Wrap(err, "failed to attach load balancer to network")
 			}
