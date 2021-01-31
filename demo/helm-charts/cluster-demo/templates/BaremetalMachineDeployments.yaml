@@ -1,0 +1,4 @@
+---
+{{- if .Values.cluster.baremetal.enabled }}
+{{- include "cluster.BaremetalMachineDeployments" . }}
+{{- end -}}

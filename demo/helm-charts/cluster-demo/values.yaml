@@ -1,0 +1,223 @@
+cluster:
+  name: cluster-a
+  namespace: default
+  serviceDomain: cluster.local
+  kubeAPIEndpoint:
+    listenPort: 443
+    domain: 
+      enabled: false
+      name: example.com
+    loadbalancer:
+      type: lb11
+      algorithm: round_robin
+    extraServices:
+      enabled: false
+      values:
+        - listenPort: 8091
+          destinationPort: 8091
+          protocol: tcp
+  kubernetesVersion: v1.19.3
+  network:
+    podCIDR: 192.168.0.0/16
+    serviceCIDR:
+      enabled: false
+      blocks: 192.168.0.0/16
+  privNet:
+    enabled: true
+    network:
+      cidrBlock: 172.16.0.0/12
+      subnets:
+      - cidrBlock: 172.16.0.0/20
+        networkZone: eu-central
+  baremetal:
+    enabled: false
+  tokenRef:
+    hcloud:
+      key: token
+      name: hetzner-token
+    baremetal:
+      robotPassword: robot-password
+      robotUser: robot-user
+      name: bm-token
+      sshRef:
+        key: name
+        name: bm-sshkey
+        publicKey: public
+        privateKey: private
+  ssh:
+    root:
+      name: root
+      keyName: cluster
+
+clusterResourceSets: # available Deployments are under ./demo/ClusterResourceSets
+  cni: cilium-privnet
+  #cni: calico-datastore-k8s
+  csi: hcloud-csi
+  metrics-server: metrics-server
+
+
+controlPlanes:
+  server:
+    replicas: "3"
+    type: cx21-ceph
+    image: centos-8_k8s-v1.19.3
+    location:
+      - nbg1 # first location is used for location of Loadbalancer
+      - fsn1
+      - hel1
+    nodepool: control-planes
+  machineTemplate:
+    version: "v1.0.0"
+  kubeadmConfig:
+    verbosity: 1
+    useExperimentalRetryJoin: false
+  machineHealthChecks:
+        name: control-plane-unhealthy-5m
+        maxUnhealthy: "1"
+        timeout: 5m
+        nodeStartupTimeout: 8m
+
+
+
+hcloudWorkers:
+  hc1:
+    name: fsn
+    revisionHistoryLimit: 5
+    progressDeadlineSeconds: 420
+    server:
+      location: fsn1
+      replicas: "1"
+      rollingUpdate:
+        maxSurge: 1
+        maxUnavailable: 0
+      nodepool: worker-fsn1
+      nodeDrainTimeout: 600s
+      type: cpx11
+      nodeLabels:
+        cpu: "amd"
+      image: centos-8_k8s-v1.19.3  # Custom image possible via tar.gz image (https only supported) For Custom image architecture see docs or the packer directory https://[your-box].your-storagebox.de/centos-8.tar.gz
+    machineTemplate:
+      version: "v1.0.0"
+    kubeadmTemplate:
+      version: "v1.0.0"
+      verbosity: 1
+      useExperimentalRetryJoin: false
+    machineHealthChecks:
+      unhealthy-1:
+        name: unhealthy-2m
+        maxUnhealthy: 50%
+        timeout: 2m
+        nodeStartupTimeout: 8m
+      unhealthy-2:
+        name: unhealthy-7m
+        timeout: 7m
+        nodeStartupTimeout: 8m
+        maxUnhealthy: 90%
+  hc2:
+    name: nbg
+    revisionHistoryLimit: 5
+    progressDeadlineSeconds: 420
+    server:
+      location: nbg1
+      replicas: "1"
+      rollingUpdate:
+        maxSurge: 1
+        maxUnavailable: 0
+      nodepool: worker-nbg1
+      nodeDrainTimeout: 600s
+      type: cpx11
+      nodeLabels:
+        cpu: "amd"
+      image: centos-8_k8s-v1.19.3  # Custom image possible via tar.gz image (https only supported) For Custom image architecture see docs or the packer directory https://[your-box].your-storagebox.de/centos-8.tar.gz
+    machineTemplate:
+      version: "v1.0.0"
+    kubeadmTemplate:
+      version: "v1.0.0"
+      verbosity: 1
+      useExperimentalRetryJoin: false
+    machineHealthChecks:
+      unhealthy-1:
+        name: unhealthy-2m
+        maxUnhealthy: 50%
+        timeout: 2m
+        nodeStartupTimeout: 8m
+      unhealthy-2:
+        name: unhealthy-7m
+        timeout: 7m
+        nodeStartupTimeout: 8m
+        maxUnhealthy: 90%
+  hc3:
+    name: hel
+    revisionHistoryLimit: 5
+    progressDeadlineSeconds: 420
+    server:
+      location: hel1
+      replicas: "1"
+      rollingUpdate:
+        maxSurge: 1
+        maxUnavailable: 0
+      nodepool: worker-hel1
+      nodeDrainTimeout: 600s
+      type: cpx11
+      nodeLabels:
+        cpu: "amd"
+      image: centos-8_k8s-v1.19.3  # Custom image possible via tar.gz image (https only supported) For Custom image architecture see docs or the packer directory https://[your-box].your-storagebox.de/centos-8.tar.gz
+    machineTemplate:
+      version: "v1.0.0"
+    kubeadmTemplate:
+      version: "v1.0.0"
+      verbosity: 1
+      useExperimentalRetryJoin: false
+    machineHealthChecks:
+      unhealthy-1:
+        name: unhealthy-2m
+        maxUnhealthy: 50%
+        timeout: 2m
+        nodeStartupTimeout: 8m
+      unhealthy-2:
+        name: unhealthy-7m
+        timeout: 7m
+        nodeStartupTimeout: 8m
+        maxUnhealthy: 90%
+
+
+# hetznerBaremetalWorkers:
+#   bm1:
+#     name: bm-1
+#     revisionHistoryLimit: 5
+#     progressDeadlineSeconds: 720
+#     server:
+#       location: "" # No failure Domains currently available 
+#       replicas: "1"
+#       rollingUpdate:
+#         maxSurge: 1
+#         maxUnavailable: 0
+#       nodepool: bm-workers-bm-1
+#       nodeDrainTimeout: 600s
+#       customPartition:
+#         enabled: false
+#         content: |
+#           PART /boot ext3 512M
+#           PART / ext4 all
+#       nodeLabels:
+#         cpu: intel
+#       type: mytype
+#       image: # Image via https for automatically installation via InstallImage
+#     machineTemplate:
+#       version: "v1.0.0"
+#     kubeadmTemplate:
+#       version: "v1.0.0"
+#       verbosity: 1
+#       useExperimentalRetryJoin: false
+#     machineHealthChecks:
+#       unhealthy-1:
+#         name: unhealthy-12m
+#         maxUnhealthy: 100%
+#         timeout: 12m
+#         nodeStartupTimeout: 20m
+#       unhealthy-2:
+#         name: unhealthy-25m
+#         timeout: 25m
+#         nodeStartupTimeout: 20m
+#         maxUnhealthy: 100%
+

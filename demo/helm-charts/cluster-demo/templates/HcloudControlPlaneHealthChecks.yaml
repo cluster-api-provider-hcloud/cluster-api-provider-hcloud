@@ -1,0 +1,18 @@
+apiVersion: cluster.x-k8s.io/v1alpha3
+kind: MachineHealthCheck
+metadata:
+  name: {{ $.Values.cluster.name }}-hc-control-plane-{{ .Values.controlPlanes.machineHealthChecks.name }}
+spec:
+  clusterName: {{ $.Values.cluster.name }}
+  maxUnhealthy: {{ .Values.controlPlanes.machineHealthChecks.maxUnhealthy }}
+  nodeStartupTimeout: {{ .Values.controlPlanes.machineHealthChecks.nodeStartupTimeout }}
+  selector:
+    matchLabels:
+      nodepool: {{ .Values.controlPlanes.server.nodepool }}
+  unhealthyConditions:
+  - type: Ready
+    status: Unknown
+    timeout: {{ .Values.controlPlanes.machineHealthChecks.timeout }}
+  - type: Ready
+    status: "False"
+    timeout: {{ .Values.controlPlanes.machineHealthChecks.timeout }}

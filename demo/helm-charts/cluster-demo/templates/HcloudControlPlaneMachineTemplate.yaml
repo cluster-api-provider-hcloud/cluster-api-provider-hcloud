@@ -1,0 +1,11 @@
+apiVersion: cluster-api-provider-hcloud.capihc.com/v1alpha3
+kind: HcloudMachineTemplate
+metadata:
+  name: {{ .Values.cluster.name }}-control-plane-mt-{{ .Values.controlPlanes.machineTemplate.version }}
+  namespace: {{ .Values.cluster.namespace }} 
+spec:
+  template:
+    spec:
+      type: {{ .Values.controlPlanes.server.type}}
+      image: {{ .Values.controlPlanes.server.image}}
+

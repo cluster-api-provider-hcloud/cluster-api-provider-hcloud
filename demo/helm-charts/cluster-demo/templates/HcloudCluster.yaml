@@ -1,0 +1,44 @@
+apiVersion: cluster-api-provider-hcloud.capihc.com/v1alpha3
+kind: HcloudCluster
+metadata:
+  name: {{ .Values.cluster.name }}
+  namespace: {{ .Values.cluster.namespace }}
+spec:
+  controlPlaneEndpoint:
+    {{ if .Values.cluster.kubeAPIEndpoint.domain.enabled }}
+    host: {{ .Values.cluster.kubeAPIEndpoint.domain.name | quote }}
+    {{- else -}}
+    host: ""
+    {{- end }}
+    port: {{ .Values.cluster.kubeAPIEndpoint.listenPort }}
+  controlPlaneLoadbalancer:
+    type: {{ .Values.cluster.kubeAPIEndpoint.loadbalancer.type | quote }}
+    algorithm: {{ .Values.cluster.kubeAPIEndpoint.loadbalancer.algorithm | quote }}
+    services:
+    - listenPort: {{ .Values.cluster.kubeAPIEndpoint.listenPort }}
+      destinationPort: 6443
+      protocol: tcp
+    {{- if .Values.cluster.kubeAPIEndpoint.extraServices.enabled -}}
+    {{- toYaml .Values.cluster.kubeAPIEndpoint.extraServices.values | nindent 4 }}
+    {{- end }}
+  locations:
+    {{- toYaml .Values.controlPlanes.server.location | nindent 2 }}
+  {{- if not .Values.cluster.privNet.enabled }}
+  network:
+    cidrBlock: ""
+    subnets: []
+  {{- else }}
+  network:
+    {{- toYaml .Values.cluster.privNet.network | nindent 4 }}
+  {{- end }}
+  sshKeys:
+    - name: {{ .Values.cluster.ssh.root.keyName }}
+  hcloudTokenRef:
+    key: {{ .Values.cluster.tokenRef.hcloud.key | quote }}
+    name: {{ .Values.cluster.tokenRef.hcloud.name | quote }}
+  {{- if .Values.cluster.baremetal.enabled }}
+  hrobotTokenRef:
+    passwordKey: {{ .Values.cluster.tokenRef.baremetal.robotPassword | quote }}
+    userNameKey: {{ .Values.cluster.tokenRef.baremetal.robotUser | quote }}
+    tokenName: {{ .Values.cluster.tokenRef.baremetal.name | quote }}
+  {{- end }}

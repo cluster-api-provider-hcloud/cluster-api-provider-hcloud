@@ -1,0 +1,33 @@
+apiVersion: cluster.x-k8s.io/v1alpha3
+kind: Cluster
+metadata:
+  name: {{ .Values.cluster.name }}
+  namespace: {{ .Values.cluster.namespace }}
+  labels:
+    {{- if .Values.cluster.baremetal.enabled }}
+    ccm: hetzner-controller-manager
+    {{- else }}
+    {{- if .Values.cluster.privNet.enabled }}
+    ccm: hcloud-controller-manager-privnet
+    {{- else}}
+    ccm: hcloud-controller-manager
+    {{- end }}
+    {{- end }}
+    {{- toYaml .Values.clusterResourceSets | nindent 4 }}
+spec:
+  clusterNetwork:
+    pods:
+      cidrBlocks: [{{ .Values.cluster.network.podCIDR | quote }}]
+    {{- if .Values.cluster.network.serviceCIDR.enabled }}
+    services:
+      cidrBlocks: [{{ .Values.cluster.network.serviceCIDR.blocks | quote }}]
+    {{- end }}
+    serviceDomain: {{ .Values.cluster.serviceDomain | quote }}
+  controlPlaneRef:
+    apiVersion: controlplane.cluster.x-k8s.io/v1alpha3
+    kind: KubeadmControlPlane
+    name: {{ .Values.cluster.name }}-control-plane
+  infrastructureRef:
+    apiVersion: cluster-api-provider-hcloud.capihc.com/v1alpha3
+    kind: HcloudCluster
+    name: {{ .Values.cluster.name }}

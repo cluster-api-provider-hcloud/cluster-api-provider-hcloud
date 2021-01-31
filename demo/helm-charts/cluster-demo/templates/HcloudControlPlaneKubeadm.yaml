@@ -1,0 +1,30 @@
+apiVersion: controlplane.cluster.x-k8s.io/v1alpha3
+kind: KubeadmControlPlane
+metadata:
+  name: {{ .Values.cluster.name }}-control-plane
+  namespace: {{ .Values.cluster.namespace }}
+spec:
+  infrastructureTemplate:
+    apiVersion: cluster-api-provider-hcloud.capihc.com/v1alpha3
+    kind: HcloudMachineTemplate
+    name: {{ .Values.cluster.name }}-control-plane-mt-{{ .Values.controlPlanes.machineTemplate.version }}
+  kubeadmConfigSpec:
+    clusterConfiguration:
+      apiServer:
+        extraArgs:
+          cloud-provider: external
+      controllerManager:
+        extraArgs:
+          cloud-provider: external
+    initConfiguration:
+      nodeRegistration:
+        kubeletExtraArgs:
+          cloud-provider: external
+    joinConfiguration:
+      nodeRegistration:
+        kubeletExtraArgs:
+          cloud-provider: external
+    useExperimentalRetryJoin: {{ .Values.controlPlanes.kubeadmConfig.useExperimentalRetryJoin }}
+    verbosity: {{ .Values.controlPlanes.kubeadmConfig.verbosity }}
+  replicas: {{ .Values.controlPlanes.server.replicas }}
+  version: {{ .Values.cluster.kubernetesVersion }}
