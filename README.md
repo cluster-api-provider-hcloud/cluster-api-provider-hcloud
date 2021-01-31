@@ -7,60 +7,8 @@ Cluster API infrastructure provider for Hetzner Cloud https://hetzner.cloud
 https://docs.capihc.com/
 or under ./docs/src
 
-## Quick start
+## Time estimation
 
-> At the moment please use the Developer Guide below. 
-
-*More information available in the [Cluster API - Quick Start guide]*
-
-- Make sure you have a Kubernetes management cluster available and your
-  KUBECONFIG and context set correctly
-
-- Ensure you have a recent [clusterctl] release (tested with v0.3.9)
-
-- Ensure your Hcloud API token is created as secret in the kubernetes API:
-
-```sh
-kubectl create secret generic hcloud-token --from-literal=token=$TOKEN
-```
-
-- Register this infrastructure provider in your `$HOME/.cluster-api/clusterctl.yaml`:
-
-```yaml
-providers:
-  - name: "hcloud"
-    url: "https://github.com/cluster-api-provider-hcloud/cluster-api-provider-hcloud/releases/latest/infrastructure-components.yaml"
-    type: "InfrastructureProvider"
-```
-
-- Deploy the cluster API components to the management cluster
-
-```sh
-clusterctl init --infrastructure hcloud:v0.1.0-rc.4
-```
-
-- Create your first cluster `cluster-dev`
-
-```sh
-# The location of the cluster (fsn1|hel1|nbg1)
-export HCLOUD_LOCATION=fsn1
-# Name of SSH keys that have access to the cluster, you need to upload them before
-export HCLOUD_SSH_KEY_NAME=id_rsa
-# Instance types used (cf. https://www.hetzner.com/cloud) 
-# Caution! Do not use a cx11 for control-plane! Kubadm requires more than 1 vCPU
-export HCLOUD_NODE_MACHINE_TYPE=cx21
-export HCLOUD_CONTROL_PLANE_MACHINE_TYPE=cx21
-
-# Create cluster yamls
-clusterctl config cluster cluster-dev --kubernetes-version v1.18.3 --control-plane-machine-count=1 --worker-machine-count=3 > cluster-dev.yaml
-
-# Apply the resources
-kubectl apply -f cluster-dev.yaml
-
-# Watch resources being created
-watch -n 1 kubectl get hcloudclusters,cluster,hcloudmachines,machines,kubeadmcontrolplane
-```
-The cluster need some time until it is ready:
 | Task | Time |
 | ---- | ---- |
 | Full cluster | ~15-30min
@@ -74,19 +22,149 @@ The cluster need some time until it is ready:
 | Control plane downscale per node | ~1min
 
 
-- Once the Control Plane has a ready replica, create a kubeconfig for the
-  hcloud cluster and test connectivity:
+## Quick start
+
+*More information available in the [Cluster API - Quick Start guide]*
+
+Before you can start you need a management Cluster.
+If you have no management cluster you can use the ./demo/setup.sh to get a kind cluster. 
+If you are not using the script because you have already a managment cluster please ensure to have the following enabled:
 
 ```sh
-KUBECONFIG_GUEST=$(pwd)/.kubeconfig-cluster-dev
-kubectl get secrets cluster-dev-kubeconfig -o json | jq -r .data.value | base64 -d > $KUBECONFIG_GUEST
-KUBECONFIG=$KUBECONFIG_GUEST kubectl get all,nodes -A
+export EXP_CLUSTER_RESOURCE_SET=true
+clusterctl init --core cluster-api:v0.3.13
 ```
-[clusterctl]: https://github.com/kubernetes-sigs/cluster-api/releases/tag/v0.3.6
+
+Please ensure you have a recent [clusterctl] release (tested with v0.3.13). You can test with `clusterctl version`
+
+Now we can start by creating a secret in management cluster. $TOKEN is a placeholder for your HETZNER API Token. You can create one in your Project under security/API TOKENS.
+
+```sh
+kubectl create secret generic hetzner-token --from-literal=token=$TOKEN
+```
+
+Then we need to create an SSH Key for the nodes. Because this is a quickstart we have specified the name of the Key, but of course feel free to change the name, but remember to do it also in cluster.yaml file.
+
+```sh
+ssh-keygen -t ed25519 -C "your_email@example.com" -f ~/.ssh/cluster
+```
+
+For deploying necessary applications like the CNI, CCM, CSI etc. We use the ClusterResourceSets and apply them to our managment cluster. 
+
+```sh
+kubectl apply -f ./demo/ClusterResourceSets
+```
+
+Then we need to register this infrastructure provider in your `$HOME/.cluster-api/clusterctl.yaml`:
+
+```yaml
+providers:
+  - name: "hcloud"
+    url: "https://github.com/cluster-api-provider-hcloud/cluster-api-provider-hcloud/releases/latest/infrastructure-components.yaml"
+    type: "InfrastructureProvider"
+```
+
+Now we deploy the API components to the management cluster
+
+```sh
+clusterctl init --infrastructure hcloud:v0.1.0
+```
+
+Now we can deploy our first Cluster. For production use it is recommended to use your own templates with all configurations. [name] is the placeholder for your cluster name like cluster-dev
+
+```sh
+clusterctl config cluster [name] | kubectl apply -f -
+
+or use helm
+
+helm install cluster ./demo/helm-charts/cluster-demo
+
+```
+
+You can check now the status of your target cluster via your management cluster:
+
+```sh
+kubectl get cluster --all-namespaces
+
+### To verify the first control plane is up:
+kubectl get kubeadmcontrolplane --all-namespaces
+```
+To get access to your target cluster you can retrieve the kubeconfig file and use it via ENV. [name] is the placeholder for your above defined cluster name.
+```sh
+export KUBECONFIG_GUEST=$(pwd)/.kubeconfig-[name]
+kubectl --namespace=default get secret [name]-kubeconfig \
+   -o jsonpath={.data.value} | base64 --decode \
+   > $KUBECONFIG_GUEST
+```
+
+To verify you have access try:
+```sh
+KUBECONFIG=$KUBECONFIG_GUEST kubectl get nodes
+```
+
+If you want you can now move all the cluster-api Resources from your management Cluster to your Target Cluster:
+
+```sh
+export EXP_CLUSTER_RESOURCE_SET=true
+KUBECONFIG=$KUBECONFIG_GUEST clusterctl init --core cluster-api:v0.3.13
+KUBECONFIG=$KUBECONFIG_GUEST clusterctl init --infrastructure hcloud:v0.1.0
+clusterctl move --to-kubeconfig $KUBECONFIG_GUEST
+```
+
+To delete the cluster (if management cluster not equal target cluster)
+
+```sh
+kubectl delete cluster [name]
+
+or with helm
+
+helm uninstall cluster
+```
+
+To delete your managment cluster (setup via setup.sh)
+```sh
+kind delete cluster --name capi-hcloud
+```
+
+# Debugging
+```sh
+### Getting information about the cluster
+KUBECONFIG=$KUBECONFIG_GUEST kubectl get all,nodes -A
+
+### Getting informations about cluster-api
+watch kubectl get hcloudclusters,cluster,hcloudmachines,baremetalmachines,machines
+
+### cluster-info
+KUBECONFIG=$KUBECONFIG_GUEST kubectl get cm cluster-info -n kube-public -o yaml
+
+# Logs
+### Provider Integration
+kubectl logs -f deployment/capi-hcloud-controller-manager -c manager --v=4 -n capi-hcloud-system
+
+### Cluster-API Controller
+kubectl logs -f deployment/capi-controller-manager -c manager --v=4 -n capi-system
+
+### Bootstrap Controller
+kubectl logs -f deployment/capi-kubeadm-bootstrap-controller-manager -c manager --v=4 -n capi-kubeadm-bootstrap-system
+
+### Kubeadm Control-plane Controller
+kubectl logs -f deployment/capi-kubeadm-control-plane-controller-manager -c manager --v=4 -n capi-kubeadm-control-plane-system
+
+### Kubernetes Events
+kubectl get events -o custom-columns=FirstSeen:.firstTimestamp,LastSeen:.lastTimestamp,Count:.count,From:.source.component,Type:.type,Re│
+ason:.reason,Message:.message --watch
+
+### Get kubeadm-config
+kubectl -n kube-system get cm kubeadm-config -o yaml
+
+```
+
+
+[clusterctl]: https://github.com/kubernetes-sigs/cluster-api/releases/
 [Cluster API - Quick Start guide]: https://cluster-api.sigs.k8s.io/user/quick-start.html
 
 
-## For Developers or demo purpose
+## For Developers 
 > Please use this for testing!
 
 See ./docs/src/developers or https://docs.capihc.com/developer/developer.html
@@ -126,17 +204,15 @@ ssh-keygen -t ed25519 -C "your_email@example.com" -f ~/.ssh/cluster
 # Create a Project on Hetzner Cloud and upload the public key. 
 
 # Create a token on Hetzner Cloud and apply it as secret
-kubectl create secret generic hcloud-token --from-literal=token=$TOKEN
+kubectl create secret generic hetzner-token --from-literal=token=$TOKEN
 
 #For automatic installation of manifests we use ClusterResourceSets
 kubectl apply -f demo/ClusterResourceSets
 
 ## You can choose which manifests should be applyed by setting the value of the labels under kind: Cluster
 
-# Apply the manifest to your management cluster; cluster name is cluster-dev; use quickstart guide for getting access to the target cluster
-kubectl apply -f ./demo/demo-cluster.yaml
-or
-kubectl apply -f ./demo/cluster-centos-8.yaml
+# Apply the manifest to your management cluster; use quickstart guide for getting access to the target cluster
+kubectl apply -f ./demo/cluster-minimal.yaml
 
 ## Get Logs:
 kubectl logs -f deployment/capi-hcloud-controller-manager -c manager --v=4 -n capi-hcloud-system
