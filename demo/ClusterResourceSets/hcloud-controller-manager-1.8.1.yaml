@@ -18,7 +18,7 @@ kind: ConfigMap
 metadata:
   name: cm-hcloud-controller-manager
 data:
-  hcloud.yaml: |
+  hcloud.yaml: |+
     # NOTE: this release was tested against kubernetes v1.16.x
 
     ---
@@ -75,7 +75,7 @@ data:
             - key: "node.kubernetes.io/not-ready"
               effect: "NoSchedule"
           containers:
-            - image: hetznercloud/hcloud-cloud-controller-manager:v1.7.0
+            - image: hetznercloud/hcloud-cloud-controller-manager:v1.8.1
               name: hcloud-cloud-controller-manager
               command:
                 - "/bin/hcloud-cloud-controller-manager"

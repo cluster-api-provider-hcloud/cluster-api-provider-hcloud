@@ -20,7 +20,7 @@ metadata:
 data:
   csi.yaml: |
     ---
-    apiVersion: storage.k8s.io/v1beta1
+    apiVersion: storage.k8s.io/v1
     kind: CSIDriver
     metadata:
       name: csi.hetzner.cloud
@@ -168,13 +168,18 @@ data:
                   add: ["SYS_ADMIN"]
                 allowPrivilegeEscalation: true
             - name: hcloud-csi-driver
-              image: hetznercloud/hcloud-csi-driver:1.4.0
+              image: hetznercloud/hcloud-csi-driver:1.5.1
               imagePullPolicy: Always
               env:
                 - name: CSI_ENDPOINT
                   value: unix:///var/lib/csi/sockets/pluginproxy/csi.sock
                 - name: METRICS_ENDPOINT
                   value: 0.0.0.0:9189
+                - name: KUBE_NODE_NAME
+                  valueFrom:
+                    fieldRef:
+                      apiVersion: v1
+                      fieldPath: spec.nodeName
                 - name: HCLOUD_TOKEN
                   valueFrom:
                     secretKeyRef:
@@ -259,7 +264,7 @@ data:
               securityContext:
                 privileged: true
             - name: hcloud-csi-driver
-              image: hetznercloud/hcloud-csi-driver:1.4.0
+              image: hetznercloud/hcloud-csi-driver:1.5.1
               imagePullPolicy: Always
               env:
                 - name: CSI_ENDPOINT
@@ -271,6 +276,11 @@ data:
                     secretKeyRef:
                       name: hcloud
                       key: token
+                - name: KUBE_NODE_NAME
+                  valueFrom:
+                    fieldRef:
+                      apiVersion: v1
+                      fieldPath: spec.nodeName
               volumeMounts:
                 - name: kubelet-dir
                   mountPath: /var/lib/kubelet
