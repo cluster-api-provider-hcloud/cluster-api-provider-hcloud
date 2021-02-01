@@ -6,7 +6,7 @@ package mock_scope
 
 import (
 	context "context"
-	v1alpha3 "github.com/cluster-api-provider-hcloud/cluster-api-provider-hcloud/api/v1alpha3"
+	v1alpha4 "github.com/cluster-api-provider-hcloud/cluster-api-provider-hcloud/api/v1alpha4"
 	api "github.com/cluster-api-provider-hcloud/cluster-api-provider-hcloud/pkg/packer/api"
 	logr "github.com/go-logr/logr"
 	gomock "github.com/golang/mock/gomock"
@@ -374,10 +374,10 @@ func (m *MockPacker) EXPECT() *MockPackerMockRecorder {
 }
 
 // EnsureImage mocks base method
-func (m *MockPacker) EnsureImage(arg0 context.Context, arg1 logr.Logger, arg2 api.HcloudClient, arg3 *api.PackerParameters) (*v1alpha3.HcloudImageID, error) {
+func (m *MockPacker) EnsureImage(arg0 context.Context, arg1 logr.Logger, arg2 api.HcloudClient, arg3 *api.PackerParameters) (*v1alpha4.HcloudImageID, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "EnsureImage", arg0, arg1, arg2, arg3)
-	ret0, _ := ret[0].(*v1alpha3.HcloudImageID)
+	ret0, _ := ret[0].(*v1alpha4.HcloudImageID)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }

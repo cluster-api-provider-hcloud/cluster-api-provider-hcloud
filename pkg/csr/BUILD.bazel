@@ -6,7 +6,7 @@ go_library(
     importpath = "github.com/cluster-api-provider-hcloud/cluster-api-provider-hcloud/pkg/csr",
     visibility = ["//visibility:public"],
     deps = [
-        "//api/v1alpha3:go_default_library",
+        "//api/v1alpha4:go_default_library",
         "@io_k8s_api//core/v1:go_default_library",
         "@io_k8s_apimachinery//pkg/util/errors:go_default_library",
     ],
@@ -17,7 +17,7 @@ go_test(
     srcs = ["csr_test.go"],
     embed = [":go_default_library"],
     deps = [
-        "//api/v1alpha3:go_default_library",
+        "//api/v1alpha4:go_default_library",
         "@io_k8s_api//core/v1:go_default_library",
     ],
 )

@@ -11,7 +11,7 @@ go_library(
         "@io_k8s_apimachinery//pkg/runtime/serializer:go_default_library",
         "@io_k8s_apimachinery//pkg/runtime/serializer/json:go_default_library",
         "@io_k8s_apimachinery//pkg/runtime/serializer/streaming:go_default_library",
-        "@io_k8s_sigs_cluster_api//bootstrap/kubeadm/api/v1alpha3:go_default_library",
+        "@io_k8s_sigs_cluster_api//bootstrap/kubeadm/api/v1alpha4:go_default_library",
         "@io_k8s_sigs_cluster_api//bootstrap/kubeadm/types/v1beta1:go_default_library",
         "@io_k8s_sigs_yaml//:go_default_library",
     ],

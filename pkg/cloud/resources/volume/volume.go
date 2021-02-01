@@ -8,7 +8,7 @@ import (
 	"github.com/pkg/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
 
-	infrav1 "github.com/cluster-api-provider-hcloud/cluster-api-provider-hcloud/api/v1alpha3"
+	infrav1 "github.com/cluster-api-provider-hcloud/cluster-api-provider-hcloud/api/v1alpha4"
 	"github.com/cluster-api-provider-hcloud/cluster-api-provider-hcloud/pkg/cloud/utils"
 	"github.com/cluster-api-provider-hcloud/cluster-api-provider-hcloud/pkg/scope"
 )

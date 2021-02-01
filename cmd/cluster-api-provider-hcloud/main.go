@@ -7,14 +7,14 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha3"
-	bootstrapv1 "sigs.k8s.io/cluster-api/bootstrap/kubeadm/api/v1alpha3"
+	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha4"
+	bootstrapv1 "sigs.k8s.io/cluster-api/bootstrap/kubeadm/api/v1alpha4"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 
-	infrav1alpha3 "github.com/cluster-api-provider-hcloud/cluster-api-provider-hcloud/api/v1alpha3"
+	infrav1alpha4 "github.com/cluster-api-provider-hcloud/cluster-api-provider-hcloud/api/v1alpha4"
 	"github.com/cluster-api-provider-hcloud/cluster-api-provider-hcloud/controllers"
 	"github.com/cluster-api-provider-hcloud/cluster-api-provider-hcloud/pkg/manifests"
 	"github.com/cluster-api-provider-hcloud/cluster-api-provider-hcloud/pkg/packer"
@@ -39,7 +39,7 @@ var rootFlags = struct {
 func init() {
 	_ = clientgoscheme.AddToScheme(scheme)
 
-	_ = infrav1alpha3.AddToScheme(scheme)
+	_ = infrav1alpha4.AddToScheme(scheme)
 	_ = clusterv1.AddToScheme(scheme)
 	_ = bootstrapv1.AddToScheme(scheme)
 	// +kubebuilder:scaffold:scheme
@@ -136,10 +136,10 @@ var rootCmd = &cobra.Command{
 			}
 
 			for _, t := range []webhookSetuper{
-				&infrav1alpha3.HcloudCluster{},
-				&infrav1alpha3.HcloudClusterList{},
-				&infrav1alpha3.HcloudMachine{},
-				&infrav1alpha3.HcloudMachineList{},
+				&infrav1alpha4.HcloudCluster{},
+				&infrav1alpha4.HcloudClusterList{},
+				&infrav1alpha4.HcloudMachine{},
+				&infrav1alpha4.HcloudMachineList{},
 			} {
 				if err = t.SetupWebhookWithManager(mgr); err != nil {
 					setupLog.Error(err, "unable to create webhook", "webhook", "HcloudCluster")

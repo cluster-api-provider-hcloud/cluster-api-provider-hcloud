@@ -1,10 +1,10 @@
-apiVersion: controlplane.cluster.x-k8s.io/v1alpha3
+apiVersion: controlplane.cluster.x-k8s.io/v1alpha4
 kind: KubeadmControlPlane
 metadata:
   name: cluster-dev
 spec:
   infrastructureTemplate:
-    apiVersion: cluster-api-provider-hcloud.capihc.com/v1alpha3
+    apiVersion: cluster-api-provider-hcloud.capihc.com/v1alpha4
     kind: HcloudMachineTemplate
     name: cluster-dev-control-plane
   replicas: 1
@@ -22,7 +22,7 @@ spec:
         extraArgs:
           cloud-provider: external
 ---
-apiVersion: cluster-api-provider-hcloud.capihc.com/v1alpha3
+apiVersion: cluster-api-provider-hcloud.capihc.com/v1alpha4
 kind: HcloudMachineTemplate
 metadata:
   name: cluster-dev-control-plane

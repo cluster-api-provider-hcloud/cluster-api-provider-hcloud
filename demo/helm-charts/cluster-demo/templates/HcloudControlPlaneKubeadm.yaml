@@ -1,11 +1,11 @@
-apiVersion: controlplane.cluster.x-k8s.io/v1alpha3
+apiVersion: controlplane.cluster.x-k8s.io/v1alpha4
 kind: KubeadmControlPlane
 metadata:
   name: {{ .Values.cluster.name }}-control-plane
   namespace: {{ .Values.cluster.namespace }}
 spec:
   infrastructureTemplate:
-    apiVersion: cluster-api-provider-hcloud.capihc.com/v1alpha3
+    apiVersion: cluster-api-provider-hcloud.capihc.com/v1alpha4
     kind: HcloudMachineTemplate
     name: {{ .Values.cluster.name }}-control-plane-mt-{{ .Values.controlPlanes.machineTemplate.version }}
   kubeadmConfigSpec:

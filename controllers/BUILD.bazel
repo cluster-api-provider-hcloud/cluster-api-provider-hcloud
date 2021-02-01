@@ -13,7 +13,7 @@ go_library(
     importpath = "github.com/cluster-api-provider-hcloud/cluster-api-provider-hcloud/controllers",
     visibility = ["//visibility:public"],
     deps = [
-        "//api/v1alpha3:go_default_library",
+        "//api/v1alpha4:go_default_library",
         "//pkg/baremetal:go_default_library",
         "//pkg/cloud/resources/loadbalancer:go_default_library",
         "//pkg/cloud/resources/location:go_default_library",
@@ -36,7 +36,7 @@ go_library(
         "@io_k8s_client_go//kubernetes:go_default_library",
         "@io_k8s_client_go//tools/clientcmd:go_default_library",
         "@io_k8s_client_go//tools/record:go_default_library",
-        "@io_k8s_sigs_cluster_api//api/v1alpha3:go_default_library",
+        "@io_k8s_sigs_cluster_api//api/v1alpha4:go_default_library",
         "@io_k8s_sigs_cluster_api//util:go_default_library",
         "@io_k8s_sigs_controller_runtime//:go_default_library",
         "@io_k8s_sigs_controller_runtime//pkg/client:go_default_library",

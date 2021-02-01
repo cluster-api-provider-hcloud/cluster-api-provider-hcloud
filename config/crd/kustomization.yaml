@@ -11,7 +11,7 @@ resources:
 # +kubebuilder:scaffold:crdkustomizeresource
 
 commonLabels:
-  cluster.x-k8s.io/v1alpha3: v1alpha3
+  cluster.x-k8s.io/v1alpha4: v1alpha4
   cluster.x-k8s.io/provider: infrastructure-hcloud
 
 patchesStrategicMerge:

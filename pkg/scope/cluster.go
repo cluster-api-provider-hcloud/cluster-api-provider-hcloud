@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strconv"
 
-	infrav1 "github.com/cluster-api-provider-hcloud/cluster-api-provider-hcloud/api/v1alpha3"
+	infrav1 "github.com/cluster-api-provider-hcloud/cluster-api-provider-hcloud/api/v1alpha4"
 	"github.com/cluster-api-provider-hcloud/cluster-api-provider-hcloud/pkg/manifests/parameters"
 	packerapi "github.com/cluster-api-provider-hcloud/cluster-api-provider-hcloud/pkg/packer/api"
 	"github.com/go-logr/logr"
@@ -18,7 +18,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 	clientcmd "k8s.io/client-go/tools/clientcmd"
 	"k8s.io/klog/klogr"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha3"
+	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha4"
 	"sigs.k8s.io/cluster-api/util/kubeconfig"
 	"sigs.k8s.io/cluster-api/util/patch"
 	"sigs.k8s.io/controller-runtime/pkg/client"

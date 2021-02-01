@@ -6,7 +6,7 @@ go_library(
     importpath = "github.com/cluster-api-provider-hcloud/cluster-api-provider-hcloud/pkg/cloud/resources/server",
     visibility = ["//visibility:public"],
     deps = [
-        "//api/v1alpha3:go_default_library",
+        "//api/v1alpha4:go_default_library",
         "//pkg/cloud/resources/loadbalancer:go_default_library",
         "//pkg/cloud/utils:go_default_library",
         "//pkg/packer/api:go_default_library",
@@ -19,7 +19,7 @@ go_library(
         "@io_k8s_apimachinery//pkg/api/errors:go_default_library",
         "@io_k8s_apimachinery//pkg/types:go_default_library",
         "@io_k8s_apimachinery//pkg/util/errors:go_default_library",
-        "@io_k8s_sigs_cluster_api//api/v1alpha3:go_default_library",
+        "@io_k8s_sigs_cluster_api//api/v1alpha4:go_default_library",
         "@io_k8s_sigs_controller_runtime//:go_default_library",
         "@io_k8s_sigs_controller_runtime//pkg/reconcile:go_default_library",
     ],

@@ -27,7 +27,7 @@ spec:
       jsonPath: .status.networkZone
       name: NetworkZone
       type: string
-    name: v1alpha3
+    name: v1alpha4
     schema:
       openAPIV3Schema:
         description: HcloudCluster is the Schema for the hcloudclusters API

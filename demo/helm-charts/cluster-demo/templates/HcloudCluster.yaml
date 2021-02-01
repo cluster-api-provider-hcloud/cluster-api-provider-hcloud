@@ -1,4 +1,4 @@
-apiVersion: cluster-api-provider-hcloud.capihc.com/v1alpha3
+apiVersion: cluster-api-provider-hcloud.capihc.com/v1alpha4
 kind: HcloudCluster
 metadata:
   name: {{ .Values.cluster.name }}

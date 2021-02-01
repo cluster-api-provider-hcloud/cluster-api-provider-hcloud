@@ -6,7 +6,7 @@ go_library(
     importpath = "github.com/cluster-api-provider-hcloud/cluster-api-provider-hcloud/pkg/cloud/resources/volume",
     visibility = ["//visibility:public"],
     deps = [
-        "//api/v1alpha3:go_default_library",
+        "//api/v1alpha4:go_default_library",
         "//pkg/cloud/utils:go_default_library",
         "//pkg/scope:go_default_library",
         "@com_github_hetznercloud_hcloud_go//hcloud:go_default_library",

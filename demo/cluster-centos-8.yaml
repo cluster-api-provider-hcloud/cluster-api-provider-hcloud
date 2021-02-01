@@ -1,4 +1,4 @@
-apiVersion: cluster.x-k8s.io/v1alpha3
+apiVersion: cluster.x-k8s.io/v1alpha4
 kind: Cluster
 metadata:
   name: cluster-dev
@@ -16,15 +16,15 @@ spec:
       cidrBlocks: ["192.168.0.0/16"]
     serviceDomain: "cluster.local"
   controlPlaneRef:
-    apiVersion: controlplane.cluster.x-k8s.io/v1alpha3
+    apiVersion: controlplane.cluster.x-k8s.io/v1alpha4
     kind: KubeadmControlPlane
     name: cluster-dev-control-plane
   infrastructureRef:
-    apiVersion: cluster-api-provider-hcloud.capihc.com/v1alpha3
+    apiVersion: cluster-api-provider-hcloud.capihc.com/v1alpha4
     kind: HcloudCluster
     name: cluster-dev
 ---
-apiVersion: cluster-api-provider-hcloud.capihc.com/v1alpha3
+apiVersion: cluster-api-provider-hcloud.capihc.com/v1alpha4
 kind: HcloudCluster
 metadata:
   name: cluster-dev
@@ -51,14 +51,14 @@ spec:
     key: token
     name: hcloud-token
 ---
-apiVersion: controlplane.cluster.x-k8s.io/v1alpha3
+apiVersion: controlplane.cluster.x-k8s.io/v1alpha4
 kind: KubeadmControlPlane
 metadata:
   name: cluster-dev-control-plane
   namespace: default
 spec:
   infrastructureTemplate:
-    apiVersion: cluster-api-provider-hcloud.capihc.com/v1alpha3
+    apiVersion: cluster-api-provider-hcloud.capihc.com/v1alpha4
     kind: HcloudMachineTemplate
     name: cluster-dev-control-plane-mt-0
   kubeadmConfigSpec:
@@ -82,7 +82,7 @@ spec:
   replicas: 3
   version: v1.19.0
 ---
-apiVersion: cluster-api-provider-hcloud.capihc.com/v1alpha3
+apiVersion: cluster-api-provider-hcloud.capihc.com/v1alpha4
 kind: HcloudMachineTemplate
 metadata:
   name: cluster-dev-control-plane-mt-0
@@ -93,7 +93,7 @@ spec:
       type: cx21-ceph
       image: centos-8_k8s-v1.19.0
 ---
-apiVersion: bootstrap.cluster.x-k8s.io/v1alpha3
+apiVersion: bootstrap.cluster.x-k8s.io/v1alpha4
 kind: KubeadmConfigTemplate
 metadata:
   name: cluster-dev-worker-kubeadm-0
@@ -107,7 +107,7 @@ spec:
             cloud-provider: external
             eviction-hard: nodefs.available<10%,nodefs.inodesFree<5%,imagefs.available<15%,imagefs.inodesFree<20%,memory.available<500Mi
 ---
-apiVersion: cluster.x-k8s.io/v1alpha3
+apiVersion: cluster.x-k8s.io/v1alpha4
 kind: MachineDeployment
 metadata:
   name: cluster-dev-worker-fsn1
@@ -129,16 +129,16 @@ spec:
       version: v1.19.0
       bootstrap:
         configRef:
-          apiVersion: bootstrap.cluster.x-k8s.io/v1alpha3
+          apiVersion: bootstrap.cluster.x-k8s.io/v1alpha4
           kind: KubeadmConfigTemplate
           name: cluster-dev-worker-kubeadm-0
       infrastructureRef:
-        apiVersion: cluster-api-provider-hcloud.capihc.com/v1alpha3
+        apiVersion: cluster-api-provider-hcloud.capihc.com/v1alpha4
         kind: HcloudMachineTemplate
         name: cluster-dev-worker-fsn1-mt-0
       failureDomain: fsn1
 ---
-apiVersion: cluster.x-k8s.io/v1alpha3
+apiVersion: cluster.x-k8s.io/v1alpha4
 kind: MachineDeployment
 metadata:
   name: cluster-dev-worker-ngb1
@@ -160,16 +160,16 @@ spec:
       version: v1.19.0
       bootstrap:
         configRef:
-          apiVersion: bootstrap.cluster.x-k8s.io/v1alpha3
+          apiVersion: bootstrap.cluster.x-k8s.io/v1alpha4
           kind: KubeadmConfigTemplate
           name: cluster-dev-worker-kubeadm-0
       infrastructureRef:
-        apiVersion: cluster-api-provider-hcloud.capihc.com/v1alpha3
+        apiVersion: cluster-api-provider-hcloud.capihc.com/v1alpha4
         kind: HcloudMachineTemplate
         name: cluster-dev-worker-nbg1-mt-0
       failureDomain: nbg1
 ---
-apiVersion: cluster.x-k8s.io/v1alpha3
+apiVersion: cluster.x-k8s.io/v1alpha4
 kind: MachineDeployment
 metadata:
   name: cluster-dev-worker-hel1
@@ -191,16 +191,16 @@ spec:
       version: v1.19.0
       bootstrap:
         configRef:
-          apiVersion: bootstrap.cluster.x-k8s.io/v1alpha3
+          apiVersion: bootstrap.cluster.x-k8s.io/v1alpha4
           kind: KubeadmConfigTemplate
           name: cluster-dev-worker-kubeadm-0
       infrastructureRef:
-        apiVersion: cluster-api-provider-hcloud.capihc.com/v1alpha3
+        apiVersion: cluster-api-provider-hcloud.capihc.com/v1alpha4
         kind: HcloudMachineTemplate
         name: cluster-dev-worker-hel1-mt-0
       failureDomain: hel1
 ---
-apiVersion: cluster-api-provider-hcloud.capihc.com/v1alpha3
+apiVersion: cluster-api-provider-hcloud.capihc.com/v1alpha4
 kind: HcloudMachineTemplate
 metadata:
   name: cluster-dev-worker-fsn1-mt-0
@@ -211,7 +211,7 @@ spec:
       type: cpx11
       image: centos-8_k8s-v1.19.0
 ---
-apiVersion: cluster-api-provider-hcloud.capihc.com/v1alpha3
+apiVersion: cluster-api-provider-hcloud.capihc.com/v1alpha4
 kind: HcloudMachineTemplate
 metadata:
   name: cluster-dev-worker-nbg1-mt-0
@@ -222,7 +222,7 @@ spec:
       type: cpx11
       image: centos-8_k8s-v1.19.0
 ---
-apiVersion: cluster-api-provider-hcloud.capihc.com/v1alpha3
+apiVersion: cluster-api-provider-hcloud.capihc.com/v1alpha4
 kind: HcloudMachineTemplate
 metadata:
   name: cluster-dev-worker-hel1-mt-0
@@ -233,7 +233,7 @@ spec:
       type: cpx11
       image: centos-8_k8s-v1.19.0
 ---
-apiVersion: cluster.x-k8s.io/v1alpha3
+apiVersion: cluster.x-k8s.io/v1alpha4
 kind: MachineHealthCheck
 metadata:
   name: cluster-dev-worker-unhealthy-5m

@@ -7,7 +7,7 @@ import (
 	"github.com/hetznercloud/hcloud-go/hcloud"
 	"github.com/pkg/errors"
 
-	infrav1 "github.com/cluster-api-provider-hcloud/cluster-api-provider-hcloud/api/v1alpha3"
+	infrav1 "github.com/cluster-api-provider-hcloud/cluster-api-provider-hcloud/api/v1alpha4"
 	"github.com/cluster-api-provider-hcloud/cluster-api-provider-hcloud/pkg/cloud/utils"
 	"github.com/cluster-api-provider-hcloud/cluster-api-provider-hcloud/pkg/scope"
 )

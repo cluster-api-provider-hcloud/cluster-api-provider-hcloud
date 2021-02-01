@@ -1,4 +1,4 @@
-apiVersion: cluster-api-provider-hcloud.capihc.com/v1alpha3
+apiVersion: cluster-api-provider-hcloud.capihc.com/v1alpha4
 kind: HcloudCluster
 metadata:
   name: cluster-dev
@@ -14,7 +14,7 @@ spec:
   - type: lb11
     algorithm: round_robin
 ---
-apiVersion: cluster.x-k8s.io/v1alpha3
+apiVersion: cluster.x-k8s.io/v1alpha4
 kind: Cluster
 metadata:
   name: cluster-dev
@@ -26,10 +26,10 @@ spec:
       cidrBlocks: ["192.168.0.0/16"]
     serviceDomain: "cluster.local"
   infrastructureRef:
-    apiVersion: cluster-api-provider-hcloud.capihc.com/v1alpha3
+    apiVersion: cluster-api-provider-hcloud.capihc.com/v1alpha4
     kind: HcloudCluster
     name: cluster-dev
   controlPlaneRef:
     kind: KubeadmControlPlane
-    apiVersion: controlplane.cluster.x-k8s.io/v1alpha3
+    apiVersion: controlplane.cluster.x-k8s.io/v1alpha4
     name: cluster-dev

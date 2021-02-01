@@ -11,7 +11,7 @@ webhooks:
     service:
       name: webhook-service
       namespace: system
-      path: /validate-cluster-api-provider-hcloud-capihc-com-v1alpha3-hcloudcluster
+      path: /validate-cluster-api-provider-hcloud-capihc-com-v1alpha4-hcloudcluster
   failurePolicy: Fail
   matchPolicy: Equivalent
   name: validation.hcloudcluster.cluster-api-provider-hcloud.capihc.com
@@ -19,7 +19,7 @@ webhooks:
   - apiGroups:
     - cluster-api-provider-hcloud.capihc.com
     apiVersions:
-    - v1alpha3
+    - v1alpha4
     operations:
     - CREATE
     - UPDATE
@@ -30,7 +30,7 @@ webhooks:
     service:
       name: webhook-service
       namespace: system
-      path: /validate-cluster-api-provider-hcloud-capihc-com-v1alpha3-hcloudmachine
+      path: /validate-cluster-api-provider-hcloud-capihc-com-v1alpha4-hcloudmachine
   failurePolicy: Fail
   matchPolicy: Equivalent
   name: validation.hcloudmachine.cluster-api-provider-hcloud.capihc.com
@@ -38,7 +38,7 @@ webhooks:
   - apiGroups:
     - cluster-api-provider-hcloud.capihc.com
     apiVersions:
-    - v1alpha3
+    - v1alpha4
     operations:
     - CREATE
     - UPDATE

@@ -23,7 +23,7 @@ import (
 	"sync"
 	"time"
 
-	infrav1 "github.com/cluster-api-provider-hcloud/cluster-api-provider-hcloud/api/v1alpha3"
+	infrav1 "github.com/cluster-api-provider-hcloud/cluster-api-provider-hcloud/api/v1alpha4"
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
 	certificatesv1 "k8s.io/api/certificates/v1beta1"
@@ -36,7 +36,7 @@ import (
 	clientcmd "k8s.io/client-go/tools/clientcmd"
 	"k8s.io/client-go/tools/record"
 	recorder "k8s.io/client-go/tools/record"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha3"
+	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha4"
 	"sigs.k8s.io/cluster-api/util"
 	ctrl "sigs.k8s.io/controller-runtime"
 	controllerclient "sigs.k8s.io/controller-runtime/pkg/client"

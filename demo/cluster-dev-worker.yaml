@@ -1,4 +1,4 @@
-apiVersion: cluster.x-k8s.io/v1alpha3
+apiVersion: cluster.x-k8s.io/v1alpha4
 kind: MachineDeployment
 metadata:
   name: cluster-dev-worker
@@ -19,16 +19,16 @@ spec:
       version: "v1.17.6"
       bootstrap:
         configRef:
-          apiVersion: bootstrap.cluster.x-k8s.io/v1alpha3
+          apiVersion: bootstrap.cluster.x-k8s.io/v1alpha4
           kind: KubeadmConfigTemplate
           name: cluster-dev-worker
       infrastructureRef:
-        apiVersion: cluster-api-provider-hcloud.capihc.com/v1alpha3
+        apiVersion: cluster-api-provider-hcloud.capihc.com/v1alpha4
         kind: HcloudMachineTemplate
         name: cluster-dev-worker
       failureDomain: nbg1
 ---
-apiVersion: cluster-api-provider-hcloud.capihc.com/v1alpha3
+apiVersion: cluster-api-provider-hcloud.capihc.com/v1alpha4
 kind: HcloudMachineTemplate
 metadata:
   name: cluster-dev-worker
@@ -37,7 +37,7 @@ spec:
     spec:
       type: cpx11
 ---
-apiVersion: bootstrap.cluster.x-k8s.io/v1alpha3
+apiVersion: bootstrap.cluster.x-k8s.io/v1alpha4
 kind: KubeadmConfigTemplate
 metadata:
   name: cluster-dev-worker

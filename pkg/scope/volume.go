@@ -4,7 +4,7 @@ import (
 	"github.com/pkg/errors"
 	"sigs.k8s.io/cluster-api/util/patch"
 
-	infrav1 "github.com/cluster-api-provider-hcloud/cluster-api-provider-hcloud/api/v1alpha3"
+	infrav1 "github.com/cluster-api-provider-hcloud/cluster-api-provider-hcloud/api/v1alpha4"
 )
 
 // ClusterScopeParams defines the input parameters used to create a new Scope.

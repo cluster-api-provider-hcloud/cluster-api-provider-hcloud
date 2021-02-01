@@ -23,7 +23,7 @@ spec:
       jsonPath: .status.location
       name: Location
       type: string
-    name: v1alpha3
+    name: v1alpha4
     schema:
       openAPIV3Schema:
         description: HcloudVolume is the Schema for the hcloudvolumes API
