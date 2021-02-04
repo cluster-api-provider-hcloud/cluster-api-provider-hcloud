@@ -6,11 +6,11 @@ import (
 
 	"github.com/hetznercloud/hcloud-go/hcloud"
 	"github.com/pkg/errors"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apiserver/pkg/storage/names"
 
 	infrav1 "github.com/cluster-api-provider-hcloud/cluster-api-provider-hcloud/api/v1alpha3"
 	"github.com/cluster-api-provider-hcloud/cluster-api-provider-hcloud/pkg/cloud/utils"
-	"github.com/cluster-api-provider-hcloud/cluster-api-provider-hcloud/pkg/record"
 	"github.com/cluster-api-provider-hcloud/cluster-api-provider-hcloud/pkg/scope"
 )
 
@@ -147,8 +147,9 @@ func (s *Service) createLoadBalancer(ctx context.Context, spec infrav1.HcloudLoa
 
 	res, _, err := s.scope.HcloudClient().CreateLoadBalancer(ctx, opts)
 	if err != nil {
-		record.Warnf(
+		s.scope.Recorder.Eventf(
 			s.scope.HcloudCluster,
+			corev1.EventTypeWarning,
 			"FailedCreateLoadBalancer",
 			"Failed to create load balancer: %s",
 			err)
@@ -171,7 +172,7 @@ func (s *Service) createLoadBalancer(ctx context.Context, spec infrav1.HcloudLoa
 			}
 		}
 	}
-	record.Eventf(s.scope.HcloudCluster, "CreateLoadBalancer", "Created load balancer")
+	s.scope.Recorder.Eventf(s.scope.HcloudCluster, "CreateLoadBalancer", corev1.EventTypeNormal, "Created load balancer")
 	return res.LoadBalancer, nil
 }
 
@@ -204,9 +205,10 @@ func (s *Service) attachLoadBalancerToNetwork(ctx context.Context, lb *hcloud.Lo
 
 	_, _, err = s.scope.HcloudClient().AttachLoadBalancerToNetwork(ctx, lb, opts)
 	if err != nil {
-		record.Warnf(
+		s.scope.Recorder.Eventf(
 			s.scope.HcloudCluster,
 			"FailedAttachLoadBalancer",
+			corev1.EventTypeWarning,
 			"Failed to attach load balancer to network: %s",
 			err)
 		return errors.Wrap(err, "failed to attach load balancer to network")
@@ -221,16 +223,16 @@ func (s *Service) Delete(ctx context.Context) (err error) {
 		return errors.Wrap(err, "failed to refresh load balancer")
 	}
 	if lb == nil {
-		record.Eventf(s.scope.HcloudCluster, "UnknownLoadBalancer", "Found no load balancer to delete")
+		s.scope.Recorder.Eventf(s.scope.HcloudCluster, "UnknownLoadBalancer", corev1.EventTypeNormal, "Found no load balancer to delete")
 		return nil
 	}
 
 	if _, err := s.scope.HcloudClient().DeleteLoadBalancer(ctx, lb); err != nil {
-		record.Eventf(s.scope.HcloudCluster, "FailedLoadBalancerDelete", "Failed to delete load balancer: %s", err)
+		s.scope.Recorder.Eventf(s.scope.HcloudCluster, "FailedLoadBalancerDelete", corev1.EventTypeNormal, "Failed to delete load balancer: %s", err)
 		return errors.Wrap(err, "failed to delete load balancer")
 	}
 
-	record.Eventf(s.scope.HcloudCluster, "DeleteLoadBalancer", "Deleted load balancer")
+	s.scope.Recorder.Eventf(s.scope.HcloudCluster, "DeleteLoadBalancer", corev1.EventTypeNormal, "Deleted load balancer")
 
 	return nil
 }

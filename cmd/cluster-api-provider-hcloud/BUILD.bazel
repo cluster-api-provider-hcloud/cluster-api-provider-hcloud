@@ -10,7 +10,6 @@ go_library(
         "//controllers:go_default_library",
         "//pkg/manifests:go_default_library",
         "//pkg/packer:go_default_library",
-        "//pkg/record:go_default_library",
         "@com_github_spf13_cobra//:go_default_library",
         "@io_k8s_apimachinery//pkg/runtime:go_default_library",
         "@io_k8s_client_go//kubernetes/scheme:go_default_library",
@@ -89,8 +88,8 @@ pkg_tar(
         "//manifests",
         "//packer/centos-7_k8s-universal:packer",
         "//packer/centos-8_k8s-v1.19.0:packer",
-        "//packer/centos-8_k8s-v1.19.3:packer",
         "//packer/centos-8_k8s-v1.19.0-privnet:packer",
+        "//packer/centos-8_k8s-v1.19.3:packer",
     ],
 )
 

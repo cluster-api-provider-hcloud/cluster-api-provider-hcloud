@@ -139,16 +139,16 @@ KUBECONFIG=$KUBECONFIG_GUEST kubectl get cm cluster-info -n kube-public -o yaml
 
 # Logs
 ### Provider Integration
-kubectl logs -f deployment/capi-hcloud-controller-manager -c manager --v=4 -n capi-hcloud-system
+kubectl logs -f deployment/capi-hcloud-controller-manager -c manager -n capi-hcloud-system
 
 ### Cluster-API Controller
-kubectl logs -f deployment/capi-controller-manager -c manager --v=4 -n capi-system
+kubectl logs -f deployment/capi-controller-manager -c manager -n capi-system
 
 ### Bootstrap Controller
-kubectl logs -f deployment/capi-kubeadm-bootstrap-controller-manager -c manager --v=4 -n capi-kubeadm-bootstrap-system
+kubectl logs -f deployment/capi-kubeadm-bootstrap-controller-manager -c manager  -n capi-kubeadm-bootstrap-system
 
 ### Kubeadm Control-plane Controller
-kubectl logs -f deployment/capi-kubeadm-control-plane-controller-manager -c manager --v=4 -n capi-kubeadm-control-plane-system
+kubectl logs -f deployment/capi-kubeadm-control-plane-controller-manager -c manager  -n capi-kubeadm-control-plane-system
 
 ### Kubernetes Events
 kubectl get events -o custom-columns=FirstSeen:.firstTimestamp,LastSeen:.lastTimestamp,Count:.count,From:.source.component,Type:.type,Re│

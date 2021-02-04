@@ -10,7 +10,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/cluster-api-provider-hcloud/cluster-api-provider-hcloud/pkg/record"
 	"github.com/cluster-api-provider-hcloud/cluster-api-provider-hcloud/pkg/scope"
 	"github.com/cluster-api-provider-hcloud/cluster-api-provider-hcloud/pkg/userdata"
 	"github.com/nl2go/hrobot-go/models"
@@ -77,7 +76,7 @@ func (s *Service) Reconcile(ctx context.Context) (_ *ctrl.Result, err error) {
 
 	// If not token information has been given, the server cannot be successfully reconciled
 	if s.scope.HcloudCluster.Spec.HrobotTokenRef == nil {
-		record.Warnf(s.scope.BareMetalMachine, "NoTokenFound", "No Hrobot token found")
+		s.scope.Recorder.Eventf(s.scope.BareMetalMachine, corev1.EventTypeWarning, "NoTokenFound", "No Hrobot token found")
 		return nil, errors.Errorf("ERROR: No token for Hetzner Robot provided: Cannot reconcile server %s", s.scope.BareMetalMachine.Name)
 	}
 
@@ -85,7 +84,7 @@ func (s *Service) Reconcile(ctx context.Context) (_ *ctrl.Result, err error) {
 	serverList, err := s.listMatchingMachines(ctx)
 	if err != nil {
 		if checkRateLimitExceeded(err) {
-			record.Warnf(s.scope.BareMetalMachine, "HrobotRateLimitExceeded", "Hrobot rate limit exceeded. Wait for %v sec before trying again.", rateLimitTimeOut)
+			s.scope.Recorder.Eventf(s.scope.BareMetalMachine, corev1.EventTypeWarning, "HrobotRateLimitExceeded", "Hrobot rate limit exceeded. Wait for %v sec before trying again.", rateLimitTimeOut)
 			return &reconcile.Result{RequeueAfter: rateLimitTimeOut * time.Second}, nil
 		}
 		return nil, errors.Wrap(err, "failed to list machines")
@@ -111,8 +110,9 @@ func (s *Service) Reconcile(ctx context.Context) (_ *ctrl.Result, err error) {
 			// it is already attached since we don't add new servers that get deleted soon to actualServers
 			// This means we have to set a failureReason so that the infrastructure object gets deleted
 			if paidUntil.Before(time.Now().Add(hoursBeforeDeletion * time.Hour)) {
-				record.Warnf(
+				s.scope.Recorder.Eventf(
 					s.scope.BareMetalMachine,
+					corev1.EventTypeWarning,
 					"CancelledBareMetalMachine",
 					"Bare metal machine is cancelled and paid until %s",
 					actualServer.PaidUntil)
@@ -146,7 +146,7 @@ func (s *Service) Reconcile(ctx context.Context) (_ *ctrl.Result, err error) {
 		// Provision the machine
 		if err := s.provisionMachine(ctx, *newServer); err != nil {
 			if checkRateLimitExceeded(err) {
-				record.Warnf(s.scope.BareMetalMachine, "HrobotRateLimitExceeded", "Hrobot rate limit exceeded. Wait for %v sec before trying again.", rateLimitTimeOut)
+				s.scope.Recorder.Eventf(s.scope.BareMetalMachine, corev1.EventTypeWarning, "HrobotRateLimitExceeded", "Hrobot rate limit exceeded. Wait for %v sec before trying again.", rateLimitTimeOut)
 				return &reconcile.Result{RequeueAfter: rateLimitTimeOut * time.Second}, nil
 			}
 			return nil, errors.Errorf("Failed to provision new machine: %s", err)
@@ -185,9 +185,10 @@ func (s *Service) findAttachedMachine(servers []models.Server) (*models.Server, 
 		}
 	}
 	if check > 1 {
-		record.Warnf(
+		s.scope.Recorder.Eventf(
 			s.scope.BareMetalMachine,
 			"MultipleBareMetalMachines",
+			corev1.EventTypeWarning,
 			"Found %v bare metal machines of the name %s attached to the cluster",
 			check, actualServer.ServerName)
 		return nil, errors.Errorf("There are %s servers which are attached to the cluster with name %s", check, actualServer.ServerName)
@@ -203,8 +204,9 @@ func (s *Service) findNewMachine(servers []models.Server) (*models.Server, error
 
 	if len(servers) == 0 {
 		// If no servers are in the list, we have to return an error
-		record.Warnf(
+		s.scope.Recorder.Eventf(
 			s.scope.BareMetalMachine,
+			corev1.EventTypeWarning,
 			"EmptyListBareMetalMachines",
 			"No machines of type %s found",
 			*s.scope.BareMetalMachine.Spec.ServerType)
@@ -219,8 +221,9 @@ func (s *Service) findNewMachine(servers []models.Server) (*models.Server, error
 			return &server, nil
 		}
 	}
-	record.Warnf(
+	s.scope.Recorder.Eventf(
 		s.scope.BareMetalMachine,
+		corev1.EventTypeWarning,
 		"NoAvailableBareMetalMachines",
 		"No machines of type %s are available",
 		*s.scope.BareMetalMachine.Spec.ServerType)
@@ -450,7 +453,7 @@ EOF`, cloudInitConfigString)
 	if err != nil {
 		return errors.Errorf("Unable to change bare metal server name: ", err)
 	}
-	record.Eventf(
+	s.scope.Recorder.Eventf(
 		s.scope.BareMetalMachine,
 		"CreateBareMetalMachine",
 		"Created bare metal machine %s",
@@ -469,7 +472,7 @@ func (s *Service) Delete(ctx context.Context) (_ *ctrl.Result, err error) {
 	serverList, err := s.listMatchingMachines(ctx)
 	if err != nil {
 		if checkRateLimitExceeded(err) {
-			record.Warnf(s.scope.BareMetalMachine, "HrobotRateLimitExceeded", "Hrobot rate limit exceeded. Wait for %v sec before trying again.", rateLimitTimeOutDeletion)
+			s.scope.Recorder.Eventf(s.scope.BareMetalMachine, "HrobotRateLimitExceeded", corev1.EventTypeWarning, "Hrobot rate limit exceeded. Wait for %v sec before trying again.", rateLimitTimeOutDeletion)
 			return &reconcile.Result{RequeueAfter: rateLimitTimeOutDeletion * time.Second}, nil
 		}
 		return nil, errors.Wrap(err, "failed to refresh server status")
@@ -478,13 +481,13 @@ func (s *Service) Delete(ctx context.Context) (_ *ctrl.Result, err error) {
 	server, err := s.findAttachedMachine(serverList)
 	if err != nil {
 		if checkRateLimitExceeded(err) {
-			record.Warnf(s.scope.BareMetalMachine, "HrobotRateLimitExceeded", "Hrobot rate limit exceeded. Wait for %v sec before trying again.", rateLimitTimeOutDeletion)
+			s.scope.Recorder.Eventf(s.scope.BareMetalMachine, "HrobotRateLimitExceeded", corev1.EventTypeWarning, "Hrobot rate limit exceeded. Wait for %v sec before trying again.", rateLimitTimeOutDeletion)
 			return &reconcile.Result{RequeueAfter: rateLimitTimeOutDeletion * time.Second}, nil
 		}
 		return nil, errors.Wrap(err, "failed to find attached machine")
 	}
 	if server == nil {
-		record.Eventf(
+		s.scope.Recorder.Eventf(
 			s.scope.BareMetalMachine,
 			"UnknownBareMetalMachine",
 			"No machine with name %s found to delete",
@@ -529,9 +532,10 @@ func (s *Service) listMatchingMachines(ctx context.Context) ([]models.Server, er
 
 	serverList, err := s.scope.HrobotClient().ListBMServers()
 	if err != nil {
-		record.Warnf(
+		s.scope.Recorder.Eventf(
 			s.scope.BareMetalMachine,
 			"ErrorListingBareMetalMachines",
+			corev1.EventTypeWarning,
 			"Error while listing bare metal machines of type %s",
 			*s.scope.BareMetalMachine.Spec.ServerType)
 		return nil, errors.Errorf("unable to list bare metal servers: %s", err)
