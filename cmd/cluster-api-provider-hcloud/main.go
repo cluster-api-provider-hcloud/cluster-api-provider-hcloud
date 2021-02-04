@@ -18,7 +18,6 @@ import (
 	"github.com/cluster-api-provider-hcloud/cluster-api-provider-hcloud/controllers"
 	"github.com/cluster-api-provider-hcloud/cluster-api-provider-hcloud/pkg/manifests"
 	"github.com/cluster-api-provider-hcloud/cluster-api-provider-hcloud/pkg/packer"
-	"github.com/cluster-api-provider-hcloud/cluster-api-provider-hcloud/pkg/record"
 	// +kubebuilder:scaffold:imports
 )
 
@@ -71,9 +70,6 @@ var rootCmd = &cobra.Command{
 			setupLog.Error(err, "unable to start manager")
 			os.Exit(1)
 		}
-
-		// Initialize event recorder.
-		record.InitFromRecorder(mgr.GetEventRecorderFor("hcloud-controller"))
 
 		if rootFlags.WebhookPort == 0 {
 			// run in controller mode
