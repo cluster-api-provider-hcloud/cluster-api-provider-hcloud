@@ -63,7 +63,7 @@ type HcloudClusterReconciler struct {
 	Scheme    *runtime.Scheme
 	Packer    *packer.Packer
 	Manifests *manifests.Manifests
-	recorder  record.EventRecorder
+	Recorder  record.EventRecorder
 
 	targetClusterManagersStopCh map[types.NamespacedName]chan struct{}
 	targetClusterManagersLock   sync.Mutex
@@ -114,6 +114,7 @@ func (r *HcloudClusterReconciler) Reconcile(req ctrl.Request) (_ ctrl.Result, re
 		HcloudCluster: hcloudCluster,
 		Packer:        r.Packer,
 		Manifests:     r.Manifests,
+		Recorder:      r.Recorder,
 	})
 	if err != nil {
 		return reconcile.Result{}, errors.Errorf("failed to create scope: %+v", err)
@@ -153,7 +154,7 @@ func (r *HcloudClusterReconciler) reconcileDelete(clusterScope *scope.ClusterSco
 		for _, m := range machines {
 			names = append(names, fmt.Sprintf("machine/%s", m.Name))
 		}
-		r.recorder.Eventf(
+		r.Recorder.Eventf(
 			hcloudCluster,
 			corev1.EventTypeNormal,
 			"WaitingForMachineDeletion",
@@ -231,7 +232,7 @@ func (r *HcloudClusterReconciler) reconcileNormal(clusterScope *scope.ClusterSco
 	}
 	// reconcile cluster manifests
 	if err := r.reconcileManifests(clusterScope); err == errNoReadyAPIServer {
-		r.recorder.Eventf(
+		r.Recorder.Eventf(
 			hcloudCluster,
 			corev1.EventTypeNormal,
 			"APIServerNotReady",
@@ -326,7 +327,7 @@ func (r *HcloudClusterReconciler) newTargetClusterManager(clusterScope *scope.Cl
 		mCluster: &managementCluster{
 			Client:        r.Client,
 			hcloudCluster: hcloudCluster,
-			recorder:      r.recorder,
+			recorder:      r.Recorder,
 		},
 		clientSet: clientSet,
 	}
@@ -411,7 +412,7 @@ func (r *HcloudClusterReconciler) reconcileManifests(clusterScope *scope.Cluster
 
 		if clientConfig == nil {
 			if err := errorutil.NewAggregate(readyErrors); err != nil {
-				r.recorder.Eventf(
+				r.Recorder.Eventf(
 					hcloudCluster,
 					corev1.EventTypeWarning,
 					"APIServerNotReady",
@@ -444,7 +445,7 @@ func (r *HcloudClusterReconciler) reconcileManifests(clusterScope *scope.Cluster
 		if err := applyManifests(); err != nil {
 			return err
 		}
-		r.recorder.Eventf(
+		r.Recorder.Eventf(
 			hcloudCluster,
 			corev1.EventTypeNormal,
 			"ManifestsApplied",
@@ -455,7 +456,7 @@ func (r *HcloudClusterReconciler) reconcileManifests(clusterScope *scope.Cluster
 		if err := applyManifests(); err != nil {
 			return err
 		}
-		r.recorder.Eventf(
+		r.Recorder.Eventf(
 			hcloudCluster,
 			corev1.EventTypeNormal,
 			"ManifestsApplied",
@@ -474,8 +475,8 @@ func (r *HcloudClusterReconciler) SetupWithManager(mgr ctrl.Manager, options con
 	if r.targetClusterManagersStopCh == nil {
 		r.targetClusterManagersStopCh = make(map[types.NamespacedName]chan struct{})
 	}
-	if r.recorder == nil {
-		r.recorder = mgr.GetEventRecorderFor("hcloud-cluster-reconciler")
+	if r.Recorder == nil {
+		r.Recorder = mgr.GetEventRecorderFor("hcloud-cluster-reconciler")
 	}
 	var (
 		controlledType     = &infrav1.HcloudCluster{}

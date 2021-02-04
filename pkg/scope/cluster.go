@@ -17,6 +17,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/client-go/kubernetes"
 	clientcmd "k8s.io/client-go/tools/clientcmd"
+	"k8s.io/client-go/tools/record"
 	"k8s.io/klog/klogr"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha3"
 	"sigs.k8s.io/cluster-api/util/kubeconfig"
@@ -44,6 +45,7 @@ type ClusterScopeParams struct {
 	HrobotClientFactory HrobotClientFactory
 	Client              client.Client
 	Logger              logr.Logger
+	Recorder            record.EventRecorder
 	Cluster             *clusterv1.Cluster
 	HcloudCluster       *infrav1.HcloudCluster
 	Packer              Packer
@@ -140,6 +142,7 @@ func NewClusterScope(params ClusterScopeParams) (*ClusterScope, error) {
 
 	return &ClusterScope{
 		Ctx:           params.Ctx,
+		Recorder:      params.Recorder,
 		Logger:        params.Logger,
 		Client:        params.Client,
 		Cluster:       params.Cluster,
@@ -159,6 +162,7 @@ func NewClusterScope(params ClusterScopeParams) (*ClusterScope, error) {
 type ClusterScope struct {
 	Ctx context.Context
 	logr.Logger
+	Recorder      record.EventRecorder
 	Client        client.Client
 	patchHelper   *patch.Helper
 	hcloudClient  HcloudClient
