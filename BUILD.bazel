@@ -45,7 +45,6 @@ filegroup(
         "//pkg/csr:all-srcs",
         "//pkg/manifests:all-srcs",
         "//pkg/packer:all-srcs",
-        "//pkg/record:all-srcs",
         "//pkg/scope:all-srcs",
         "//pkg/userdata:all-srcs",
     ],
