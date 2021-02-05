@@ -71,7 +71,7 @@ controlPlanes:
   kubeadmConfig:
     verbosity: 1
     useExperimentalRetryJoin: false
-  machineHealthChecks:
+  machineHealthCheck:
         name: control-plane-unhealthy-5m
         maxUnhealthy: "1"
         timeout: 5m
@@ -95,6 +95,7 @@ hcloudWorkers:
       type: cpx11
       nodeLabels:
         cpu: "amd"
+        customLabels: "capihc.com/pool=worker" # Comma seperated list with customLabels
       image: centos-8_k8s-v1.19.3  # Custom image possible via tar.gz image (https only supported) For Custom image architecture see docs or the packer directory https://[your-box].your-storagebox.de/centos-8.tar.gz
     machineTemplate:
       version: "v1.0.0"
@@ -102,17 +103,12 @@ hcloudWorkers:
       version: "v1.0.0"
       verbosity: 1
       useExperimentalRetryJoin: false
-    machineHealthChecks:
-      unhealthy-1:
+    machineHealthCheck:
         name: unhealthy-2m
         maxUnhealthy: 50%
         timeout: 2m
         nodeStartupTimeout: 8m
-      unhealthy-2:
-        name: unhealthy-7m
-        timeout: 7m
-        nodeStartupTimeout: 8m
-        maxUnhealthy: 90%
+
   hc2:
     name: nbg
     revisionHistoryLimit: 5
@@ -128,6 +124,7 @@ hcloudWorkers:
       type: cpx11
       nodeLabels:
         cpu: "amd"
+        customLabels: "capihc.com/pool=worker" # Comma seperated list with customLabels
       image: centos-8_k8s-v1.19.3  # Custom image possible via tar.gz image (https only supported) For Custom image architecture see docs or the packer directory https://[your-box].your-storagebox.de/centos-8.tar.gz
     machineTemplate:
       version: "v1.0.0"
@@ -135,17 +132,12 @@ hcloudWorkers:
       version: "v1.0.0"
       verbosity: 1
       useExperimentalRetryJoin: false
-    machineHealthChecks:
-      unhealthy-1:
+    machineHealthCheck:
         name: unhealthy-2m
         maxUnhealthy: 50%
         timeout: 2m
         nodeStartupTimeout: 8m
-      unhealthy-2:
-        name: unhealthy-7m
-        timeout: 7m
-        nodeStartupTimeout: 8m
-        maxUnhealthy: 90%
+
   hc3:
     name: hel
     revisionHistoryLimit: 5
@@ -161,6 +153,7 @@ hcloudWorkers:
       type: cpx11
       nodeLabels:
         cpu: "amd"
+        customLabels: "capihc.com/pool=worker" # Comma seperated list with customLabels
       image: centos-8_k8s-v1.19.3  # Custom image possible via tar.gz image (https only supported) For Custom image architecture see docs or the packer directory https://[your-box].your-storagebox.de/centos-8.tar.gz
     machineTemplate:
       version: "v1.0.0"
@@ -168,17 +161,12 @@ hcloudWorkers:
       version: "v1.0.0"
       verbosity: 1
       useExperimentalRetryJoin: false
-    machineHealthChecks:
-      unhealthy-1:
+    machineHealthCheck:
         name: unhealthy-2m
         maxUnhealthy: 50%
         timeout: 2m
         nodeStartupTimeout: 8m
-      unhealthy-2:
-        name: unhealthy-7m
-        timeout: 7m
-        nodeStartupTimeout: 8m
-        maxUnhealthy: 90%
+
 
 
 # hetznerBaremetalWorkers:
@@ -201,6 +189,7 @@ hcloudWorkers:
 #           PART / ext4 all
 #       nodeLabels:
 #         cpu: intel
+#         customLabels: "capihc.com/pool=worker" # Comma seperated list with customLabels
 #       type: mytype
 #       image: # Image via https for automatically installation via InstallImage
 #     machineTemplate:
@@ -209,15 +198,10 @@ hcloudWorkers:
 #       version: "v1.0.0"
 #       verbosity: 1
 #       useExperimentalRetryJoin: false
-#     machineHealthChecks:
-#       unhealthy-1:
+#     machineHealthCheck:
 #         name: unhealthy-12m
 #         maxUnhealthy: 100%
 #         timeout: 12m
 #         nodeStartupTimeout: 20m
-#       unhealthy-2:
-#         name: unhealthy-25m
-#         timeout: 25m
-#         nodeStartupTimeout: 20m
-#         maxUnhealthy: 100%
+
 

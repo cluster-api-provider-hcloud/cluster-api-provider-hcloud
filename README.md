@@ -27,7 +27,7 @@ or under ./docs/src
 *More information available in the [Cluster API - Quick Start guide]*
 
 Before you can start you need a management Cluster.
-If you have no management cluster you can use the ./demo/setup.sh to get a kind cluster. 
+If you have no management cluster you can use the `./demo/setup.sh` to get a kind cluster. 
 If you are not using the script because you have already a managment cluster please ensure to have the following enabled:
 
 ```sh
@@ -43,7 +43,7 @@ Now we can start by creating a secret in management cluster. $TOKEN is a placeho
 kubectl create secret generic hetzner-token --from-literal=token=$TOKEN
 ```
 
-Then we need to create an SSH Key for the nodes. Because this is a quickstart we have specified the name of the Key, but of course feel free to change the name, but remember to do it also in cluster.yaml file.
+Then we need to create an SSH Key for the nodes. Because this is a quickstart we have specified the name of the Key, but of course feel free to change the name, but remember to do it also in cluster.yaml file. Then upload the public Key to Hetzner Cloud.
 
 ```sh
 ssh-keygen -t ed25519 -C "your_email@example.com" -f ~/.ssh/cluster
@@ -67,7 +67,7 @@ providers:
 Now we deploy the API components to the management cluster
 
 ```sh
-clusterctl init --infrastructure hcloud:v0.1.0
+clusterctl init --infrastructure hcloud:v0.1.1
 ```
 
 Now we can deploy our first Cluster. For production use it is recommended to use your own templates with all configurations. [name] is the placeholder for your cluster name like cluster-dev
@@ -107,7 +107,7 @@ If you want you can now move all the cluster-api Resources from your management 
 ```sh
 export EXP_CLUSTER_RESOURCE_SET=true
 KUBECONFIG=$KUBECONFIG_GUEST clusterctl init --core cluster-api:v0.3.13
-KUBECONFIG=$KUBECONFIG_GUEST clusterctl init --infrastructure hcloud:v0.1.0
+KUBECONFIG=$KUBECONFIG_GUEST clusterctl init --infrastructure hcloud:v0.1.1
 clusterctl move --to-kubeconfig $KUBECONFIG_GUEST
 ```
 

@@ -68,7 +68,7 @@ spec:
           kubeletExtraArgs: 
             cloud-provider: external
             {{- with $ka.server.nodeLabels }}
-            node-labels: capihc.com/cpu={{ .cpu }}
+            node-labels: capihc.com/cpu={{ .cpu }},{{ .customLabels }}
             {{- end }}
       useExperimentalRetryJoin: {{ $ka.kubeadmTemplate.useExperimentalRetryJoin }}
       verbosity: {{ $ka.kubeadmTemplate.verbosity }}
@@ -79,29 +79,28 @@ spec:
 
 {{- define "cluster.HcloudMachineHealthChecks" }}
 {{- range $mhc := .Values.hcloudWorkers -}}
-{{- range $hc := $mhc.machineHealthChecks -}}
 apiVersion: cluster.x-k8s.io/v1alpha3
 kind: MachineHealthCheck
 metadata:
-  name: {{ $.Values.cluster.name }}-hc-workers-{{ $mhc.name }}-{{ $hc.name }}
+  name: {{ $.Values.cluster.name }}-hc-workers-{{ $mhc.name }}-{{ $mhc.machineHealthCheck.name }}
 spec:
   clusterName: {{ $.Values.cluster.name }}
-  maxUnhealthy: {{ $hc.maxUnhealthy }}
-  nodeStartupTimeout: {{ $hc.nodeStartupTimeout }}
+  maxUnhealthy: {{ $mhc.machineHealthCheck.maxUnhealthy }}
+  nodeStartupTimeout: {{ $mhc.machineHealthCheck.nodeStartupTimeout }}
   selector:
     matchLabels:
       nodepool: {{ $mhc.server.nodepool }}
   unhealthyConditions:
   - type: Ready
     status: Unknown
-    timeout: {{ $hc.timeout }}
+    timeout: {{ $mhc.machineHealthCheck.timeout }}
   - type: Ready
     status: "False"
-    timeout: {{ $hc.timeout }}
+    timeout: {{ $mhc.machineHealthCheck.timeout }}
 ---
 {{- end }}
 {{- end }}
-{{- end }}
+
 
 
 {{- define "cluster.BaremetalMachineDeployments" }}
@@ -185,7 +184,7 @@ spec:
           kubeletExtraArgs: 
             cloud-provider: external
             {{- with $ka.server.nodeLabels }}
-            node-labels: capihc.com/type=bm,capihc.com/cpu={{ .cpu }}
+            node-labels: capihc.com/type=bm,capihc.com/cpu={{ .cpu }},{{ .customLabels }}
             {{- end }}
       useExperimentalRetryJoin: {{ $ka.kubeadmTemplate.useExperimentalRetryJoin }}
       verbosity: {{ $ka.kubeadmTemplate.verbosity }}
@@ -194,29 +193,26 @@ spec:
 {{- end }}
 
 
-
 {{- define "cluster.BaremetalMachineHealthChecks" }}
 {{- range $mhc := .Values.hetznerBaremetalWorkers -}}
-{{- range $hc := $mhc.machineHealthChecks -}}
 apiVersion: cluster.x-k8s.io/v1alpha3
 kind: MachineHealthCheck
 metadata:
-  name: {{ $.Values.cluster.name }}-bm-workers-{{ $mhc.name }}-{{ $hc.name }}
+  name: {{ $.Values.cluster.name }}-bm-workers-{{ $mhc.name }}-{{ $mhc.machineHealthCheck.name }}
 spec:
   clusterName: {{ $.Values.cluster.name }}
-  maxUnhealthy: {{ $hc.maxUnhealthy }}
-  nodeStartupTimeout: {{ $hc.nodeStartupTimeout }}
+  maxUnhealthy: {{ $mhc.machineHealthCheck.maxUnhealthy }}
+  nodeStartupTimeout: {{ $mhc.machineHealthCheck.nodeStartupTimeout }}
   selector:
     matchLabels:
       nodepool: {{ $mhc.server.nodepool }}
   unhealthyConditions:
   - type: Ready
     status: Unknown
-    timeout: {{ $hc.timeout }}
+    timeout: {{ $mhc.machineHealthCheck.timeout }}
   - type: Ready
     status: "False"
-    timeout: {{ $hc.timeout }}
+    timeout: {{ $mhc.machineHealthCheck.timeout }}
 ---
-{{- end }}
 {{- end }}
 {{- end }}
