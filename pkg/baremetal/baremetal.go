@@ -187,8 +187,8 @@ func (s *Service) findAttachedMachine(servers []models.Server) (*models.Server, 
 	if check > 1 {
 		s.scope.Recorder.Eventf(
 			s.scope.BareMetalMachine,
-			"MultipleBareMetalMachines",
 			corev1.EventTypeWarning,
+			"MultipleBareMetalMachines",
 			"Found %v bare metal machines of the name %s attached to the cluster",
 			check, actualServer.ServerName)
 		return nil, errors.Errorf("There are %s servers which are attached to the cluster with name %s", check, actualServer.ServerName)
@@ -472,7 +472,7 @@ func (s *Service) Delete(ctx context.Context) (_ *ctrl.Result, err error) {
 	serverList, err := s.listMatchingMachines(ctx)
 	if err != nil {
 		if checkRateLimitExceeded(err) {
-			s.scope.Recorder.Eventf(s.scope.BareMetalMachine, "HrobotRateLimitExceeded", corev1.EventTypeWarning, "Hrobot rate limit exceeded. Wait for %v sec before trying again.", rateLimitTimeOutDeletion)
+			s.scope.Recorder.Eventf(s.scope.BareMetalMachine, corev1.EventTypeWarning, "HrobotRateLimitExceeded", "Hrobot rate limit exceeded. Wait for %v sec before trying again.", rateLimitTimeOutDeletion)
 			return &reconcile.Result{RequeueAfter: rateLimitTimeOutDeletion * time.Second}, nil
 		}
 		return nil, errors.Wrap(err, "failed to refresh server status")
@@ -481,7 +481,7 @@ func (s *Service) Delete(ctx context.Context) (_ *ctrl.Result, err error) {
 	server, err := s.findAttachedMachine(serverList)
 	if err != nil {
 		if checkRateLimitExceeded(err) {
-			s.scope.Recorder.Eventf(s.scope.BareMetalMachine, "HrobotRateLimitExceeded", corev1.EventTypeWarning, "Hrobot rate limit exceeded. Wait for %v sec before trying again.", rateLimitTimeOutDeletion)
+			s.scope.Recorder.Eventf(s.scope.BareMetalMachine, corev1.EventTypeWarning, "HrobotRateLimitExceeded", "Hrobot rate limit exceeded. Wait for %v sec before trying again.", rateLimitTimeOutDeletion)
 			return &reconcile.Result{RequeueAfter: rateLimitTimeOutDeletion * time.Second}, nil
 		}
 		return nil, errors.Wrap(err, "failed to find attached machine")
@@ -534,8 +534,8 @@ func (s *Service) listMatchingMachines(ctx context.Context) ([]models.Server, er
 	if err != nil {
 		s.scope.Recorder.Eventf(
 			s.scope.BareMetalMachine,
-			"ErrorListingBareMetalMachines",
 			corev1.EventTypeWarning,
+			"ErrorListingBareMetalMachines",
 			"Error while listing bare metal machines of type %s",
 			*s.scope.BareMetalMachine.Spec.ServerType)
 		return nil, errors.Errorf("unable to list bare metal servers: %s", err)

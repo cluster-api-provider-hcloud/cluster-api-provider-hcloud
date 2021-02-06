@@ -53,8 +53,8 @@ func (s *Service) Reconcile(ctx context.Context) (_ *ctrl.Result, err error) {
 	})
 	if err != nil {
 		s.scope.Recorder.Eventf(s.scope.HcloudMachine,
-			"FailedEnsuringHcloudImage",
 			corev1.EventTypeWarning,
+			"FailedEnsuringHcloudImage",
 			"Failed to ensure image for Hcloud server %s: %s",
 			s.scope.Name(),
 			err,
@@ -83,8 +83,8 @@ func (s *Service) Reconcile(ctx context.Context) (_ *ctrl.Result, err error) {
 		}
 		s.scope.Recorder.Eventf(
 			s.scope.HcloudMachine,
-			"SuccessfulCreate",
 			corev1.EventTypeNormal,
+			"SuccessfulCreate",
 			"Created new server with id %d",
 			instance.ID,
 		)
@@ -334,8 +334,8 @@ func (s *Service) createServer(ctx context.Context, failureDomain string, imageI
 	res, _, err := s.scope.HcloudClient().CreateServer(s.scope.Ctx, opts)
 	if err != nil {
 		s.scope.Recorder.Eventf(s.scope.HcloudMachine,
-			"FailedCreateHcloudServer",
 			corev1.EventTypeWarning,
+			"FailedCreateHcloudServer",
 			"Failed to create Hcloud server %s: %s",
 			s.scope.Name(),
 			err,
@@ -356,7 +356,7 @@ func (s *Service) Delete(ctx context.Context) (_ *ctrl.Result, err error) {
 	// If no server has been found then nothing can be deleted
 	if server == nil {
 		s.scope.V(2).Info("Unable to locate Hcloud instance by ID or tags")
-		s.scope.Recorder.Eventf(s.scope.HcloudMachine, "NoInstanceFound", corev1.EventTypeWarning, "Unable to find matching Hcloud instance for %s", s.scope.Name())
+		s.scope.Recorder.Eventf(s.scope.HcloudMachine, corev1.EventTypeWarning, "NoInstanceFound", "Unable to find matching Hcloud instance for %s", s.scope.Name())
 		return result, nil
 	}
 
@@ -378,7 +378,7 @@ func (s *Service) Delete(ctx context.Context) (_ *ctrl.Result, err error) {
 	case hcloud.ServerStatusOff:
 
 		if _, err := s.scope.HcloudClient().DeleteServer(ctx, server); err != nil {
-			s.scope.Recorder.Eventf(s.scope.HcloudMachine, "FailedDeleteHcloudServer", corev1.EventTypeWarning, "Failed to delete Hcloud server %s", s.scope.Name())
+			s.scope.Recorder.Eventf(s.scope.HcloudMachine, corev1.EventTypeWarning, "FailedDeleteHcloudServer", "Failed to delete Hcloud server %s", s.scope.Name())
 			return &reconcile.Result{}, errors.Wrap(err, "failed to delete server")
 		}
 
@@ -473,8 +473,8 @@ func (s *Service) reconcileLoadBalancerAttachment(ctx context.Context, server *h
 	} else {
 		s.scope.Recorder.Eventf(
 			s.scope.HcloudCluster,
-			"AddedAsTargetToLoadBalancer",
 			corev1.EventTypeNormal,
+			"AddedAsTargetToLoadBalancer",
 			"Added new server with id %d to the loadbalancer %v",
 			server.ID, lb.ID)
 	}
@@ -506,8 +506,8 @@ func (s *Service) deleteServerOfLoadBalancer(ctx context.Context, server *hcloud
 	} else {
 		s.scope.Recorder.Eventf(
 			s.scope.HcloudCluster,
-			"DeletedTargetOfLoadBalancer",
 			corev1.EventTypeNormal,
+			"DeletedTargetOfLoadBalancer",
 			"Deleted new server with id %d of the loadbalancer %v",
 			server.ID, lb.ID)
 	}
@@ -524,8 +524,8 @@ func (s *Service) findServer(ctx context.Context) (*hcloud.Server, error) {
 	}
 	if len(servers) > 1 {
 		s.scope.Recorder.Eventf(s.scope.HcloudMachine,
-			"MultipleInstances",
 			corev1.EventTypeWarning,
+			"MultipleInstances",
 			"Found %v instances of name %s",
 			len(servers),
 			s.scope.Name())
