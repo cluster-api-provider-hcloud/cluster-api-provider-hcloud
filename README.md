@@ -109,6 +109,9 @@ export EXP_CLUSTER_RESOURCE_SET=true
 KUBECONFIG=$KUBECONFIG_GUEST clusterctl init --core cluster-api:v0.3.14
 KUBECONFIG=$KUBECONFIG_GUEST clusterctl init --infrastructure hcloud:v0.1.2
 clusterctl move --to-kubeconfig $KUBECONFIG_GUEST
+
+### You also need to create your Hetzner Token secret on the new management cluster
+### If you use helm please keep in mind to also move the helm secret 
 ```
 
 To delete the cluster (if management cluster not equal target cluster)

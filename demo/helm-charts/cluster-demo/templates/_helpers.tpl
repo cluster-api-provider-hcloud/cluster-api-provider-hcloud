@@ -68,7 +68,7 @@ spec:
           kubeletExtraArgs: 
             cloud-provider: external
             {{- with $ka.server.nodeLabels }}
-            node-labels: capihc.com/cpu={{ .cpu }},{{ .customLabels }}
+            node-labels: node-access=ssh,capihc.com/type=bm,capihc.com/cpu={{ .cpu }},{{ .customLabels }}
             {{- end }}
       useExperimentalRetryJoin: {{ $ka.kubeadmTemplate.useExperimentalRetryJoin }}
       verbosity: {{ $ka.kubeadmTemplate.verbosity }}
@@ -184,7 +184,7 @@ spec:
           kubeletExtraArgs: 
             cloud-provider: external
             {{- with $ka.server.nodeLabels }}
-            node-labels: capihc.com/type=bm,capihc.com/cpu={{ .cpu }},{{ .customLabels }}
+            node-labels: node-access=ssh,capihc.com/cpu={{ .cpu }},{{ .customLabels }}
             {{- end }}
       useExperimentalRetryJoin: {{ $ka.kubeadmTemplate.useExperimentalRetryJoin }}
       verbosity: {{ $ka.kubeadmTemplate.verbosity }}
