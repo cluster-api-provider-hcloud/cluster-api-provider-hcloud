@@ -246,7 +246,7 @@ func (s *ClusterScope) ClientConfigWithAPIEndpoint(endpoint clusterv1.APIEndpoin
 
 	// update cluster endpint in confgi
 	for key := range raw.Clusters {
-		raw.Clusters[key].Server = fmt.Sprintf("https://%s:%d", endpoint.Host, endpoint.Port)
+		raw.Clusters[key].Server = fmt.Sprintf("https://%s:%d", s.HcloudCluster.Spec.ControlPlaneEndpoint.Host, s.HcloudCluster.Spec.ControlPlaneLoadBalancer.Services[0].ListenPort)
 	}
 
 	return clientcmd.NewDefaultClientConfig(raw, &clientcmd.ConfigOverrides{}), nil
