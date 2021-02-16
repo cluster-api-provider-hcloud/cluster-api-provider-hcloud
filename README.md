@@ -67,7 +67,7 @@ providers:
 Now we deploy the API components to the management cluster
 
 ```sh
-clusterctl init --infrastructure hcloud:v0.1.2
+clusterctl init --infrastructure hcloud:v0.1.3
 ```
 
 Now we can deploy our first Cluster. For production use it is recommended to use your own templates with all configurations. [name] is the placeholder for your cluster name like cluster-dev
@@ -107,7 +107,7 @@ If you want you can now move all the cluster-api Resources from your management 
 ```sh
 export EXP_CLUSTER_RESOURCE_SET=true
 KUBECONFIG=$KUBECONFIG_GUEST clusterctl init --core cluster-api:v0.3.14
-KUBECONFIG=$KUBECONFIG_GUEST clusterctl init --infrastructure hcloud:v0.1.2
+KUBECONFIG=$KUBECONFIG_GUEST clusterctl init --infrastructure hcloud:v0.1.3
 clusterctl move --to-kubeconfig $KUBECONFIG_GUEST
 
 ### You also need to create your Hetzner Token secret on the new management cluster
