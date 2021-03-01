@@ -145,6 +145,8 @@ type HcloudClusterStatus struct {
 	ControlPlaneLoadBalancer HcloudLoadBalancerStatus `json:"controlPlaneLoadBalancer,omitempty"`
 
 	// +optional
+	BareMetalInventory []BareMetalMachineStatus `json:"baremetal_machine_status"`
+	// +optional
 	Network *HcloudNetworkStatus `json:"network,omitempty"`
 
 	// Manifests stores the if the cluster has already applied the minimal

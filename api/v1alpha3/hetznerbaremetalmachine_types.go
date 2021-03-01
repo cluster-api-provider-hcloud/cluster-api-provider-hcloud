@@ -21,14 +21,15 @@ import (
 )
 
 const (
-	// ClusterFinalizer allows Reconcile BareMetalMachine to clean up
-	// resources associated with BareMetalMachine before removing it from the
+	// ClusterFinalizer allows Reconcile HetznerBareMetalMachine to clean up
+	// resources associated with HetznerBareMetalMachine before removing it from the
 	// apiserver.
-	BareMetalMachineFinalizer = "baremetalmachine.cluster-api-provider-hcloud.capihc.com"
+	HetznerBareMetalMachineFinalizer = "hetznerbaremetalmachine.cluster-api-provider-hcloud.capihc.com"
 )
 
 // BareMetalMachineSpec defines the desired state of a BareMetalMachine
-type BareMetalMachineSpec struct {
+type HetznerBareMetalMachineSpec struct {
+	SSHTokenRef sshTokenRef `json:"sshTokenRef"`
 
 	// ProviderID is the unique identifier as specified by the cloud provider.
 	// +optional
@@ -37,20 +38,31 @@ type BareMetalMachineSpec struct {
 	// +optional
 	Partition *string `json:"partition"`
 
-	IP *string `json:"ip"`
+	ImagePath *string `json:"imagePath"`
 
 	ServerType *string `json:"serverType"`
 }
 
-// BareMetalMachineStatus defines the observed state of BareMetalMachine
-type BareMetalMachineStatus struct {
-	ID            int    `json:"id,omitempty"`
-	Name          string `json:"name,omitempty"`
-	Product       string `json:"product,omitempty"`
-	DataCenter    string `json:"datacenter,omitempty"`
-	HetznerStatus string `json:"hetzner_status,omitempty"`
-	Status        string `json:"status,omitempty"`
-	PaidUntil     string `json:"paid_until,omitempty"`
+type sshTokenRef struct {
+	PublicKey  string `json:"publicKey"`
+	PrivateKey string `json:"privateKey"`
+	SSHKeyName string `json:"sshKeyName"`
+	TokenName  string `json:"tokenName"`
+}
+
+//type HetznerBareMetalServerState string
+
+// HetznerBareMetalMachineStatus defines the observed state of HetznerBareMetalMachine
+type HetznerBareMetalMachineStatus struct {
+	IPv4        string `json:"server_ip,omitempty"`
+	IPv6        string `json:"ipv6,omitempty"`
+	ServerID    int    `json:"server_number,omitempty"`
+	ServerName  string `json:"server_name,omitempty"`
+	Ready       bool   `json:"ready,omitempty"`
+	ServerState string `json:"serverState,omitempty"`
+	Cancelled   bool   `json:"cancelled,omitempty"`
+	Reset       bool   `json:"reset,omitempty"`
+	Rescue      bool   `json:"rescue,omitempty"`
 
 	// FailureReason will be set in the event that there is a terminal problem
 	// reconciling the Machine and will contain a succinct value suitable
@@ -91,7 +103,7 @@ type BareMetalMachineStatus struct {
 	FailureMessage *string `json:"failureMessage,omitempty"`
 }
 
-func (h *BareMetalMachine) BareMetalMachineSpec() *BareMetalMachineSpec {
+func (h *HetznerBareMetalMachine) HetznerBareMetalMachineSpec() *HetznerBareMetalMachineSpec {
 	return h.Spec.DeepCopy()
 }
 
@@ -104,24 +116,24 @@ func (h *BareMetalMachine) BareMetalMachineSpec() *BareMetalMachineSpec {
 // +kubebuilder:printcolumn:name="InstanceID",type="string",JSONPath=".spec.providerID",description="Hcloud instance ID"
 // +kubebuilder:printcolumn:name="Machine",type="string",JSONPath=".metadata.ownerReferences[?(@.kind==\"Machine\")].name",description="Machine object which owns with this BareMetalMachine"
 
-// BareMetalMachine is the Schema for the bareMetalMachine API
-type BareMetalMachine struct {
+// HetznerBareMetalMachine is the Schema for the bareMetalMachine API
+type HetznerBareMetalMachine struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   BareMetalMachineSpec   `json:"spec,omitempty"`
-	Status BareMetalMachineStatus `json:"status,omitempty"`
+	Spec   HetznerBareMetalMachineSpec   `json:"spec,omitempty"`
+	Status HetznerBareMetalMachineStatus `json:"status,omitempty"`
 }
 
 // +kubebuilder:object:root=true
 
-// BareMetalMachineList contains a list of BareMetalMachine
-type BareMetalMachineList struct {
+// HetznerBareMetalMachineList contains a list of BareMetalMachine
+type HetznerBareMetalMachineList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
-	Items           []BareMetalMachine `json:"items"`
+	Items           []HetznerBareMetalMachine `json:"items"`
 }
 
 func init() {
-	SchemeBuilder.Register(&BareMetalMachine{}, &BareMetalMachineList{})
+	SchemeBuilder.Register(&HetznerBareMetalMachine{}, &HetznerBareMetalMachineList{})
 }

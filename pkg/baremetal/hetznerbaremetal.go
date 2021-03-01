@@ -33,7 +33,7 @@ const (
 )
 
 type Service struct {
-	scope *scope.BareMetalMachineScope
+	scope *scope.HetznerBareMetalMachineScope
 }
 
 type blockDeviceData struct {
@@ -57,7 +57,7 @@ type blockDevices struct {
 	Devices []blockDevice `json:"blockdevices"`
 }
 
-func NewService(scope *scope.BareMetalMachineScope) *Service {
+func NewService(scope *scope.HetznerBareMetalMachineScope) *Service {
 	return &Service{
 		scope: scope,
 	}
@@ -76,15 +76,15 @@ func (s *Service) Reconcile(ctx context.Context) (_ *ctrl.Result, err error) {
 
 	// If not token information has been given, the server cannot be successfully reconciled
 	if s.scope.HcloudCluster.Spec.HrobotTokenRef == nil {
-		s.scope.Recorder.Eventf(s.scope.BareMetalMachine, corev1.EventTypeWarning, "NoTokenFound", "No Hrobot token found")
-		return nil, errors.Errorf("ERROR: No token for Hetzner Robot provided: Cannot reconcile server %s", s.scope.BareMetalMachine.Name)
+		s.scope.Recorder.Eventf(s.scope.HetznerBareMetalMachine, corev1.EventTypeWarning, "NoTokenFound", "No Hrobot token found")
+		return nil, errors.Errorf("ERROR: No token for Hetzner Robot provided: Cannot reconcile server %s", s.scope.HetznerBareMetalMachine.Name)
 	}
 
 	// update list of servers which have the right type and are not taken in other clusters
 	serverList, err := s.listMatchingMachines(ctx)
 	if err != nil {
 		if checkRateLimitExceeded(err) {
-			s.scope.Recorder.Eventf(s.scope.BareMetalMachine, corev1.EventTypeWarning, "HrobotRateLimitExceeded", "Hrobot rate limit exceeded. Wait for %v sec before trying again.", rateLimitTimeOut)
+			s.scope.Recorder.Eventf(s.scope.HetznerBareMetalMachine, corev1.EventTypeWarning, "HrobotRateLimitExceeded", "Hrobot rate limit exceeded. Wait for %v sec before trying again.", rateLimitTimeOut)
 			return &reconcile.Result{RequeueAfter: rateLimitTimeOut * time.Second}, nil
 		}
 		return nil, errors.Wrap(err, "failed to list machines")
@@ -111,15 +111,15 @@ func (s *Service) Reconcile(ctx context.Context) (_ *ctrl.Result, err error) {
 			// This means we have to set a failureReason so that the infrastructure object gets deleted
 			if paidUntil.Before(time.Now().Add(hoursBeforeDeletion * time.Hour)) {
 				s.scope.Recorder.Eventf(
-					s.scope.BareMetalMachine,
+					s.scope.HetznerBareMetalMachine,
 					corev1.EventTypeWarning,
-					"CancelledBareMetalMachine",
+					"CancelledHetznerBareMetalMachine",
 					"Bare metal machine is cancelled and paid until %s",
 					actualServer.PaidUntil)
 				er := capierrors.UpdateMachineError
-				s.scope.BareMetalMachine.Status.FailureReason = &er
-				s.scope.BareMetalMachine.Status.FailureMessage = pointer.StringPtr("Machine has been cancelled and is paid until less than" + hoursBeforeDeletion.String() + "hours")
-				s.scope.BareMetalMachine.Status.Ready = false
+				s.scope.HetznerBareMetalMachine.Status.FailureReason = &er
+				s.scope.HetznerBareMetalMachine.Status.FailureMessage = pointer.StringPtr("Machine has been cancelled and is paid until less than" + hoursBeforeDeletion.String() + "hours")
+				s.scope.HetznerBareMetalMachine.Status.Ready = false
 			}
 		}
 
@@ -141,12 +141,12 @@ func (s *Service) Reconcile(ctx context.Context) (_ *ctrl.Result, err error) {
 			return &reconcile.Result{RequeueAfter: 15 * time.Second}, nil
 		}
 
-		s.scope.BareMetalMachine.Status.ServerState = "initializing"
+		s.scope.HetznerBareMetalMachine.Status.ServerState = "initializing"
 
 		// Provision the machine
 		if err := s.provisionMachine(ctx, *newServer); err != nil {
 			if checkRateLimitExceeded(err) {
-				s.scope.Recorder.Eventf(s.scope.BareMetalMachine, corev1.EventTypeWarning, "HrobotRateLimitExceeded", "Hrobot rate limit exceeded. Wait for %v sec before trying again.", rateLimitTimeOut)
+				s.scope.Recorder.Eventf(s.scope.HetznerBareMetalMachine, corev1.EventTypeWarning, "HrobotRateLimitExceeded", "Hrobot rate limit exceeded. Wait for %v sec before trying again.", rateLimitTimeOut)
 				return &reconcile.Result{RequeueAfter: rateLimitTimeOut * time.Second}, nil
 			}
 			return nil, errors.Errorf("Failed to provision new machine: %s", err)
@@ -155,11 +155,11 @@ func (s *Service) Reconcile(ctx context.Context) (_ *ctrl.Result, err error) {
 	}
 
 	providerID := fmt.Sprintf("hcloud://%d", actualServer.ServerNumber)
-	s.scope.BareMetalMachine.Status.ServerState = "running"
-	s.scope.BareMetalMachine.Spec.ProviderID = &providerID
+	s.scope.HetznerBareMetalMachine.Status.ServerState = "running"
+	s.scope.HetznerBareMetalMachine.Spec.ProviderID = &providerID
 
 	// TODO: Ask for the state of the server and only if it is ready set it to true
-	s.scope.BareMetalMachine.Status.Ready = true
+	s.scope.HetznerBareMetalMachine.Status.Ready = true
 
 	return nil, nil
 }
@@ -179,16 +179,16 @@ func (s *Service) findAttachedMachine(servers []models.Server) (*models.Server, 
 		splitName := strings.Split(server.ServerName, delimiter)
 
 		// If server is attached to the cluster and is the one we are looking for
-		if len(splitName) == 3 && splitName[2] == s.scope.BareMetalMachine.Name {
+		if len(splitName) == 3 && splitName[2] == s.scope.HetznerBareMetalMachine.Name {
 			actualServer = server
 			check++
 		}
 	}
 	if check > 1 {
 		s.scope.Recorder.Eventf(
-			s.scope.BareMetalMachine,
+			s.scope.HetznerBareMetalMachine,
 			corev1.EventTypeWarning,
-			"MultipleBareMetalMachines",
+			"MultipleHetznerBareMetalMachines",
 			"Found %v bare metal machines of the name %s attached to the cluster",
 			check, actualServer.ServerName)
 		return nil, errors.Errorf("There are %s servers which are attached to the cluster with name %s", check, actualServer.ServerName)
@@ -205,12 +205,12 @@ func (s *Service) findNewMachine(servers []models.Server) (*models.Server, error
 	if len(servers) == 0 {
 		// If no servers are in the list, we have to return an error
 		s.scope.Recorder.Eventf(
-			s.scope.BareMetalMachine,
+			s.scope.HetznerBareMetalMachine,
 			corev1.EventTypeWarning,
-			"EmptyListBareMetalMachines",
+			"EmptyListHetznerBareMetalMachines",
 			"No machines of type %s found",
-			*s.scope.BareMetalMachine.Spec.ServerType)
-		return nil, errors.Errorf("No bare metal server found with type %s", *s.scope.BareMetalMachine.Spec.ServerType)
+			*s.scope.HetznerBareMetalMachine.Spec.ServerType)
+		return nil, errors.Errorf("No bare metal server found with type %s", *s.scope.HetznerBareMetalMachine.Spec.ServerType)
 	}
 
 	for _, server := range servers {
@@ -222,12 +222,12 @@ func (s *Service) findNewMachine(servers []models.Server) (*models.Server, error
 		}
 	}
 	s.scope.Recorder.Eventf(
-		s.scope.BareMetalMachine,
+		s.scope.HetznerBareMetalMachine,
 		corev1.EventTypeWarning,
-		"NoAvailableBareMetalMachines",
+		"NoAvailableHetznerBareMetalMachines",
 		"No machines of type %s are available",
-		*s.scope.BareMetalMachine.Spec.ServerType)
-	return nil, errors.Errorf("There are no available servers of type %s left", *s.scope.BareMetalMachine.Spec.ServerType)
+		*s.scope.HetznerBareMetalMachine.Spec.ServerType)
+	return nil, errors.Errorf("There are no available servers of type %s left", *s.scope.HetznerBareMetalMachine.Spec.ServerType)
 }
 
 // Provisions the bare metal machine
@@ -324,8 +324,8 @@ func (s *Service) provisionMachine(ctx context.Context, server models.Server) er
 
 	partitionString := `PART /boot ext3 512M
 PART / ext4 all`
-	if s.scope.BareMetalMachine.Spec.Partition != nil {
-		partitionString = *s.scope.BareMetalMachine.Spec.Partition
+	if s.scope.HetznerBareMetalMachine.Spec.Partition != nil {
+		partitionString = *s.scope.HetznerBareMetalMachine.Spec.Partition
 	}
 	autoSetup := fmt.Sprintf(
 		`cat > /autosetup << EOF
@@ -335,7 +335,7 @@ HOSTNAME %s
 %s
 IMAGE %s
 EOF`,
-		drive, s.scope.Cluster.Name+delimiter+*s.scope.BareMetalMachine.Spec.ServerType+delimiter+s.scope.BareMetalMachine.Name, partitionString, *s.scope.BareMetalMachine.Spec.ImagePath)
+		drive, s.scope.Cluster.Name+delimiter+*s.scope.HetznerBareMetalMachine.Spec.ServerType+delimiter+s.scope.HetznerBareMetalMachine.Name, partitionString, *s.scope.HetznerBareMetalMachine.Spec.ImagePath)
 
 	s.scope.V(4).Info("Send auto setup file to server")
 	// Send autosetup file to server
@@ -449,15 +449,15 @@ EOF`, cloudInitConfigString)
 	s.scope.V(4).Info("Set server name and finish")
 	// Finally set the machine's name. The name replaces labels as we cannot label bare metal machines directly
 	_, err = s.scope.HrobotClient().SetBMServerName(server.ServerIP,
-		s.scope.Cluster.Name+delimiter+*s.scope.BareMetalMachine.Spec.ServerType+delimiter+s.scope.BareMetalMachine.Name)
+		s.scope.Cluster.Name+delimiter+*s.scope.HetznerBareMetalMachine.Spec.ServerType+delimiter+s.scope.HetznerBareMetalMachine.Name)
 	if err != nil {
 		return errors.Errorf("Unable to change bare metal server name: ", err)
 	}
 	s.scope.Recorder.Eventf(
-		s.scope.BareMetalMachine,
-		"CreateBareMetalMachine",
+		s.scope.HetznerBareMetalMachine,
+		"CreateHetznerBareMetalMachine",
 		"Created bare metal machine %s",
-		s.scope.BareMetalMachine.Name)
+		s.scope.HetznerBareMetalMachine.Name)
 	return nil
 }
 
@@ -472,7 +472,7 @@ func (s *Service) Delete(ctx context.Context) (_ *ctrl.Result, err error) {
 	serverList, err := s.listMatchingMachines(ctx)
 	if err != nil {
 		if checkRateLimitExceeded(err) {
-			s.scope.Recorder.Eventf(s.scope.BareMetalMachine, corev1.EventTypeWarning, "HrobotRateLimitExceeded", "Hrobot rate limit exceeded. Wait for %v sec before trying again.", rateLimitTimeOutDeletion)
+			s.scope.Recorder.Eventf(s.scope.HetznerBareMetalMachine, corev1.EventTypeWarning, "HrobotRateLimitExceeded", "Hrobot rate limit exceeded. Wait for %v sec before trying again.", rateLimitTimeOutDeletion)
 			return &reconcile.Result{RequeueAfter: rateLimitTimeOutDeletion * time.Second}, nil
 		}
 		return nil, errors.Wrap(err, "failed to refresh server status")
@@ -481,22 +481,22 @@ func (s *Service) Delete(ctx context.Context) (_ *ctrl.Result, err error) {
 	server, err := s.findAttachedMachine(serverList)
 	if err != nil {
 		if checkRateLimitExceeded(err) {
-			s.scope.Recorder.Eventf(s.scope.BareMetalMachine, corev1.EventTypeWarning, "HrobotRateLimitExceeded", "Hrobot rate limit exceeded. Wait for %v sec before trying again.", rateLimitTimeOutDeletion)
+			s.scope.Recorder.Eventf(s.scope.HetznerBareMetalMachine, corev1.EventTypeWarning, "HrobotRateLimitExceeded", "Hrobot rate limit exceeded. Wait for %v sec before trying again.", rateLimitTimeOutDeletion)
 			return &reconcile.Result{RequeueAfter: rateLimitTimeOutDeletion * time.Second}, nil
 		}
 		return nil, errors.Wrap(err, "failed to find attached machine")
 	}
 	if server == nil {
 		s.scope.Recorder.Eventf(
-			s.scope.BareMetalMachine,
-			"UnknownBareMetalMachine",
+			s.scope.HetznerBareMetalMachine,
+			"UnknownHetznerBareMetalMachine",
 			"No machine with name %s found to delete",
-			s.scope.BareMetalMachine.Name)
+			s.scope.HetznerBareMetalMachine.Name)
 		return nil, nil
 	}
 
 	_, err = s.scope.HrobotClient().SetBMServerName(server.ServerIP,
-		*s.scope.BareMetalMachine.Spec.ServerType+delimiter+"unused-"+s.scope.BareMetalMachine.Name)
+		*s.scope.HetznerBareMetalMachine.Spec.ServerType+delimiter+"unused-"+s.scope.HetznerBareMetalMachine.Name)
 	if err != nil {
 		return nil, errors.Errorf("Unable to change bare metal server name: ", err)
 	}
@@ -533,11 +533,11 @@ func (s *Service) listMatchingMachines(ctx context.Context) ([]models.Server, er
 	serverList, err := s.scope.HrobotClient().ListBMServers()
 	if err != nil {
 		s.scope.Recorder.Eventf(
-			s.scope.BareMetalMachine,
+			s.scope.HetznerBareMetalMachine,
 			corev1.EventTypeWarning,
-			"ErrorListingBareMetalMachines",
+			"ErrorListingHetznerBareMetalMachines",
 			"Error while listing bare metal machines of type %s",
-			*s.scope.BareMetalMachine.Spec.ServerType)
+			*s.scope.HetznerBareMetalMachine.Spec.ServerType)
 		return nil, errors.Errorf("unable to list bare metal servers: %s", err)
 	}
 
@@ -546,7 +546,7 @@ func (s *Service) listMatchingMachines(ctx context.Context) ([]models.Server, er
 	// as well as machines that don't fit the type or are attached to other clusters
 	for _, server := range serverList {
 		splitName := strings.Split(server.ServerName, delimiter)
-		if len(splitName) == 2 && splitName[0] == *s.scope.BareMetalMachine.Spec.ServerType {
+		if len(splitName) == 2 && splitName[0] == *s.scope.HetznerBareMetalMachine.Spec.ServerType {
 			if !server.Cancelled {
 				matchingServers = append(matchingServers, server)
 			} else {
@@ -559,7 +559,7 @@ func (s *Service) listMatchingMachines(ctx context.Context) ([]models.Server, er
 				}
 			}
 		}
-		if len(splitName) == 3 && splitName[0] == s.scope.Cluster.Name && splitName[1] == *s.scope.BareMetalMachine.Spec.ServerType {
+		if len(splitName) == 3 && splitName[0] == s.scope.Cluster.Name && splitName[1] == *s.scope.HetznerBareMetalMachine.Spec.ServerType {
 			matchingServers = append(matchingServers, server)
 		}
 	}
@@ -717,22 +717,22 @@ func convertSizeToInt(str string) (x int, err error) {
 func (s *Service) retrieveSSHSecret(ctx context.Context) (sshKeyName string, publicKey string, privateKey string, err error) {
 	// retrieve token secret
 	var tokenSecret corev1.Secret
-	tokenSecretName := types.NamespacedName{Namespace: s.scope.HcloudCluster.Namespace, Name: s.scope.BareMetalMachine.Spec.SSHTokenRef.TokenName}
+	tokenSecretName := types.NamespacedName{Namespace: s.scope.HcloudCluster.Namespace, Name: s.scope.HetznerBareMetalMachine.Spec.SSHTokenRef.TokenName}
 	if err := s.scope.Client.Get(ctx, tokenSecretName, &tokenSecret); err != nil {
 		return "", "", "", errors.Errorf("error getting referenced token secret/%s: %s", tokenSecretName, err)
 	}
 
-	publicKeyTokenBytes, keyExists := tokenSecret.Data[s.scope.BareMetalMachine.Spec.SSHTokenRef.PublicKey]
+	publicKeyTokenBytes, keyExists := tokenSecret.Data[s.scope.HetznerBareMetalMachine.Spec.SSHTokenRef.PublicKey]
 	if !keyExists {
-		return "", "", "", errors.Errorf("error key %s does not exist in secret/%s", s.scope.BareMetalMachine.Spec.SSHTokenRef.PublicKey, tokenSecretName)
+		return "", "", "", errors.Errorf("error key %s does not exist in secret/%s", s.scope.HetznerBareMetalMachine.Spec.SSHTokenRef.PublicKey, tokenSecretName)
 	}
-	privateKeyTokenBytes, keyExists := tokenSecret.Data[s.scope.BareMetalMachine.Spec.SSHTokenRef.PrivateKey]
+	privateKeyTokenBytes, keyExists := tokenSecret.Data[s.scope.HetznerBareMetalMachine.Spec.SSHTokenRef.PrivateKey]
 	if !keyExists {
-		return "", "", "", errors.Errorf("error key %s does not exist in secret/%s", s.scope.BareMetalMachine.Spec.SSHTokenRef.PrivateKey, tokenSecretName)
+		return "", "", "", errors.Errorf("error key %s does not exist in secret/%s", s.scope.HetznerBareMetalMachine.Spec.SSHTokenRef.PrivateKey, tokenSecretName)
 	}
-	sshKeyNameTokenBytes, keyExists := tokenSecret.Data[s.scope.BareMetalMachine.Spec.SSHTokenRef.SSHKeyName]
+	sshKeyNameTokenBytes, keyExists := tokenSecret.Data[s.scope.HetznerBareMetalMachine.Spec.SSHTokenRef.SSHKeyName]
 	if !keyExists {
-		return "", "", "", errors.Errorf("error key %s does not exist in secret/%s", s.scope.BareMetalMachine.Spec.SSHTokenRef.SSHKeyName, tokenSecretName)
+		return "", "", "", errors.Errorf("error key %s does not exist in secret/%s", s.scope.HetznerBareMetalMachine.Spec.SSHTokenRef.SSHKeyName, tokenSecretName)
 	}
 
 	sshKeyName = string(sshKeyNameTokenBytes)

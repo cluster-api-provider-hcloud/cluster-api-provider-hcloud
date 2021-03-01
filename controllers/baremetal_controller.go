@@ -35,7 +35,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
 	infrav1 "github.com/cluster-api-provider-hcloud/cluster-api-provider-hcloud/api/v1alpha3"
-	"github.com/cluster-api-provider-hcloud/cluster-api-provider-hcloud/pkg/baremetal"
+	baremetal "github.com/cluster-api-provider-hcloud/cluster-api-provider-hcloud/pkg/baremetal/inventory"
 	"github.com/cluster-api-provider-hcloud/cluster-api-provider-hcloud/pkg/manifests"
 	"github.com/cluster-api-provider-hcloud/cluster-api-provider-hcloud/pkg/packer"
 	"github.com/cluster-api-provider-hcloud/cluster-api-provider-hcloud/pkg/scope"
@@ -69,29 +69,13 @@ func (r *BareMetalMachineReconciler) Reconcile(req ctrl.Request) (_ ctrl.Result,
 		return reconcile.Result{}, err
 	}
 
-	// Fetch the Machine
-	machine, err := util.GetOwnerMachine(ctx, r.Client, bareMetalMachine.ObjectMeta)
-	if err != nil {
-		return reconcile.Result{}, err
-	}
-	if machine == nil {
-		log.Info("Machine Controller has not yet set OwnerRef")
-		return reconcile.Result{}, nil
-	}
-	log = log.WithValues("machine", machine.Name)
-
 	// Fetch the Cluster.
-	cluster, err := util.GetClusterFromMetadata(ctx, r.Client, machine.ObjectMeta)
+	cluster, err := util.GetClusterFromMetadata(ctx, r.Client, bareMetalMachine.ObjectMeta)
 	if err != nil {
-		log.Info("Machine is missing cluster label or cluster does not exist")
+		log.Info("HcloudVolume is missing cluster label or cluster does not exist")
 		return reconcile.Result{}, nil
 	}
 	log = log.WithValues("cluster", cluster.Name)
-
-	if util.IsPaused(cluster, bareMetalMachine) {
-		log.Info("BareMetalMachine or linked Cluster is marked as paused. Won't reconcile")
-		return ctrl.Result{}, nil
-	}
 
 	hcloudCluster := &infrav1.HcloudCluster{}
 
@@ -118,7 +102,6 @@ func (r *BareMetalMachineReconciler) Reconcile(req ctrl.Request) (_ ctrl.Result,
 			Packer:        r.Packer,
 			Manifests:     r.Manifests,
 		},
-		Machine:          machine,
 		BareMetalMachine: bareMetalMachine,
 	})
 	if err != nil {
@@ -182,19 +165,13 @@ func (r *BareMetalMachineReconciler) SetupWithManager(mgr ctrl.Manager, options 
 		WithOptions(options).
 		For(&infrav1.BareMetalMachine{}).
 		Watches(
-			&source.Kind{Type: &clusterv1.Machine{}},
-			&handler.EnqueueRequestsFromMapFunc{
-				ToRequests: util.MachineToInfrastructureMapFunc(infrav1.GroupVersion.WithKind("BareMetalMachine")),
-			},
-		).
-		Watches(
 			&source.Kind{Type: &infrav1.HcloudCluster{}},
 			&handler.EnqueueRequestsFromMapFunc{ToRequests: handler.ToRequestsFunc(r.HcloudClusterToBareMetalMachines)},
 		).
 		Complete(r)
 }
 
-// HcloudClusterToBareMetalMachine is a handler.ToRequestsFunc to be used to
+// HcloudClusterToBareMetalMachines is a handler.ToRequestsFunc to be used to
 // enqeue requests for reconciliation of BareMetalMachines.
 func (r *BareMetalMachineReconciler) HcloudClusterToBareMetalMachines(o handler.MapObject) []ctrl.Request {
 	result := []ctrl.Request{}

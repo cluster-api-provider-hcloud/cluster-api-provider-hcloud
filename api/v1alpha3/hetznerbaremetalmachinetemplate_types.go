@@ -19,37 +19,37 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// BareMetalMachineTemplateSpec defines the desired state of BareMetalMachineTemplate
-type BareMetalMachineTemplateSpec struct {
-	Template BareMetalMachineTemplateResource `json:"template"`
+// HetznerBareMetalMachineTemplateSpec defines the desired state of HetznerBareMetalMachineTemplate
+type HetznerBareMetalMachineTemplateSpec struct {
+	Template HetznerBareMetalMachineTemplateResource `json:"template"`
 }
 
 // BareMetalMachineTemplateResource describes the data needed to create am BareMetalMachine from a template
-type BareMetalMachineTemplateResource struct {
+type HetznerBareMetalMachineTemplateResource struct {
 	// Spec is the specification of the desired behavior of the machine.
-	Spec BareMetalMachineSpec `json:"spec"`
+	Spec HetznerBareMetalMachineSpec `json:"spec"`
 }
 
 // +kubebuilder:object:root=true
-// +kubebuilder:resource:path=baremetalmachinetemplates,scope=Namespaced,categories=cluster-api
+// +kubebuilder:resource:path=hetznerbaremetalmachinetemplates,scope=Namespaced,categories=cluster-api
 
-// BareMetalMachineTemplate is the Schema for the bareMetalMachine API
-type BareMetalMachineTemplate struct {
+// HetznerBareMetalMachineTemplate is the Schema for the bareMetalMachine API
+type HetznerBareMetalMachineTemplate struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec BareMetalMachineTemplateSpec `json:"spec,omitempty"`
+	Spec HetznerBareMetalMachineTemplateSpec `json:"spec,omitempty"`
 }
 
 // +kubebuilder:object:root=true
 
-// BareMetalMachineTemplateList contains a list of BareMetalMachineTemplate
-type BareMetalMachineTemplateList struct {
+// HetznerBareMetalMachineTemplateList contains a list of HetznerBareMetalMachineTemplate
+type HetznerBareMetalMachineTemplateList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
-	Items           []BareMetalMachineTemplate `json:"items"`
+	Items           []HetznerBareMetalMachineTemplate `json:"items"`
 }
 
 func init() {
-	SchemeBuilder.Register(&BareMetalMachineTemplate{}, &BareMetalMachineTemplateList{})
+	SchemeBuilder.Register(&HetznerBareMetalMachineTemplate{}, &HetznerBareMetalMachineTemplateList{})
 }

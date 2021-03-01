@@ -103,6 +103,26 @@ rules:
   - patch
   - update
 - apiGroups:
+  - cluster-api-provider-hcloud.capihc.com
+  resources:
+  - hetznerbaremetalmachines
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - cluster-api-provider-hcloud.capihc.com
+  resources:
+  - hetznerbaremetalmachines/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
   - cluster.x-k8s.io
   resources:
   - clusters
