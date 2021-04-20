@@ -14,7 +14,7 @@ import (
 	kubejson "k8s.io/apimachinery/pkg/runtime/serializer/json"
 	"k8s.io/apimachinery/pkg/runtime/serializer/streaming"
 	bootstrapv1 "sigs.k8s.io/cluster-api/bootstrap/kubeadm/api/v1alpha3"
-	kubeadmv1beta1 "sigs.k8s.io/cluster-api/bootstrap/kubeadm/types/v1beta1"
+	kubeadmv1beta2 "sigs.k8s.io/cluster-api/bootstrap/kubeadm/types/v1beta2"
 	kubeyaml "sigs.k8s.io/yaml"
 )
 
@@ -26,9 +26,9 @@ type UserData struct {
 }
 
 type KubeadmConfig struct {
-	ClusterConfiguration *kubeadmv1beta1.ClusterConfiguration
-	InitConfiguration    *kubeadmv1beta1.InitConfiguration
-	JoinConfiguration    *kubeadmv1beta1.JoinConfiguration
+	ClusterConfiguration *kubeadmv1beta2.ClusterConfiguration
+	InitConfiguration    *kubeadmv1beta2.InitConfiguration
+	JoinConfiguration    *kubeadmv1beta2.JoinConfiguration
 	isInit               bool
 }
 
@@ -43,10 +43,10 @@ func (k *KubeadmConfig) IsJoin() bool {
 func newScheme() *runtime.Scheme {
 	sch := runtime.NewScheme()
 	sch.AddKnownTypes(
-		kubeadmv1beta1.GroupVersion,
-		&kubeadmv1beta1.ClusterConfiguration{},
-		&kubeadmv1beta1.InitConfiguration{},
-		&kubeadmv1beta1.JoinConfiguration{},
+		kubeadmv1beta2.GroupVersion,
+		&kubeadmv1beta2.ClusterConfiguration{},
+		&kubeadmv1beta2.InitConfiguration{},
+		&kubeadmv1beta2.JoinConfiguration{},
 	)
 	return sch
 }
@@ -138,11 +138,11 @@ func parseKubeadmConfig(data []byte) (*KubeadmConfig, error) {
 			return nil, fmt.Errorf("error during parse: %w", err)
 		}
 		switch o := obj.(type) {
-		case *kubeadmv1beta1.ClusterConfiguration:
+		case *kubeadmv1beta2.ClusterConfiguration:
 			k.ClusterConfiguration = o
-		case *kubeadmv1beta1.InitConfiguration:
+		case *kubeadmv1beta2.InitConfiguration:
 			k.InitConfiguration = o
-		case *kubeadmv1beta1.JoinConfiguration:
+		case *kubeadmv1beta2.JoinConfiguration:
 			k.JoinConfiguration = o
 		default:
 			return nil, fmt.Errorf("unknown type during parse: %v", o)
@@ -201,7 +201,7 @@ func (u *UserData) SetKubeadmConfig(k *KubeadmConfig) error {
 		objects = append(objects, "---\n"+s)
 	}
 
-	kubeadmEncoder := codecs.EncoderForVersion(info.Serializer, kubeadmv1beta1.GroupVersion)
+	kubeadmEncoder := codecs.EncoderForVersion(info.Serializer, kubeadmv1beta2.GroupVersion)
 
 	if obj := k.ClusterConfiguration; obj != nil {
 		b := bytes.NewBuffer(nil)
