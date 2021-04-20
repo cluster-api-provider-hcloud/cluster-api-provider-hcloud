@@ -247,8 +247,8 @@ def go_repositories():
         build_file_generation = "on",
         build_file_proto_mode = "disable_global",
         importpath = "github.com/coredns/corefile-migration",
-        sum = "h1:7HI4r5S5Fne749a+JDxUZppqBpYoZK8Q53ZVK9cn3aM=",
-        version = "v1.0.10",
+        sum = "h1:ptBYGW2ADXIB7ZEBPrhhTvNwJLQfxE3Q9IUMBhJCEeI=",
+        version = "v1.0.11",
     )
     go_repository(
         name = "com_github_coreos_bbolt",
@@ -1726,8 +1726,8 @@ def go_repositories():
         build_file_generation = "on",
         build_file_proto_mode = "disable_global",
         importpath = "k8s.io/cluster-bootstrap",
-        sum = "h1:qee9dmkOVwngBf98zbwrij1s898EZ2aHg+ymXw1UBLU=",
-        version = "v0.17.8",
+        sum = "h1:IH/MwGor5/7bwHClz0PO/8pKq+SU1eSB1rs645pGu8Y=",
+        version = "v0.17.9",
     )
     go_repository(
         name = "io_k8s_code_generator",
@@ -1774,8 +1774,8 @@ def go_repositories():
         build_file_generation = "on",
         build_file_proto_mode = "disable_global",
         importpath = "sigs.k8s.io/cluster-api",
-        sum = "h1:WongQFeW+vbII9Karc3nIarxMfuUuTr33QU9aSyiKfs=",
-        version = "v0.3.9",
+        sum = "h1:hSIdfaNAHxZpB7r6W6iNoRjm4feqfeKgc0QorfYGyLo=",
+        version = "v0.3.16",
     )
     go_repository(
         name = "io_k8s_sigs_controller_runtime",
@@ -2086,8 +2086,8 @@ def go_repositories():
         build_file_generation = "on",
         build_file_proto_mode = "disable_global",
         importpath = "github.com/gobuffalo/flect",
-        sum = "h1:EWCvMGGxOjsgwlWaP+f4+Hh6yrrte7JeFL2S6b+0hdM=",
-        version = "v0.2.0",
+        sum = "h1:PAVD7sp0KOdfswjAw9BpLCU9hXo7wFSzgpQ+zNeks/A=",
+        version = "v0.2.2",
     )
     go_repository(
         name = "io_k8s_sigs_controller_tools",

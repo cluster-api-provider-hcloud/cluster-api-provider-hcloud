@@ -17,6 +17,8 @@ package controllers
 
 import (
 	"context"
+	"fmt"
+	"time"
 
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
@@ -175,7 +177,8 @@ func (r *HcloudMachineReconciler) reconcileDelete(machineScope *scope.MachineSco
 func (r *HcloudMachineReconciler) reconcileNormal(machineScope *scope.MachineScope) (reconcile.Result, error) {
 	machineScope.Info("Reconciling HcloudMachine")
 	hcloudMachine := machineScope.HcloudMachine
-
+	fmt.Println("Started reconcileNormal of Machine ", machineScope.Name())
+	time.Sleep(30 * time.Second)
 	// If the HcloudMachine doesn't have our finalizer, add it.
 	controllerutil.AddFinalizer(machineScope.HcloudMachine, infrav1.MachineFinalizer)
 
@@ -189,7 +192,7 @@ func (r *HcloudMachineReconciler) reconcileNormal(machineScope *scope.MachineSco
 	if result, err, brk := breakReconcile(server.NewService(machineScope).Reconcile(machineScope.Ctx)); brk {
 		return result, errors.Wrapf(err, "failed to reconcile server for HcloudMachine %s/%s", hcloudMachine.Namespace, hcloudMachine.Name)
 	}
-
+	fmt.Println("Finished reconcileNormal of Machine ", machineScope.Name())
 	return reconcile.Result{}, nil
 }
 
