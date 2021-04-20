@@ -26,7 +26,7 @@ go_rules_dependencies()
 
 go_register_toolchains()
 
-load("@bazel_gazelle//:deps.bzl", "gazelle_dependencies")
+load("@bazel_gazelle//:deps.bzl", "gazelle_dependencies", "go_repository")
 
 gazelle_dependencies()
 
@@ -177,4 +177,13 @@ http_file(
     sha256 = "5d5bd9f88cc77fc51057641c46a2a73e6490550efa7c808f2d2e27a90cfe0c6e",
     downloaded_file_path = "kubectl",
     executable = True,
+)
+
+go_repository(
+    name = "com_github_gosuri_uitable",
+    build_file_generation = "on",
+    build_file_proto_mode = "disable_global",
+    importpath = "github.com/gosuri/uitable",
+    sum = "h1:IG2xLKRvErL3uhY6e1BylFzG+aJiwQviDDTfOKeKTpY=",
+    version = "v0.0.4",
 )
