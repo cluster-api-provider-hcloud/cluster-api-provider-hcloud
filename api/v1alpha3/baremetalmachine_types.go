@@ -47,10 +47,12 @@ type BareMetalMachineStatus struct {
 	ID            int    `json:"id,omitempty"`
 	Name          string `json:"name,omitempty"`
 	Product       string `json:"product,omitempty"`
+	ServerType    string `json:"serverType,omitempty"`
 	DataCenter    string `json:"datacenter,omitempty"`
 	HetznerStatus string `json:"hetzner_status,omitempty"`
 	Status        string `json:"status,omitempty"`
 	PaidUntil     string `json:"paid_until,omitempty"`
+	IP            string `json:"ip,omitempty"`
 
 	// FailureReason will be set in the event that there is a terminal problem
 	// reconciling the Machine and will contain a succinct value suitable

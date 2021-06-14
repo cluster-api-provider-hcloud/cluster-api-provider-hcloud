@@ -75,11 +75,15 @@ spec:
                 type: string
               id:
                 type: integer
+              ip:
+                type: string
               name:
                 type: string
               paid_until:
                 type: string
               product:
+                type: string
+              serverType:
                 type: string
               status:
                 type: string

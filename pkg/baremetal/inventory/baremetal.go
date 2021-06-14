@@ -56,6 +56,8 @@ func (s *Service) Reconcile(ctx context.Context) (_ *ctrl.Result, err error) {
 	status.Name = server.ServerName
 	status.DataCenter = server.Dc
 	status.PaidUntil = server.PaidUntil
+	status.ServerType = *s.scope.BareMetalMachine.Spec.ServerType
+	status.IP = *s.scope.BareMetalMachine.Spec.IP
 
 	// Get status of object in BareMetalInventory of HcloudCluster.Status, where we update the status
 	// in case of a server getting attached to a cluster etc.

@@ -188,6 +188,12 @@ func (r *HetznerBareMetalMachineReconciler) SetupWithManager(mgr ctrl.Manager, o
 			},
 		).
 		Watches(
+			&source.Kind{Type: &infrav1.BareMetalMachine{}},
+			&handler.EnqueueRequestsFromMapFunc{
+				ToRequests: util.MachineToInfrastructureMapFunc(infrav1.GroupVersion.WithKind("HetznerBareMetalMachine")),
+			},
+		).
+		Watches(
 			&source.Kind{Type: &infrav1.HcloudCluster{}},
 			&handler.EnqueueRequestsFromMapFunc{ToRequests: handler.ToRequestsFunc(r.HcloudClusterToHetznerBareMetalMachines)},
 		).
