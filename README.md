@@ -35,7 +35,7 @@ export EXP_CLUSTER_RESOURCE_SET=true
 clusterctl init --core cluster-api:v0.3.13
 ```
 
-Please ensure you have a recent [clusterctl] release (tested with v0.3.14). You can test with `clusterctl version`
+Please ensure you have a recent [clusterctl] release (tested with v0.3.16). You can test with `clusterctl version`
 
 Now we can start by creating a secret in management cluster. $TOKEN is a placeholder for your HETZNER API Token. You can create one in your Project under security/API TOKENS.
 
@@ -67,7 +67,7 @@ providers:
 Now we deploy the API components to the management cluster
 
 ```sh
-clusterctl init --infrastructure hcloud:v0.1.3
+clusterctl init --infrastructure hcloud:v0.1.4
 ```
 
 Now we can deploy our first Cluster. For production use it is recommended to use your own templates with all configurations. [name] is the placeholder for your cluster name like cluster-dev
@@ -106,8 +106,8 @@ If you want you can now move all the cluster-api Resources from your management 
 
 ```sh
 export EXP_CLUSTER_RESOURCE_SET=true
-KUBECONFIG=$KUBECONFIG_GUEST clusterctl init --core cluster-api:v0.3.14
-KUBECONFIG=$KUBECONFIG_GUEST clusterctl init --infrastructure hcloud:v0.1.3
+KUBECONFIG=$KUBECONFIG_GUEST clusterctl init --core cluster-api:v0.3.16
+KUBECONFIG=$KUBECONFIG_GUEST clusterctl init --infrastructure hcloud:v0.1.4
 clusterctl move --to-kubeconfig $KUBECONFIG_GUEST
 
 ### You also need to create your Hetzner Token secret on the new management cluster
