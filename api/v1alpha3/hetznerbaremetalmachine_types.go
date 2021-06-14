@@ -108,7 +108,7 @@ func (h *HetznerBareMetalMachine) HetznerBareMetalMachineSpec() *HetznerBareMeta
 }
 
 // +kubebuilder:object:root=true
-// +kubebuilder:resource:path=baremetalmachines,scope=Namespaced,categories=cluster-api
+// +kubebuilder:resource:path=hetznerbaremetalmachines,scope=Namespaced,categories=cluster-api
 // +kubebuilder:storageversion
 // +kubebuilder:subresource:status
 // +kubebuilder:printcolumn:name="State",type="string",JSONPath=".status.serverState",description="Server state"

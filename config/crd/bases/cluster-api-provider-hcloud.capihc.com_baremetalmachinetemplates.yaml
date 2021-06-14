@@ -40,7 +40,7 @@ spec:
                   spec:
                     description: Spec is the specification of the desired behavior of the machine.
                     properties:
-                      imagePath:
+                      ip:
                         type: string
                       partition:
                         type: string
@@ -49,26 +49,9 @@ spec:
                         type: string
                       serverType:
                         type: string
-                      sshTokenRef:
-                        properties:
-                          privateKey:
-                            type: string
-                          publicKey:
-                            type: string
-                          sshKeyName:
-                            type: string
-                          tokenName:
-                            type: string
-                        required:
-                        - privateKey
-                        - publicKey
-                        - sshKeyName
-                        - tokenName
-                        type: object
                     required:
-                    - imagePath
+                    - ip
                     - serverType
-                    - sshTokenRef
                     type: object
                 required:
                 - spec

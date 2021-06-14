@@ -15,3 +15,5 @@ resources:
 - aggregate_hcloudmachinetemplates_clusterrole.yaml
 - aggregate_baremetalmachines_clusterrole.yaml
 - aggregate_baremetalmachinetemplates_clusterrole.yaml
+- aggregate_hetznerbaremetalmachines_clusterrole.yaml
+- aggregate_hetznerbaremetalmachinetemplates_clusterrole.yaml

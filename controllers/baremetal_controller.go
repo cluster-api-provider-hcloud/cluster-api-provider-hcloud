@@ -27,7 +27,6 @@ import (
 	"sigs.k8s.io/cluster-api/util"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	controllerclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
@@ -43,7 +42,7 @@ import (
 
 // BareMetalMachineReconciler reconciles a BareMetalMachine object
 type BareMetalMachineReconciler struct {
-	controllerclient.Client
+	client.Client
 	Log       logr.Logger
 	Scheme    *runtime.Scheme
 	Packer    *packer.Packer
@@ -53,7 +52,6 @@ type BareMetalMachineReconciler struct {
 
 // +kubebuilder:rbac:groups=cluster-api-provider-hcloud.capihc.com,resources=baremetalmachines,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=cluster-api-provider-hcloud.capihc.com,resources=baremetalmachines/status,verbs=get;update;patch
-// +kubebuilder:rbac:groups=cluster.x-k8s.io,resources=machines;machines/status,verbs=get;list;watch
 
 func (r *BareMetalMachineReconciler) Reconcile(req ctrl.Request) (_ ctrl.Result, reterr error) {
 	ctx := context.TODO()
@@ -72,7 +70,7 @@ func (r *BareMetalMachineReconciler) Reconcile(req ctrl.Request) (_ ctrl.Result,
 	// Fetch the Cluster.
 	cluster, err := util.GetClusterFromMetadata(ctx, r.Client, bareMetalMachine.ObjectMeta)
 	if err != nil {
-		log.Info("HcloudVolume is missing cluster label or cluster does not exist")
+		log.Info("BareMetal machine is missing cluster label or cluster does not exist")
 		return reconcile.Result{}, nil
 	}
 	log = log.WithValues("cluster", cluster.Name)

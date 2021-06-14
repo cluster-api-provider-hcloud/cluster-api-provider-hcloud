@@ -102,7 +102,6 @@ func (h *BareMetalMachine) BareMetalMachineSpec() *BareMetalMachineSpec {
 // +kubebuilder:printcolumn:name="State",type="string",JSONPath=".status.serverState",description="Server state"
 // +kubebuilder:printcolumn:name="Ready",type="string",JSONPath=".status.ready",description="Machine ready status"
 // +kubebuilder:printcolumn:name="InstanceID",type="string",JSONPath=".spec.providerID",description="Hcloud instance ID"
-// +kubebuilder:printcolumn:name="Machine",type="string",JSONPath=".metadata.ownerReferences[?(@.kind==\"Machine\")].name",description="Machine object which owns with this BareMetalMachine"
 
 // BareMetalMachine is the Schema for the bareMetalMachine API
 type BareMetalMachine struct {

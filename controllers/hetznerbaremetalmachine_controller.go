@@ -180,11 +180,11 @@ func (r *HetznerBareMetalMachineReconciler) reconcileNormal(hetznerBareMetalMach
 func (r *HetznerBareMetalMachineReconciler) SetupWithManager(mgr ctrl.Manager, options controller.Options) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		WithOptions(options).
-		For(&infrav1.BareMetalMachine{}).
+		For(&infrav1.HetznerBareMetalMachine{}).
 		Watches(
 			&source.Kind{Type: &clusterv1.Machine{}},
 			&handler.EnqueueRequestsFromMapFunc{
-				ToRequests: util.MachineToInfrastructureMapFunc(infrav1.GroupVersion.WithKind("BareMetalMachine")),
+				ToRequests: util.MachineToInfrastructureMapFunc(infrav1.GroupVersion.WithKind("HetznerBareMetalMachine")),
 			},
 		).
 		Watches(

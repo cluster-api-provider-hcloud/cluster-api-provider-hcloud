@@ -30,12 +30,13 @@ func NewService(scope *scope.BareMetalMachineScope) *Service {
 
 func (s *Service) Reconcile(ctx context.Context) (_ *ctrl.Result, err error) {
 
-	// If not token information has been given, the server cannot be successfully reconciled
+	// If no token information has been given, the server cannot be successfully reconciled
 	if s.scope.HcloudCluster.Spec.HrobotTokenRef == nil {
 		s.scope.Recorder.Eventf(s.scope.BareMetalMachine, corev1.EventTypeWarning, "NoTokenFound", "No Hrobot token found")
 		return nil, errors.Errorf("ERROR: No token for Hetzner Robot provided: Cannot reconcile server %s", s.scope.BareMetalMachine.Name)
 	}
 
+	s.scope.Logger.Info("Get status")
 	// Get bare metal server object and Hetzner status
 	status := s.scope.BareMetalMachine.Status
 	server, err := s.scope.HrobotClient().GetBMServer(s.scope.IP())
@@ -48,6 +49,8 @@ func (s *Service) Reconcile(ctx context.Context) (_ *ctrl.Result, err error) {
 		return nil, errors.Wrap(err, "Failed to get bare metal server")
 	}
 
+	s.scope.Logger.Info("Get server", "server", server)
+
 	status.HetznerStatus = server.Status
 	status.ID = server.ServerNumber
 	status.Name = server.ServerName
@@ -59,6 +62,8 @@ func (s *Service) Reconcile(ctx context.Context) (_ *ctrl.Result, err error) {
 
 	found := false
 	bmInventory := s.scope.HcloudCluster.Status.BareMetalInventory
+	s.scope.Logger.Info("Get inventory", "bm inventory before", bmInventory)
+
 	for _, bmStatus := range bmInventory {
 		if bmStatus.ID == status.ID {
 			// Get the status (e.g. running, available, etc.) which has been updated in the cluster object
@@ -68,11 +73,16 @@ func (s *Service) Reconcile(ctx context.Context) (_ *ctrl.Result, err error) {
 			found = true
 		}
 	}
-	if found == false {
+	if !found {
+		status.Status = "available"
 		bmInventory = append(bmInventory, status)
 	}
 
+	s.scope.Logger.Info("Get inventory", "bm inventory after", bmInventory)
+
 	s.scope.HcloudCluster.Status.BareMetalInventory = bmInventory
+
+	s.scope.BareMetalMachine.Status = status
 
 	return nil, nil
 }

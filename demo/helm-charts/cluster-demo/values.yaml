@@ -169,7 +169,7 @@ hcloudWorkers:
 
 
 
-# hetznerBaremetalWorkers:
+# hetznerBareMetalWorkers:
 #   bm1:
 #     name: bm-1
 #     revisionHistoryLimit: 5
