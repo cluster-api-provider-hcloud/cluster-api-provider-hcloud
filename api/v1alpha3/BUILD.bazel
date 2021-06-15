@@ -5,8 +5,6 @@ go_library(
     srcs = [
         "baremetalmachine_conversion.go",
         "baremetalmachine_types.go",
-        "baremetalmachinetemplate_conversion.go",
-        "baremetalmachinetemplate_types.go",
         "groupversion_info.go",
         "hcloudcluster_conversion.go",
         "hcloudcluster_types.go",
