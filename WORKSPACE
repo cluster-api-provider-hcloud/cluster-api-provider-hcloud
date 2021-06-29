@@ -1,42 +1,15 @@
-load("@bazel_tools//tools/build_defs/repo:git.bzl", "git_repository")
+# Do not load `http_archive` or `http_file` in this file.
+# All fetches of external repositories should go in deps_bazel.bzl
+# so that statements in this file are all order-dependent.
+load("//:WORKSPACE_deps.bzl", "fetch_deps")
 load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive", "http_file")
+fetch_deps()
 
-http_archive(
-    name = "io_bazel_rules_go",
-    sha256 = "ac03931e56c3b229c145f1a8b2a2ad3e8d8f1af57e43ef28a26123362a1e3c7e",
-    urls = [
-        "https://mirror.bazel.build/github.com/bazelbuild/rules_go/releases/download/v0.24.4/rules_go-v0.24.4.tar.gz",
-        "https://github.com/bazelbuild/rules_go/releases/download/v0.24.4/rules_go-v0.24.4.tar.gz",
-    ],
-)
-
-## Load gazelle and dependencies
-http_archive(
-    name = "bazel_gazelle",
-    sha256 = "cdb02a887a7187ea4d5a27452311a75ed8637379a1287d8eeb952138ea485f7d",
-    urls = [
-        "https://mirror.bazel.build/github.com/bazelbuild/bazel-gazelle/releases/download/v0.21.1/bazel-gazelle-v0.21.1.tar.gz",
-        "https://github.com/bazelbuild/bazel-gazelle/releases/download/v0.21.1/bazel-gazelle-v0.21.1.tar.gz",
-    ],
-)
-
-load("@io_bazel_rules_go//go:deps.bzl", "go_rules_dependencies", "go_register_toolchains")
+load("@io_bazel_rules_go//go:deps.bzl", "go_register_toolchains", "go_rules_dependencies")
 
 go_rules_dependencies()
 
-go_register_toolchains()
-
-load("@bazel_gazelle//:deps.bzl", "gazelle_dependencies")
-
-gazelle_dependencies()
-
-## Load kubernetes repo-infra for tools like kazel
-git_repository(
-    name = "io_k8s_repo_infra",
-    commit = "967e39a37fb93640a37e272949ddf92a8c96f230",
-    remote = "https://github.com/kubernetes/repo-infra.git",
-    shallow_since = "1569300445 -0700",
-)
+go_register_toolchains(version = "1.16.2")
 
 # Load repositories from external files
 # gazelle:repository_macro hack/build/repos.bzl%go_repositories
@@ -44,14 +17,9 @@ load("//hack/build:repos.bzl", "go_repositories")
 
 go_repositories()
 
-## Load rules_docker and depdencies, for working with docker images
-# Download the rules_docker repository at release v0.14.4
-http_archive(
-    name = "io_bazel_rules_docker",
-    sha256 = "4521794f0fba2e20f3bf15846ab5e01d5332e587e9ce81629c7f96c793bb7036",
-    strip_prefix = "rules_docker-0.14.4",
-    urls = ["https://github.com/bazelbuild/rules_docker/releases/download/v0.14.4/rules_docker-v0.14.4.tar.gz"],
-)
+load("@bazel_gazelle//:deps.bzl", "gazelle_dependencies")
+
+gazelle_dependencies()
 
 load(
     "@io_bazel_rules_docker//repositories:repositories.bzl",
@@ -64,9 +32,9 @@ load("@io_bazel_rules_docker//repositories:deps.bzl", container_deps = "deps")
 
 container_deps()
 
-load("@io_bazel_rules_docker//repositories:pip_repositories.bzl", "pip_deps")
+# load("@io_bazel_rules_docker//repositories:pip_repositories.bzl", "pip_deps")
 
-pip_deps()
+# pip_deps()
 
 load(
     "@io_bazel_rules_docker//container:container.bzl",
@@ -83,12 +51,6 @@ container_pull(
 )
 
 ## Setup jsonnet
-http_archive(
-    name = "io_bazel_rules_jsonnet",
-    sha256 = "68b5bcb0779599065da1056fc8df60d970cffe8e6832caf13819bb4d6e832459",
-    strip_prefix = "rules_jsonnet-0.2.0",
-    urls = ["https://github.com/bazelbuild/rules_jsonnet/archive/0.2.0.tar.gz"],
-)
 
 load("@io_bazel_rules_jsonnet//jsonnet:jsonnet.bzl", "jsonnet_repositories")
 
@@ -101,12 +63,6 @@ jsonnet_go_repositories()
 load("@jsonnet_go//bazel:deps.bzl", "jsonnet_go_dependencies")
 
 jsonnet_go_dependencies()
-
-git_repository(
-    name = "com_github_jemdiggity_rules_os_dependent_http_archive",
-    remote = "https://github.com/jemdiggity/rules_os_dependent_http_archive.git",
-    commit = "b1e3ed2fd829dfd1602bc31df4804ff34149f659",
-)
 
 load("@com_github_jemdiggity_rules_os_dependent_http_archive//:os_dependent_http_archive.bzl", "os_dependent_http_archive")
 
