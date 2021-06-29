@@ -34,11 +34,13 @@ def fetch_deps():
     )
 
     ## Load kubernetes repo-infra for tools like kazel
-    git_repository(
+    http_archive(
         name = "io_k8s_repo_infra",
-        commit = "967e39a37fb93640a37e272949ddf92a8c96f230",
-        remote = "https://github.com/kubernetes/repo-infra.git",
-        shallow_since = "1569300445 -0700",
+        strip_prefix = "repo-infra-0.1.8",
+        sha256 = "5baf1b698bc20080ba714401c34ddc6ffa447757896c26399c00ab8bb39cc980",
+        urls = [
+            "https://github.com/kubernetes/repo-infra/archive/v0.1.8.tar.gz",
+        ],
     )
 
     http_archive(

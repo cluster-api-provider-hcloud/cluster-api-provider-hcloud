@@ -354,7 +354,7 @@ func IsControlPlaneReady(ctx context.Context, c clientcmd.ClientConfig) error {
 		return err
 	}
 
-	_, err = clientSet.Discovery().RESTClient().Get().AbsPath("/readyz").DoRaw()
+	_, err = clientSet.Discovery().RESTClient().Get().AbsPath("/readyz").DoRaw(ctx)
 	return err
 }
 

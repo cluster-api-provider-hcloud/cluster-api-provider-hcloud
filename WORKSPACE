@@ -2,8 +2,11 @@
 # All fetches of external repositories should go in deps_bazel.bzl
 # so that statements in this file are all order-dependent.
 load("//:WORKSPACE_deps.bzl", "fetch_deps")
-load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive", "http_file")
+
 fetch_deps()
+
+load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive", "http_file")
+
 
 load("@io_bazel_rules_go//go:deps.bzl", "go_register_toolchains", "go_rules_dependencies")
 
