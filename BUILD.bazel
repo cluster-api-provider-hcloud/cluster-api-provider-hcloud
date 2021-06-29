@@ -25,6 +25,7 @@ filegroup(
     name = "all-srcs",
     srcs = [
         ":package-srcs",
+        "//api/v1alpha3:all-srcs",
         "//api/v1alpha4:all-srcs",
         "//cmd/cluster-api-provider-hcloud:all-srcs",
         "//config:all-srcs",

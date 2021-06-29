@@ -6,6 +6,7 @@ go_library(
     importpath = "github.com/cluster-api-provider-hcloud/cluster-api-provider-hcloud/cmd/cluster-api-provider-hcloud",
     visibility = ["//visibility:private"],
     deps = [
+        "//api/v1alpha3:go_default_library",
         "//api/v1alpha4:go_default_library",
         "//controllers:go_default_library",
         "//pkg/manifests:go_default_library",

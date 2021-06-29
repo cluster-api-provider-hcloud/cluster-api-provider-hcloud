@@ -24,6 +24,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha4"
 	"sigs.k8s.io/cluster-api/util"
+	"sigs.k8s.io/cluster-api/util/annotations"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	controllerclient "sigs.k8s.io/controller-runtime/pkg/client"
@@ -53,8 +54,8 @@ type BareMetalMachineReconciler struct {
 // +kubebuilder:rbac:groups=cluster-api-provider-hcloud.capihc.com,resources=baremetalmachines/status,verbs=get;update;patch
 // +kubebuilder:rbac:groups=cluster.x-k8s.io,resources=machines;machines/status,verbs=get;list;watch
 
-func (r *BareMetalMachineReconciler) Reconcile(req ctrl.Request) (_ ctrl.Result, reterr error) {
-	ctx := context.TODO()
+func (r *BareMetalMachineReconciler) Reconcile(ctx context.Context, req ctrl.Request) (_ ctrl.Result, reterr error) {
+
 	log := r.Log.WithValues("namespace", req.Namespace, "bareMetalMachine", req.Name)
 
 	// Fetch the BareMetalMachine instance
@@ -86,7 +87,7 @@ func (r *BareMetalMachineReconciler) Reconcile(req ctrl.Request) (_ ctrl.Result,
 	}
 	log = log.WithValues("cluster", cluster.Name)
 
-	if util.IsPaused(cluster, bareMetalMachine) {
+	if annotations.IsPaused(cluster, bareMetalMachine) {
 		log.Info("BareMetalMachine or linked Cluster is marked as paused. Won't reconcile")
 		return ctrl.Result{}, nil
 	}
@@ -174,31 +175,29 @@ func (r *BareMetalMachineReconciler) reconcileNormal(bareMetalMachineScope *scop
 	return reconcile.Result{}, nil
 }
 
-func (r *BareMetalMachineReconciler) SetupWithManager(mgr ctrl.Manager, options controller.Options) error {
+func (r *BareMetalMachineReconciler) SetupWithManager(ctx context.Context, mgr ctrl.Manager, options controller.Options) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		WithOptions(options).
 		For(&infrav1.BareMetalMachine{}).
 		Watches(
 			&source.Kind{Type: &clusterv1.Machine{}},
-			&handler.EnqueueRequestsFromMapFunc{
-				ToRequests: util.MachineToInfrastructureMapFunc(infrav1.GroupVersion.WithKind("BareMetalMachine")),
-			},
+			handler.EnqueueRequestsFromMapFunc(util.MachineToInfrastructureMapFunc(infrav1.GroupVersion.WithKind("BareMetalMachine"))),
 		).
 		Watches(
 			&source.Kind{Type: &infrav1.HcloudCluster{}},
-			&handler.EnqueueRequestsFromMapFunc{ToRequests: handler.ToRequestsFunc(r.HcloudClusterToBareMetalMachines)},
+			handler.EnqueueRequestsFromMapFunc(r.HcloudClusterToBareMetalMachines),
 		).
 		Complete(r)
 }
 
 // HcloudClusterToBareMetalMachine is a handler.ToRequestsFunc to be used to
 // enqeue requests for reconciliation of BareMetalMachines.
-func (r *BareMetalMachineReconciler) HcloudClusterToBareMetalMachines(o handler.MapObject) []ctrl.Request {
+func (r *BareMetalMachineReconciler) HcloudClusterToBareMetalMachines(o client.Object) []ctrl.Request {
 	result := []ctrl.Request{}
 
-	c, ok := o.Object.(*infrav1.HcloudCluster)
+	c, ok := o.(*infrav1.HcloudCluster)
 	if !ok {
-		r.Log.Error(errors.Errorf("expected a HcloudCluster but got a %T", o.Object), "failed to get BareMetalMachine for HcloudCluster")
+		r.Log.Error(errors.Errorf("expected a HcloudCluster but got a %T", o), "failed to get BareMetalMachine for HcloudCluster")
 		return nil
 	}
 	log := r.Log.WithValues("HcloudCluster", c.Name, "Namespace", c.Namespace)

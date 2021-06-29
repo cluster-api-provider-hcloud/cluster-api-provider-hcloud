@@ -38,6 +38,7 @@ go_library(
         "@io_k8s_client_go//tools/record:go_default_library",
         "@io_k8s_sigs_cluster_api//api/v1alpha4:go_default_library",
         "@io_k8s_sigs_cluster_api//util:go_default_library",
+        "@io_k8s_sigs_cluster_api//util/annotations:go_default_library",
         "@io_k8s_sigs_controller_runtime//:go_default_library",
         "@io_k8s_sigs_controller_runtime//pkg/client:go_default_library",
         "@io_k8s_sigs_controller_runtime//pkg/controller:go_default_library",

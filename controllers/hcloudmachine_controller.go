@@ -24,6 +24,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha4"
 	"sigs.k8s.io/cluster-api/util"
+	"sigs.k8s.io/cluster-api/util/annotations"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	controllerclient "sigs.k8s.io/controller-runtime/pkg/client"
@@ -53,8 +54,7 @@ type HcloudMachineReconciler struct {
 // +kubebuilder:rbac:groups=cluster-api-provider-hcloud.capihc.com,resources=hcloudmachines/status,verbs=get;update;patch
 // +kubebuilder:rbac:groups=cluster.x-k8s.io,resources=machines;machines/status,verbs=get;list;watch
 
-func (r *HcloudMachineReconciler) Reconcile(req ctrl.Request) (_ ctrl.Result, reterr error) {
-	ctx := context.TODO()
+func (r *HcloudMachineReconciler) Reconcile(ctx context.Context, req ctrl.Request) (_ ctrl.Result, reterr error) {
 	log := r.Log.WithValues("namespace", req.Namespace, "hcloudMachine", req.Name)
 
 	// Fetch the HcloudMachine instance
@@ -97,7 +97,7 @@ func (r *HcloudMachineReconciler) Reconcile(req ctrl.Request) (_ ctrl.Result, re
 	}
 	log = log.WithValues("cluster", cluster.Name)
 
-	if util.IsPaused(cluster, hcloudMachine) {
+	if annotations.IsPaused(cluster, hcloudMachine) {
 		log.Info("HcloudMachine or linked Cluster is marked as paused. Won't reconcile")
 		return ctrl.Result{}, nil
 	}
@@ -193,31 +193,29 @@ func (r *HcloudMachineReconciler) reconcileNormal(machineScope *scope.MachineSco
 	return reconcile.Result{}, nil
 }
 
-func (r *HcloudMachineReconciler) SetupWithManager(mgr ctrl.Manager, options controller.Options) error {
+func (r *HcloudMachineReconciler) SetupWithManager(ctx context.Context, mgr ctrl.Manager, options controller.Options) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		WithOptions(options).
 		For(&infrav1.HcloudMachine{}).
 		Watches(
 			&source.Kind{Type: &clusterv1.Machine{}},
-			&handler.EnqueueRequestsFromMapFunc{
-				ToRequests: util.MachineToInfrastructureMapFunc(infrav1.GroupVersion.WithKind("HcloudMachine")),
-			},
+			handler.EnqueueRequestsFromMapFunc(util.ClusterToInfrastructureMapFunc(infrav1.GroupVersion.WithKind("HcloudMachine"))),
 		).
 		Watches(
 			&source.Kind{Type: &infrav1.HcloudCluster{}},
-			&handler.EnqueueRequestsFromMapFunc{ToRequests: handler.ToRequestsFunc(r.HcloudClusterToHcloudMachines)},
+			handler.EnqueueRequestsFromMapFunc(r.HcloudClusterToHcloudMachines),
 		).
 		Complete(r)
 }
 
 // HcloudClusterToHcloudMachine is a handler.ToRequestsFunc to be used to
 // enqeue requests for reconciliation of HcloudMachines.
-func (r *HcloudMachineReconciler) HcloudClusterToHcloudMachines(o handler.MapObject) []ctrl.Request {
+func (r *HcloudMachineReconciler) HcloudClusterToHcloudMachines(o client.Object) []ctrl.Request {
 	result := []ctrl.Request{}
 
-	c, ok := o.Object.(*infrav1.HcloudCluster)
+	c, ok := o.(*infrav1.HcloudCluster)
 	if !ok {
-		r.Log.Error(errors.Errorf("expected a HcloudCluster but got a %T", o.Object), "failed to get HcloudMachine for HcloudCluster")
+		r.Log.Error(errors.Errorf("expected a HcloudCluster but got a %T", o), "failed to get HcloudMachine for HcloudCluster")
 		return nil
 	}
 	log := r.Log.WithValues("HcloudCluster", c.Name, "Namespace", c.Namespace)

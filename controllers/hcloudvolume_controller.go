@@ -50,8 +50,8 @@ type HcloudVolumeReconciler struct {
 // +kubebuilder:rbac:groups=cluster-api-provider-hcloud.capihc.com,resources=hcloudvolumes,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=cluster-api-provider-hcloud.capihc.com,resources=hcloudvolumes/status,verbs=get;update;patch
 
-func (r *HcloudVolumeReconciler) Reconcile(req ctrl.Request) (_ ctrl.Result, reterr error) {
-	ctx := context.TODO()
+func (r *HcloudVolumeReconciler) Reconcile(ctx context.Context, req ctrl.Request) (_ ctrl.Result, reterr error) {
+
 	log := r.Log.WithValues("namespace", req.Namespace, "hcloudVolume", req.Name)
 
 	// Fetch the HcloudVolume instance
@@ -154,7 +154,7 @@ func (r *HcloudVolumeReconciler) reconcileNormal(volumeScope *scope.VolumeScope)
 	return reconcile.Result{}, nil
 }
 
-func (r *HcloudVolumeReconciler) SetupWithManager(mgr ctrl.Manager, options controller.Options) error {
+func (r *HcloudVolumeReconciler) SetupWithManager(ctx context.Context, mgr ctrl.Manager, options controller.Options) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		WithOptions(options).
 		For(&infrav1.HcloudVolume{}).

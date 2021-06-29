@@ -38,6 +38,7 @@ import (
 	recorder "k8s.io/client-go/tools/record"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha4"
 	"sigs.k8s.io/cluster-api/util"
+	"sigs.k8s.io/cluster-api/util/annotations"
 	ctrl "sigs.k8s.io/controller-runtime"
 	controllerclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
@@ -74,8 +75,8 @@ type HcloudClusterReconciler struct {
 // +kubebuilder:rbac:groups=cluster.x-k8s.io,resources=clusters;clusters/status,verbs=get;list;watch
 // +kubebuilder:rbac:groups="",resources=secrets,verbs=get;list;watch;create
 
-func (r *HcloudClusterReconciler) Reconcile(req ctrl.Request) (_ ctrl.Result, reterr error) {
-	ctx := context.TODO()
+func (r *HcloudClusterReconciler) Reconcile(ctx context.Context, req ctrl.Request) (_ ctrl.Result, reterr error) {
+
 	log := r.Log.WithValues("namespace", req.Namespace, "hcloudCluster", req.Name)
 
 	// Fetch the HcloudCluster instance
@@ -98,7 +99,7 @@ func (r *HcloudClusterReconciler) Reconcile(req ctrl.Request) (_ ctrl.Result, re
 		return reconcile.Result{}, nil
 	}
 
-	if util.IsPaused(cluster, hcloudCluster) {
+	if annotations.IsPaused(cluster, hcloudCluster) {
 		log.Info("HcloudCluster or linked Cluster is marked as paused. Won't reconcile")
 		return reconcile.Result{}, nil
 	}
@@ -270,7 +271,7 @@ func (r *HcloudClusterReconciler) reconcileTargetClusterManager(clusterScope *sc
 		r.targetClusterManagersStopCh[key] = make(chan struct{})
 
 		go func() {
-			if err := m.Start(r.targetClusterManagersStopCh[key]); err != nil {
+			if err := m.Start(ctx, r.targetClusterManagersStopCh[key]); err != nil {
 				clusterScope.Error(err, "failed to start a targetClusterManager")
 			} else {
 				clusterScope.Info("stoppend targetClusterManager")
@@ -468,7 +469,7 @@ func (r *HcloudClusterReconciler) reconcileManifests(clusterScope *scope.Cluster
 	return nil
 }
 
-func (r *HcloudClusterReconciler) SetupWithManager(mgr ctrl.Manager, options controller.Options) error {
+func (r *HcloudClusterReconciler) SetupWithManager(ctx context.Context, mgr ctrl.Manager, options controller.Options) error {
 	r.targetClusterManagersLock.Lock()
 	defer r.targetClusterManagersLock.Unlock()
 	if r.targetClusterManagersStopCh == nil {
@@ -488,9 +489,7 @@ func (r *HcloudClusterReconciler) SetupWithManager(mgr ctrl.Manager, options con
 		// Watch the CAPI resource that owns this infrastructure resource.
 		Watches(
 			&source.Kind{Type: &clusterv1.Cluster{}},
-			&handler.EnqueueRequestsFromMapFunc{
-				ToRequests: util.ClusterToInfrastructureMapFunc(controlledTypeGVK),
-			},
+			handler.EnqueueRequestsFromMapFunc(util.ClusterToInfrastructureMapFunc(controlledTypeGVK)),
 		).
 		Complete(r)
 }

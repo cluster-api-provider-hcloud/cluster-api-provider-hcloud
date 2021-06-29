@@ -53,8 +53,8 @@ type GuestCSRReconciler struct {
 	clientSet *kubernetes.Clientset
 }
 
-func (r *GuestCSRReconciler) Reconcile(req ctrl.Request) (_ ctrl.Result, reterr error) {
-	ctx := context.TODO()
+func (r *GuestCSRReconciler) Reconcile(ctx context.Context, req ctrl.Request) (_ ctrl.Result, reterr error) {
+
 	log := r.Log.WithValues("csr", req.Name)
 
 	// Fetch the HcloudCluster instance

@@ -1,8 +1,15 @@
 package main
 
 import (
+	"context"
 	"os"
 
+	infrav1alpha3 "github.com/cluster-api-provider-hcloud/cluster-api-provider-hcloud/api/v1alpha3"
+	infrav1alpha4 "github.com/cluster-api-provider-hcloud/cluster-api-provider-hcloud/api/v1alpha4"
+	"github.com/cluster-api-provider-hcloud/cluster-api-provider-hcloud/controllers"
+	"github.com/cluster-api-provider-hcloud/cluster-api-provider-hcloud/pkg/manifests"
+	"github.com/cluster-api-provider-hcloud/cluster-api-provider-hcloud/pkg/packer"
+	"github.com/cluster-api-provider-hcloud/cluster-api-provider-hcloud/pkg/record"
 	"github.com/spf13/cobra"
 	"k8s.io/apimachinery/pkg/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
@@ -13,12 +20,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
-
-	infrav1alpha4 "github.com/cluster-api-provider-hcloud/cluster-api-provider-hcloud/api/v1alpha4"
-	"github.com/cluster-api-provider-hcloud/cluster-api-provider-hcloud/controllers"
-	"github.com/cluster-api-provider-hcloud/cluster-api-provider-hcloud/pkg/manifests"
-	"github.com/cluster-api-provider-hcloud/cluster-api-provider-hcloud/pkg/packer"
-	"github.com/cluster-api-provider-hcloud/cluster-api-provider-hcloud/pkg/record"
 	// +kubebuilder:scaffold:imports
 )
 
@@ -38,7 +39,7 @@ var rootFlags = struct {
 
 func init() {
 	_ = clientgoscheme.AddToScheme(scheme)
-
+	_ = infrav1alpha3.AddToScheme(scheme)
 	_ = infrav1alpha4.AddToScheme(scheme)
 	_ = clusterv1.AddToScheme(scheme)
 	_ = bootstrapv1.AddToScheme(scheme)
@@ -46,7 +47,7 @@ func init() {
 
 	rootCmd.PersistentFlags().BoolVarP(&rootFlags.Verbose, "verbose", "v", false, "Enable verbose logging")
 	rootCmd.PersistentFlags().StringVar(&rootFlags.MetricsAddr, "metrics-addr", ":8484", "The address the metrics endpoint binds to.")
-	rootCmd.PersistentFlags().BoolVar(&rootFlags.EnableLeaderElection, "enable-leader-election", false, "Enable leader election for controller manager. Enabling this will ensure there is only one active controller manager.")
+	rootCmd.PersistentFlags().BoolVar(&rootFlags.EnableLeaderElection, "leader-elect", false, "Enable leader election for controller manager. Enabling this will ensure there is only one active controller manager.")
 	rootCmd.PersistentFlags().StringVarP(&rootFlags.ManifestsConfigPath, "manifests-config-path", "m", "", "Path to the manifests config. Disable manifest deployment if not set")
 	rootCmd.PersistentFlags().StringVarP(&rootFlags.PackerConfigPath, "packer-config-path", "p", "", "Path to the packer config. Disable image building if not set")
 	rootCmd.PersistentFlags().IntVar(&rootFlags.WebhookPort, "webhook-port", 0, "Webhook Server port, disabled by default. When enabled, the manager will only work as webhook server, no reconcilers are installed.")
@@ -93,7 +94,7 @@ var rootCmd = &cobra.Command{
 				Scheme:    mgr.GetScheme(),
 				Packer:    packerMgr,
 				Manifests: manifestsMgr,
-			}).SetupWithManager(mgr, controller.Options{}); err != nil {
+			}).SetupWithManager(context.Background(), mgr, controller.Options{}); err != nil {
 				setupLog.Error(err, "unable to create controller", "controller", "HcloudCluster")
 				os.Exit(1)
 			}
@@ -103,7 +104,7 @@ var rootCmd = &cobra.Command{
 				Scheme:    mgr.GetScheme(),
 				Packer:    packerMgr,
 				Manifests: manifestsMgr,
-			}).SetupWithManager(mgr, controller.Options{}); err != nil {
+			}).SetupWithManager(context.Background(), mgr, controller.Options{}); err != nil {
 				setupLog.Error(err, "unable to create controller", "controller", "HcloudMachine")
 				os.Exit(1)
 			}
@@ -113,7 +114,7 @@ var rootCmd = &cobra.Command{
 				Scheme:    mgr.GetScheme(),
 				Packer:    packerMgr,
 				Manifests: manifestsMgr,
-			}).SetupWithManager(mgr, controller.Options{}); err != nil {
+			}).SetupWithManager(context.Background(), mgr, controller.Options{}); err != nil {
 				setupLog.Error(err, "unable to create controller", "controller", "BareMetalMachine")
 				os.Exit(1)
 			}
@@ -123,7 +124,7 @@ var rootCmd = &cobra.Command{
 				Scheme:    mgr.GetScheme(),
 				Packer:    packerMgr,
 				Manifests: manifestsMgr,
-			}).SetupWithManager(mgr, controller.Options{}); err != nil {
+			}).SetupWithManager(context.Background(), mgr, controller.Options{}); err != nil {
 				setupLog.Error(err, "unable to create controller", "controller", "HcloudVolume")
 				os.Exit(1)
 			}
