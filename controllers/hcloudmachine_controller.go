@@ -22,6 +22,7 @@ import (
 	"github.com/pkg/errors"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/client-go/tools/record"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha4"
 	"sigs.k8s.io/cluster-api/util"
 	"sigs.k8s.io/cluster-api/util/annotations"
@@ -48,6 +49,7 @@ type HcloudMachineReconciler struct {
 	Scheme    *runtime.Scheme
 	Packer    *packer.Packer
 	Manifests *manifests.Manifests
+	Recorder  record.EventRecorder
 }
 
 // +kubebuilder:rbac:groups=cluster-api-provider-hcloud.capihc.com,resources=hcloudmachines,verbs=get;list;watch;create;update;patch;delete
@@ -125,6 +127,7 @@ func (r *HcloudMachineReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 			HcloudCluster: hcloudCluster,
 			Packer:        r.Packer,
 			Manifests:     r.Manifests,
+			Recorder:      r.Recorder,
 		},
 		Machine:       machine,
 		HcloudMachine: hcloudMachine,

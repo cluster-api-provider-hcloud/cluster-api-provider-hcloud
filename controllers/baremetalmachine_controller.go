@@ -22,6 +22,7 @@ import (
 	"github.com/pkg/errors"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/client-go/tools/record"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha4"
 	"sigs.k8s.io/cluster-api/util"
 	"sigs.k8s.io/cluster-api/util/annotations"
@@ -48,6 +49,7 @@ type BareMetalMachineReconciler struct {
 	Scheme    *runtime.Scheme
 	Packer    *packer.Packer
 	Manifests *manifests.Manifests
+	Recorder  record.EventRecorder
 }
 
 // +kubebuilder:rbac:groups=cluster-api-provider-hcloud.capihc.com,resources=baremetalmachines,verbs=get;list;watch;create;update;patch;delete
@@ -111,6 +113,7 @@ func (r *BareMetalMachineReconciler) Reconcile(ctx context.Context, req ctrl.Req
 			Ctx:           ctx,
 			Client:        r.Client,
 			Logger:        log,
+			Recorder:      r.Recorder,
 			Cluster:       cluster,
 			HcloudCluster: hcloudCluster,
 			Packer:        r.Packer,

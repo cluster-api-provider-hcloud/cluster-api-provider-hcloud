@@ -24,6 +24,9 @@ spec:
       nodeRegistration:
         kubeletExtraArgs:
           cloud-provider: external
+          {{- with .Values.controlPlanes.server.nodeLabels }}
+          node-labels: node-access=ssh,capihc.com/cpu={{ .cpu }},{{ .customLabels }}
+          {{- end }}
     useExperimentalRetryJoin: {{ .Values.controlPlanes.kubeadmConfig.useExperimentalRetryJoin }}
     verbosity: {{ .Values.controlPlanes.kubeadmConfig.verbosity }}
   replicas: {{ .Values.controlPlanes.server.replicas }}

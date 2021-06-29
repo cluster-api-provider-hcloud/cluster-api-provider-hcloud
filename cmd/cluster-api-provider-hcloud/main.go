@@ -9,7 +9,6 @@ import (
 	"github.com/cluster-api-provider-hcloud/cluster-api-provider-hcloud/controllers"
 	"github.com/cluster-api-provider-hcloud/cluster-api-provider-hcloud/pkg/manifests"
 	"github.com/cluster-api-provider-hcloud/cluster-api-provider-hcloud/pkg/packer"
-	"github.com/cluster-api-provider-hcloud/cluster-api-provider-hcloud/pkg/record"
 	"github.com/spf13/cobra"
 	"k8s.io/apimachinery/pkg/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
@@ -73,9 +72,6 @@ var rootCmd = &cobra.Command{
 			os.Exit(1)
 		}
 
-		// Initialize event recorder.
-		record.InitFromRecorder(mgr.GetEventRecorderFor("hcloud-controller"))
-
 		if rootFlags.WebhookPort == 0 {
 			// run in controller mode
 
@@ -91,6 +87,7 @@ var rootCmd = &cobra.Command{
 			if err = (&controllers.HcloudClusterReconciler{
 				Client:    mgr.GetClient(),
 				Log:       ctrl.Log.WithName("controllers").WithName("HcloudCluster"),
+				Recorder:  mgr.GetEventRecorderFor("hcloudcluster-controller"),
 				Scheme:    mgr.GetScheme(),
 				Packer:    packerMgr,
 				Manifests: manifestsMgr,
@@ -101,6 +98,7 @@ var rootCmd = &cobra.Command{
 			if err = (&controllers.HcloudMachineReconciler{
 				Client:    mgr.GetClient(),
 				Log:       ctrl.Log.WithName("controllers").WithName("HcloudMachine"),
+				Recorder:  mgr.GetEventRecorderFor("hcloudmachine-controller"),
 				Scheme:    mgr.GetScheme(),
 				Packer:    packerMgr,
 				Manifests: manifestsMgr,
@@ -111,6 +109,7 @@ var rootCmd = &cobra.Command{
 			if err = (&controllers.BareMetalMachineReconciler{
 				Client:    mgr.GetClient(),
 				Log:       ctrl.Log.WithName("controllers").WithName("BareMetalMachine"),
+				Recorder:  mgr.GetEventRecorderFor("baremetalmachine-controller"),
 				Scheme:    mgr.GetScheme(),
 				Packer:    packerMgr,
 				Manifests: manifestsMgr,
@@ -121,6 +120,7 @@ var rootCmd = &cobra.Command{
 			if err = (&controllers.HcloudVolumeReconciler{
 				Client:    mgr.GetClient(),
 				Log:       ctrl.Log.WithName("controllers").WithName("HcloudVolume"),
+				Recorder:  mgr.GetEventRecorderFor("hcloudvolume-controller"),
 				Scheme:    mgr.GetScheme(),
 				Packer:    packerMgr,
 				Manifests: manifestsMgr,

@@ -27,7 +27,7 @@ or under ./docs/src
 *More information available in the [Cluster API - Quick Start guide]*
 
 Before you can start you need a management Cluster.
-If you have no management cluster you can use the ./demo/setup.sh to get a kind cluster. 
+If you have no management cluster you can use the `./demo/setup.sh` to get a kind cluster. 
 If you are not using the script because you have already a managment cluster please ensure to have the following enabled:
 
 ```sh
@@ -35,7 +35,7 @@ export EXP_CLUSTER_RESOURCE_SET=true
 clusterctl init --core cluster-api:v0.3.13
 ```
 
-Please ensure you have a recent [clusterctl] release (tested with v0.3.13). You can test with `clusterctl version`
+Please ensure you have a recent [clusterctl] release (tested with v0.3.16). You can test with `clusterctl version`
 
 Now we can start by creating a secret in management cluster. $TOKEN is a placeholder for your HETZNER API Token. You can create one in your Project under security/API TOKENS.
 
@@ -43,7 +43,7 @@ Now we can start by creating a secret in management cluster. $TOKEN is a placeho
 kubectl create secret generic hetzner-token --from-literal=token=$TOKEN
 ```
 
-Then we need to create an SSH Key for the nodes. Because this is a quickstart we have specified the name of the Key, but of course feel free to change the name, but remember to do it also in cluster.yaml file.
+Then we need to create an SSH Key for the nodes. Because this is a quickstart we have specified the name of the Key, but of course feel free to change the name, but remember to do it also in cluster.yaml file. Then upload the public Key to Hetzner Cloud.
 
 ```sh
 ssh-keygen -t ed25519 -C "your_email@example.com" -f ~/.ssh/cluster
@@ -67,7 +67,7 @@ providers:
 Now we deploy the API components to the management cluster
 
 ```sh
-clusterctl init --infrastructure hcloud:v0.1.0
+clusterctl init --infrastructure hcloud:v0.1.4
 ```
 
 Now we can deploy our first Cluster. For production use it is recommended to use your own templates with all configurations. [name] is the placeholder for your cluster name like cluster-dev
@@ -106,9 +106,12 @@ If you want you can now move all the cluster-api Resources from your management 
 
 ```sh
 export EXP_CLUSTER_RESOURCE_SET=true
-KUBECONFIG=$KUBECONFIG_GUEST clusterctl init --core cluster-api:v0.3.13
-KUBECONFIG=$KUBECONFIG_GUEST clusterctl init --infrastructure hcloud:v0.1.0
+KUBECONFIG=$KUBECONFIG_GUEST clusterctl init --core cluster-api:v0.3.16
+KUBECONFIG=$KUBECONFIG_GUEST clusterctl init --infrastructure hcloud:v0.1.4
 clusterctl move --to-kubeconfig $KUBECONFIG_GUEST
+
+### You also need to create your Hetzner Token secret on the new management cluster
+### If you use helm please keep in mind to also move the helm secret 
 ```
 
 To delete the cluster (if management cluster not equal target cluster)
@@ -139,16 +142,16 @@ KUBECONFIG=$KUBECONFIG_GUEST kubectl get cm cluster-info -n kube-public -o yaml
 
 # Logs
 ### Provider Integration
-kubectl logs -f deployment/capi-hcloud-controller-manager -c manager --v=4 -n capi-hcloud-system
+kubectl logs -f deployment/capi-hcloud-controller-manager -c manager -n capi-hcloud-system
 
 ### Cluster-API Controller
-kubectl logs -f deployment/capi-controller-manager -c manager --v=4 -n capi-system
+kubectl logs -f deployment/capi-controller-manager -c manager -n capi-system
 
 ### Bootstrap Controller
-kubectl logs -f deployment/capi-kubeadm-bootstrap-controller-manager -c manager --v=4 -n capi-kubeadm-bootstrap-system
+kubectl logs -f deployment/capi-kubeadm-bootstrap-controller-manager -c manager  -n capi-kubeadm-bootstrap-system
 
 ### Kubeadm Control-plane Controller
-kubectl logs -f deployment/capi-kubeadm-control-plane-controller-manager -c manager --v=4 -n capi-kubeadm-control-plane-system
+kubectl logs -f deployment/capi-kubeadm-control-plane-controller-manager -c manager  -n capi-kubeadm-control-plane-system
 
 ### Kubernetes Events
 kubectl get events -o custom-columns=FirstSeen:.firstTimestamp,LastSeen:.lastTimestamp,Count:.count,From:.source.component,Type:.type,Re│
