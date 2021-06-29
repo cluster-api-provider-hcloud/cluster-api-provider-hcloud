@@ -18,16 +18,20 @@ spec:
     singular: hcloudmachinetemplate
   scope: Namespaced
   versions:
-  - name: v1alpha4
+  - name: v1alpha3
     schema:
       openAPIV3Schema:
         description: HcloudMachineTemplate is the Schema for the hcloudmachine API
         properties:
           apiVersion:
-            description: 'APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+            description: 'APIVersion defines the versioned schema of this representation
+              of an object. Servers should convert recognized schemas to the latest
+              internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
             type: string
           kind:
-            description: 'Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+            description: 'Kind is a string value representing the REST resource this
+              object represents. Servers may infer this from the endpoint the client
+              submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
             type: string
           metadata:
             type: object
@@ -35,18 +39,22 @@ spec:
             description: HcloudMachineTemplateSpec defines the desired state of HcloudMachineTemplate
             properties:
               template:
-                description: HcloudMachineTemplateResource describes the data needed to create am HcloudMachine from a template
+                description: HcloudMachineTemplateResource describes the data needed
+                  to create am HcloudMachine from a template
                 properties:
                   spec:
-                    description: Spec is the specification of the desired behavior of the machine.
+                    description: Spec is the specification of the desired behavior
+                      of the machine.
                     properties:
                       image:
                         type: string
                       providerID:
-                        description: ProviderID is the unique identifier as specified by the cloud provider.
+                        description: ProviderID is the unique identifier as specified
+                          by the cloud provider.
                         type: string
                       sshKeys:
-                        description: define Machine specific SSH keys, overrides cluster wide SSH keys
+                        description: define Machine specific SSH keys, overrides cluster
+                          wide SSH keys
                         items:
                           properties:
                             id:
@@ -81,7 +89,79 @@ spec:
             type: object
         type: object
     served: true
-    storage: true
+    storage: false
+  - name: v1alpha4
+    schema:
+      openAPIV3Schema:
+        description: HcloudMachineTemplate is the Schema for the hcloudmachine API
+        properties:
+          apiVersion:
+            description: 'APIVersion defines the versioned schema of this representation
+              of an object. Servers should convert recognized schemas to the latest
+              internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+            type: string
+          kind:
+            description: 'Kind is a string value representing the REST resource this
+              object represents. Servers may infer this from the endpoint the client
+              submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: HcloudMachineTemplateSpec defines the desired state of HcloudMachineTemplate
+            properties:
+              template:
+                description: HcloudMachineTemplateResource describes the data needed
+                  to create am HcloudMachine from a template
+                properties:
+                  spec:
+                    description: Spec is the specification of the desired behavior
+                      of the machine.
+                    properties:
+                      image:
+                        type: string
+                      providerID:
+                        description: ProviderID is the unique identifier as specified
+                          by the cloud provider.
+                        type: string
+                      sshKeys:
+                        description: define Machine specific SSH keys, overrides cluster
+                          wide SSH keys
+                        items:
+                          properties:
+                            id:
+                              type: integer
+                            name:
+                              type: string
+                          type: object
+                        type: array
+                      type:
+                        type: string
+                      volumes:
+                        items:
+                          description: HcloudMachineVolume represent a Volume attachment
+                          properties:
+                            mountPath:
+                              type: string
+                            name:
+                              type: string
+                            volumeRef:
+                              type: string
+                          type: object
+                        type: array
+                    required:
+                    - image
+                    - type
+                    type: object
+                required:
+                - spec
+                type: object
+            required:
+            - template
+            type: object
+        type: object
+    served: true
+    storage: false
 status:
   acceptedNames:
     kind: ""

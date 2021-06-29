@@ -27,16 +27,20 @@ spec:
       jsonPath: .status.networkZone
       name: NetworkZone
       type: string
-    name: v1alpha4
+    name: v1alpha3
     schema:
       openAPIV3Schema:
         description: HcloudCluster is the Schema for the hcloudclusters API
         properties:
           apiVersion:
-            description: 'APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+            description: 'APIVersion defines the versioned schema of this representation
+              of an object. Servers should convert recognized schemas to the latest
+              internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
             type: string
           kind:
-            description: 'Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+            description: 'Kind is a string value representing the REST resource this
+              object represents. Servers may infer this from the endpoint the client
+              submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
             type: string
           metadata:
             type: object
@@ -44,7 +48,8 @@ spec:
             description: HcloudClusterSpec defines the desired state of HcloudCluster
             properties:
               controlPlaneEndpoint:
-                description: ControlPlaneEndpoint represents the endpoint used to communicate with the control plane.
+                description: ControlPlaneEndpoint represents the endpoint used to
+                  communicate with the control plane.
                 properties:
                   host:
                     description: The hostname on which the API server is serving.
@@ -92,10 +97,12 @@ spec:
                 description: SecretKeySelector selects a key of a Secret.
                 properties:
                   key:
-                    description: The key of the secret to select from.  Must be a valid secret key.
+                    description: The key of the secret to select from.  Must be a
+                      valid secret key.
                     type: string
                   name:
-                    description: 'Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names TODO: Add other useful fields. apiVersion, kind, uid?'
+                    description: 'Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                      TODO: Add other useful fields. apiVersion, kind, uid?'
                     type: string
                   optional:
                     description: Specify whether the Secret or its key must be defined
@@ -104,7 +111,8 @@ spec:
                 - key
                 type: object
               hrobotTokenRef:
-                description: If no token is provided then it is assumed that the bare metal controller is unused
+                description: If no token is provided then it is assumed that the bare
+                  metal controller is unused
                 properties:
                   passwordKey:
                     type: string
@@ -178,31 +186,292 @@ spec:
                 type: object
               failureDomains:
                 additionalProperties:
-                  description: FailureDomainSpec is the Schema for Cluster API failure domains. It allows controllers to understand how many failure domains a cluster can optionally span across.
+                  description: FailureDomainSpec is the Schema for Cluster API failure
+                    domains. It allows controllers to understand how many failure
+                    domains a cluster can optionally span across.
                   properties:
                     attributes:
                       additionalProperties:
                         type: string
-                      description: Attributes is a free form map of attributes an infrastructure provider might use or require.
+                      description: Attributes is a free form map of attributes an
+                        infrastructure provider might use or require.
                       type: object
                     controlPlane:
-                      description: ControlPlane determines if this failure domain is suitable for use by control plane machines.
+                      description: ControlPlane determines if this failure domain
+                        is suitable for use by control plane machines.
                       type: boolean
                   type: object
-                description: FailureDomains contains the failure domains that machines should be placed in. failureDomains is a map, defined as map[string]FailureDomainSpec. A unique key must be used for each FailureDomainSpec
+                description: FailureDomains contains the failure domains that machines
+                  should be placed in. failureDomains is a map, defined as map[string]FailureDomainSpec.
+                  A unique key must be used for each FailureDomainSpec
                 type: object
               failureMessage:
-                description: "FailureMessage will be set in the event that there is a terminal problem reconciling the Machine and will contain a more verbose string suitable for logging and human consumption. \n This field should not be set for transitive errors that a controller faces that are expected to be fixed automatically over time (like service outages), but instead indicate that something is fundamentally wrong with the Machine's spec or the configuration of the controller, and that manual intervention is required. Examples of terminal errors would be invalid combinations of settings in the spec, values that are unsupported by the controller, or the responsible controller itself being critically misconfigured. \n Any transient errors that occur during the reconciliation of Machines can be added as events to the Machine object and/or logged in the controller's output."
+                description: "FailureMessage will be set in the event that there is
+                  a terminal problem reconciling the Machine and will contain a more
+                  verbose string suitable for logging and human consumption. \n This
+                  field should not be set for transitive errors that a controller
+                  faces that are expected to be fixed automatically over time (like
+                  service outages), but instead indicate that something is fundamentally
+                  wrong with the Machine's spec or the configuration of the controller,
+                  and that manual intervention is required. Examples of terminal errors
+                  would be invalid combinations of settings in the spec, values that
+                  are unsupported by the controller, or the responsible controller
+                  itself being critically misconfigured. \n Any transient errors that
+                  occur during the reconciliation of Machines can be added as events
+                  to the Machine object and/or logged in the controller's output."
                 type: string
               failureReason:
-                description: "FailureReason will be set in the event that there is a terminal problem reconciling the Machine and will contain a succinct value suitable for machine interpretation. \n This field should not be set for transitive errors that a controller faces that are expected to be fixed automatically over time (like service outages), but instead indicate that something is fundamentally wrong with the Machine's spec or the configuration of the controller, and that manual intervention is required. Examples of terminal errors would be invalid combinations of settings in the spec, values that are unsupported by the controller, or the responsible controller itself being critically misconfigured. \n Any transient errors that occur during the reconciliation of Machines can be added as events to the Machine object and/or logged in the controller's output."
+                description: "FailureReason will be set in the event that there is
+                  a terminal problem reconciling the Machine and will contain a succinct
+                  value suitable for machine interpretation. \n This field should
+                  not be set for transitive errors that a controller faces that are
+                  expected to be fixed automatically over time (like service outages),
+                  but instead indicate that something is fundamentally wrong with
+                  the Machine's spec or the configuration of the controller, and that
+                  manual intervention is required. Examples of terminal errors would
+                  be invalid combinations of settings in the spec, values that are
+                  unsupported by the controller, or the responsible controller itself
+                  being critically misconfigured. \n Any transient errors that occur
+                  during the reconciliation of Machines can be added as events to
+                  the Machine object and/or logged in the controller's output."
                 type: string
               locations:
                 items:
                   type: string
                 type: array
               manifests:
-                description: Manifests stores the if the cluster has already applied the minimal manifests
+                description: Manifests stores the if the cluster has already applied
+                  the minimal manifests
+                properties:
+                  appliedHash:
+                    type: string
+                  initialized:
+                    type: boolean
+                type: object
+              network:
+                properties:
+                  cidrBlock:
+                    type: string
+                  id:
+                    type: integer
+                  subnets:
+                    items:
+                      properties:
+                        cidrBlock:
+                          type: string
+                        networkZone:
+                          type: string
+                      type: object
+                    type: array
+                type: object
+              networkZone:
+                type: string
+              ready:
+                description: Ready is true when the provider resource is ready.
+                type: boolean
+            type: object
+        type: object
+    served: true
+    storage: true
+    subresources:
+      status: {}
+  - additionalPrinterColumns:
+    - description: Locations of the cluster
+      jsonPath: .status.locations
+      name: Locations
+      type: string
+    - description: NetworkZone of the cluster
+      jsonPath: .status.networkZone
+      name: NetworkZone
+      type: string
+    name: v1alpha4
+    schema:
+      openAPIV3Schema:
+        description: HcloudCluster is the Schema for the hcloudclusters API
+        properties:
+          apiVersion:
+            description: 'APIVersion defines the versioned schema of this representation
+              of an object. Servers should convert recognized schemas to the latest
+              internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+            type: string
+          kind:
+            description: 'Kind is a string value representing the REST resource this
+              object represents. Servers may infer this from the endpoint the client
+              submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: HcloudClusterSpec defines the desired state of HcloudCluster
+            properties:
+              controlPlaneEndpoint:
+                $ref: '#/definitions/sigs.k8s.io~1cluster-api~1api~1v1alpha4~0APIEndpoint'
+                description: ControlPlaneEndpoint represents the endpoint used to
+                  communicate with the control plane.
+              controlPlaneLoadbalancer:
+                properties:
+                  algorithm:
+                    enum:
+                    - round_robin
+                    - least_connections
+                    type: string
+                  name:
+                    type: string
+                  services:
+                    items:
+                      properties:
+                        destinationPort:
+                          type: integer
+                        listenPort:
+                          type: integer
+                        protocol:
+                          type: string
+                      required:
+                      - destinationPort
+                      - listenPort
+                      - protocol
+                      type: object
+                    type: array
+                  type:
+                    type: string
+                required:
+                - algorithm
+                - services
+                - type
+                type: object
+              hcloudTokenRef:
+                description: SecretKeySelector selects a key of a Secret.
+                properties:
+                  key:
+                    description: The key of the secret to select from.  Must be a
+                      valid secret key.
+                    type: string
+                  name:
+                    description: 'Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                      TODO: Add other useful fields. apiVersion, kind, uid?'
+                    type: string
+                  optional:
+                    description: Specify whether the Secret or its key must be defined
+                    type: boolean
+                required:
+                - key
+                type: object
+              hrobotTokenRef:
+                description: If no token is provided then it is assumed that the bare
+                  metal controller is unused
+                properties:
+                  passwordKey:
+                    type: string
+                  tokenName:
+                    type: string
+                  userNameKey:
+                    type: string
+                required:
+                - passwordKey
+                - tokenName
+                - userNameKey
+                type: object
+              locations:
+                items:
+                  type: string
+                type: array
+              network:
+                properties:
+                  cidrBlock:
+                    type: string
+                  subnets:
+                    items:
+                      properties:
+                        cidrBlock:
+                          type: string
+                        networkZone:
+                          type: string
+                      type: object
+                    type: array
+                type: object
+              sshKeys:
+                description: define cluster wide SSH keys
+                items:
+                  properties:
+                    id:
+                      type: integer
+                    name:
+                      type: string
+                  type: object
+                type: array
+              vcKubeletClientSecretEnabled:
+                description: Useful for https://github.com/kubernetes-sigs/multi-tenancy/blob/master/incubator/virtualcluster/doc/demo.md#optional-update-client-ca-secret
+                type: boolean
+            required:
+            - controlPlaneLoadbalancer
+            - hcloudTokenRef
+            - sshKeys
+            type: object
+          status:
+            description: HcloudClusterStatus defines the observed state of HcloudCluster
+            properties:
+              controlPlaneLoadBalancer:
+                properties:
+                  algorithm:
+                    enum:
+                    - round_robin
+                    - least_connections
+                    type: string
+                  id:
+                    type: integer
+                  internalIP:
+                    type: string
+                  ipv4:
+                    type: string
+                  ipv6:
+                    type: string
+                  name:
+                    type: string
+                  type:
+                    type: string
+                type: object
+              failureDomains:
+                $ref: '#/definitions/sigs.k8s.io~1cluster-api~1api~1v1alpha4~0FailureDomains'
+                description: FailureDomains contains the failure domains that machines
+                  should be placed in. failureDomains is a map, defined as map[string]FailureDomainSpec.
+                  A unique key must be used for each FailureDomainSpec
+              failureMessage:
+                description: "FailureMessage will be set in the event that there is
+                  a terminal problem reconciling the Machine and will contain a more
+                  verbose string suitable for logging and human consumption. \n This
+                  field should not be set for transitive errors that a controller
+                  faces that are expected to be fixed automatically over time (like
+                  service outages), but instead indicate that something is fundamentally
+                  wrong with the Machine's spec or the configuration of the controller,
+                  and that manual intervention is required. Examples of terminal errors
+                  would be invalid combinations of settings in the spec, values that
+                  are unsupported by the controller, or the responsible controller
+                  itself being critically misconfigured. \n Any transient errors that
+                  occur during the reconciliation of Machines can be added as events
+                  to the Machine object and/or logged in the controller's output."
+                type: string
+              failureReason:
+                description: "FailureReason will be set in the event that there is
+                  a terminal problem reconciling the Machine and will contain a succinct
+                  value suitable for machine interpretation. \n This field should
+                  not be set for transitive errors that a controller faces that are
+                  expected to be fixed automatically over time (like service outages),
+                  but instead indicate that something is fundamentally wrong with
+                  the Machine's spec or the configuration of the controller, and that
+                  manual intervention is required. Examples of terminal errors would
+                  be invalid combinations of settings in the spec, values that are
+                  unsupported by the controller, or the responsible controller itself
+                  being critically misconfigured. \n Any transient errors that occur
+                  during the reconciliation of Machines can be added as events to
+                  the Machine object and/or logged in the controller's output."
+                type: string
+              locations:
+                items:
+                  type: string
+                type: array
+              manifests:
+                description: Manifests stores the if the cluster has already applied
+                  the minimal manifests
                 properties:
                   appliedHash:
                     type: string
