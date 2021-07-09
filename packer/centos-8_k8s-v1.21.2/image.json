@@ -1,0 +1,42 @@
+{
+  "variables": {
+    "hcloud_token": "{{env `HCLOUD_TOKEN`}}",
+    "scripts": "{{template_dir}}/scripts",
+    "os": "centos-8",
+    "image-name": "centos-8_k8s-v1.21.2",
+    "template_hash": "{{env `PACKER_TEMPLATE_HASH`}}"
+  },
+  "sensitive-variables": ["hcloud_token"],
+  "builders": [
+      {
+          "type": "hcloud",
+          "token": "{{user `hcloud_token`}}",
+          "image": "{{user `os`}}",
+          "location": "nbg1",
+          "server_type": "cpx11",
+          "ssh_username": "root",
+          "snapshot_name": "capi-hcloud-{{user `os`}}-{{isotime \"2006-01-02-030405\"}}",
+          "snapshot_labels": {
+              "cluster-api-provider-hcloud.capihc.com/image-name": "{{user `image-name`}}",
+              "cluster-api-provider-hcloud.capihc.com/kubernetes-version": "v1.21.2",
+              "cluster-api-provider-hcloud.capihc.com/template-hash": "{{user `template_hash`}}"
+          }
+      }
+  ],
+  "provisioners": [
+    {
+      "type": "shell",
+      "environment_vars": [
+        "PACKER_CENTOS_RELEASE=8.2.2004",
+        "PACKER_OS_IMAGE={{user `os`}}"
+      ],
+      "scripts": [
+        "{{user `scripts`}}/configure_base.sh",
+        "{{user `scripts`}}/configure_cri.sh",
+        "{{user `scripts`}}/configure_kernel.sh",
+        "{{user `scripts`}}/configure_kubernetes.sh",
+        "{{user `scripts`}}/cleanup.sh"
+      ]
+    }
+  ]
+}
