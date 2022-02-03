@@ -1,4 +1,8 @@
 # cluster-api-provider-hcloud
+> New project ->: [https://github.com/syself/cluster-api-provider-hetzner](https://github.com/syself/cluster-api-provider-hetzner)
+
+**⚠️ Deprecation notice: We decided to archive this project and to start a fresh one out of several reasons. We wanted to re-design the structure of the project. For example, we got rid of Bazel and Packer and started with the latest skaffolding of kubebuilder. This makes it more comparable to the other provider integrations and easier to use.
+We are no longer accepting pull requests or providing support. We urge all cluster-api-provider-hcloud users to migrate to [cluster-api-provider-hetzner](https://github.com/syself/cluster-api-provider-hetzner) as soon as possible.**
 
 Cluster API infrastructure provider for Hetzner Cloud https://hetzner.cloud
 
